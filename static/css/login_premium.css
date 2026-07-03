@@ -1,0 +1,211 @@
+/* static/css/login_premium.css */
+
+:root {
+  --color-primary: #F57C00;
+  --color-primary-light: #FF9800;
+  --color-dark-bg: #1e2125;
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  background-color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+.min-vh-100-custom {
+  min-height: 100vh;
+}
+
+/* ==========================================================
+   ESCRITORIO: PANEL IZQUIERDO Y TRANSICIÓN DE ONDAS
+========================================================== */
+.brand-column-premium {
+  background-color: var(--color-dark-bg);
+  position: relative;
+  overflow: hidden; 
+}
+
+.brand-overlay-premium {
+  background: linear-gradient(
+    to right, 
+    rgba(30, 33, 37, 0.2) 0%,
+    rgba(30, 33, 37, 0.7) 100%
+  );
+  z-index: 1;
+}
+
+/* CONTENEDOR DE LA ONDA SHAPEDIVIDER (ESCRITORIO) */
+.desktop-divider-transition {
+  position: absolute;
+  top: -3%;       
+  right: -1px;    
+  height: 106%;
+  width: 136px;   
+  z-index: 5;
+  pointer-events: none;
+  transform: rotateX(180deg); 
+}
+
+/* ==========================================================
+   MÓVIL: CABECERA DE ONDAS (RESPONSIVE)
+========================================================== */
+.mobile-waves-header {
+  display: none; 
+  width: 100%;
+  height: 260px; 
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(0deg, var(--color-primary) 0%, #000000e0 95%);
+}
+
+.mobile-logo-wrapper {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  text-align: center;
+}
+
+/* CONTENEDOR DE LA ONDA SHAPEDIVIDER (MÓVIL) */
+.mobile-waves-divider {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 76px;  
+  z-index: 5;
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px) {
+  .mobile-waves-header {
+    display: block;
+  }
+  .form-column-premium {
+    align-items: flex-start !important;
+    padding-top: 40px !important;
+  }
+}
+
+/* ==========================================================
+   TARJETA, LOGO Y BOTONES
+========================================================== */
+.glass-card-logo {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+  z-index: 3;
+}
+
+.logo-container-premium {
+  width: 130px;
+  height: 130px;
+  background-color: #ffffff;
+  padding: 5px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease;
+}
+
+.logo-container-premium:hover {
+  transform: scale(1.05) rotate(2deg);
+}
+
+.logo-container-premium img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.form-column-premium {
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.btn-orange-premium {
+  background-image: linear-gradient(195deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(245, 124, 0, 0.35) !important;
+  transition: all 0.3s ease;
+}
+
+.btn-orange-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 124, 0, 0.5) !important;
+}
+
+.alert-danger-material {
+  background-image: linear-gradient(195deg, #EF5350 0%, #E53935 100%);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.25);
+}
+
+/* =========================================================
+   💥 CORRECCIÓN DE "SALTO" (LAYOUT SHIFT) EN INPUTS
+   ========================================================= */
+
+/* 1. Mantenemos el borde siempre de 1px, solo cambiamos el color */
+.input-group.input-group-outline.is-focused .form-label + .form-control,
+.input-group.input-group-outline.is-filled .form-label + .form-control {
+    border-color: #fb8c00 !important; 
+    border-width: 1px !important; /* 💥 SIEMPRE 1px para que no se mueva */
+    border-top-color: transparent !important;
+    
+    /* Usamos box-shadow suave para el resplandor, pero SIN añadir grosor que mueva la caja */
+    box-shadow: inset 1px 0 #fb8c00, inset -1px 0 #fb8c00, inset 0 -1px #fb8c00 !important;
+}
+
+/* 2. Ajuste fino para evitar que cambie el borde al hacer clic */
+.input-group.input-group-outline.is-focused .form-control {
+    border-color: #fb8c00 !important;
+    border-width: 1px !important; /* 💥 FORZAMOS 1px, eliminando el grosor de 2px que causaba el salto */
+}
+
+/* 3. Aseguramos que el label flotante mantenga su elegancia */
+.input-group.input-group-outline.is-focused .form-label::before,
+.input-group.input-group-outline.is-focused .form-label::after,
+.input-group.input-group-outline.is-filled .form-label::before,
+.input-group.input-group-outline.is-filled .form-label::after {
+    border-top-color: #fb8c00 !important;
+    box-shadow: inset 0 1px #fb8c00 !important; 
+}
+
+/* 4. Color del label flotante */
+.input-group.input-group-outline.is-focused .form-label,
+.input-group.input-group-outline.is-filled .form-label {
+    color: #fb8c00 !important;
+}
+
+/* =========================================================
+   💥 CORRECCIONES DE UX (CLICS Y AUTOCOMPLETADO)
+========================================================= */
+
+/* Solución del fondo celeste asqueroso de Chrome al autocompletar contraseñas */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: #495057 !important; 
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Evitar que el label flotante bloquee el clic en la caja de texto */
+.input-group-outline .form-label {
+    z-index: 10 !important;
+    pointer-events: none !important; 
+}
+
+/* Asegurar que la caja de texto se pueda clickear */
+.input-group-outline .form-control {
+    z-index: 1 !important;
+    position: relative;
+}

@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-radius-lg">
+        
+        <div class="card-header bg-gradient-dark py-3 d-flex justify-content-between align-items-start">
+          <div class="col-md-7 text-white d-flex align-items-center">
+              <a href="{% url 'academico:mi_aula' %}" class="text-white me-3">
+                  <i class="material-symbols-rounded text-3xl">arrow_back</i>
+              </a>
+              <div class="d-flex flex-column">
+                <h5 class="text-white mb-0">
+                📦 Inventario Físico - Aula: {{ aula.grado }} "{{ aula.seccion }}"
+                </h5>
+                <p class="text-xs text-white opacity-8 mb-0">
+                Periodo actual: {{ periodo }} | Por favor, registre las cantidades exactas.
+                </p>
+              </div>
+          </div>
+          <a href="{% url 'academico:exportar_inventario_excel' %}?aula_id={{ aula.id }}"
+              class="btn bg-gradient-success mb-0 d-flex align-items-center" style="height: 42px;">
+              <i class="material-symbols-rounded text-sm me-1">table_view</i>
+              Descargar Excel del Aula
+          </a>
+
+        </div>
+
+        <div class="card-body px-0 pb-2">
+          <!-- Formulario masivo que envuelve toda la tabla -->
+          <form method="POST" id="formInventarioDocente">
+            {% csrf_token %}
+            <div class="table-responsive p-0">
+              <table id="tablaInventarioDocente" class="table align-items-center mb-0 table-hover text-center">
+                <thead class="bg-light">
+                  <tr>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-center" style="width: 50px;">N°</th>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-start px-4">Material</th>
+                    <th class="text-uppercase text-success text-xxs font-weight-bolder">Buen Estado</th>
+                    <th class="text-uppercase text-warning text-xxs font-weight-bolder">Regular</th>
+                    <th class="text-uppercase text-danger text-xxs font-weight-bolder">Mal Estado</th>
+                    <th class="text-uppercase text-info text-xxs font-weight-bolder">Se Requiere</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for fila in datos_grilla %}
+                  <tr>
+                    <td class="text-center text-sm font-weight-bold text-secondary"></td>
+                    <td class="text-start px-4">
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm font-weight-bold">{{ fila.nombre }}</h6>
+                      </div>
+                    </td>
+                    <!-- Inputs Numéricos Inteligentes -->
+                    <td><input type="number" min="0" name="bueno_{{ fila.id_material }}" value="{{ fila.bueno }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
+                    <td><input type="number" min="0" name="regular_{{ fila.id_material }}" value="{{ fila.regular }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
+                    <td><input type="number" min="0" name="malo_{{ fila.id_material }}" value="{{ fila.malo }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
+                    <td><input type="number" min="0" name="requiere_{{ fila.id_material }}" value="{{ fila.requiere }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center py-4">La Coordinadora aún no ha registrado el catálogo maestro de materiales.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Botón de Guardado Global -->
+            <div class="px-4 py-3 bg-light mt-3 d-flex justify-content-end">
+              <button type="submit" class="btn bg-gradient-success mb-0">
+                <i class="material-symbols-rounded align-middle me-1">save</i> Guardar Inventario
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% load static %}
+<script src="{% static 'js/inventario.js' %}"></script>
+{% endblock %}

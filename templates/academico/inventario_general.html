@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6 d-flex gap-2">
+      <button class="btn bg-gradient-dark mb-0 d-flex align-items-center" onclick="abrirModalCrear()">
+        <i class="material-symbols-rounded text-sm me-2">add_circle</i> Nuevo Material
+      </button>
+      <a href="{% url 'academico:exportar_inventario_excel' %}" class="btn bg-gradient-success mb-0 d-flex align-items-center">
+        <i class="material-symbols-rounded text-sm me-2">table_view</i> Exportar Consolidado
+      </a>
+    </div>
+    
+    <div class="col-md-6 text-end">
+      <label class="text-xs font-weight-bold text-secondary mb-1">Filtrar Inventario por Aula:</label>
+      
+      <select id="filtroAula" class="form-select border border-2 p-2 rounded-3 w-50 d-inline-block">
+        <option value="">-- Todas las Aulas (Consolidado) --</option>
+        {% for a in todas_las_aulas %}
+          <option value="{{ a.id }}">🏫 {{ a.grado }} "{{ a.seccion }}" - {{ a.get_nivel_display }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-radius-lg">
+        <div class="card-header bg-gradient-info py-3">
+          <h5 class="text-white mb-0">📊 Consolidado General de Inventario</h5>
+        </div>
+        <div class="card-body p-4"> <div class="table-responsive">
+            <table class="table align-items-center mb-0 table-hover text-center w-100" id="tablaInventarioGeneral">
+              <thead class="bg-light">
+                <tr>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-center" style="width: 50px;">N°</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-start px-4">Material</th>
+                  <th class="text-uppercase text-success text-xxs font-weight-bolder">Bueno</th>
+                  <th class="text-uppercase text-warning text-xxs font-weight-bolder">Regular</th>
+                  <th class="text-uppercase text-danger text-xxs font-weight-bolder">Malo</th>
+                  <th class="text-uppercase text-info text-xxs font-weight-bolder">Requerido</th>
+                  <th class="text-uppercase text-info text-xxs font-weight-bolder">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalMaterial" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark" id="modalMaterialHeader">
+        <h6 class="modal-title text-white" id="modalMaterialTitle">📦 Agregar Nuevo Material</h6>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <form id="formMaterial" onsubmit="event.preventDefault();">
+        {% csrf_token %} 
+        
+        <input type="hidden" id="materialId" name="id">
+        
+        <div class="modal-body p-4">
+          <div class="input-group input-group-static mb-4">
+            <label class="font-weight-bold text-dark">Nombre del Material</label>
+            <input type="text" class="form-control" id="nombreMaterial" name="nombre" placeholder="Ej. Pizarra Acrílica" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn bg-gradient-dark mb-0" onclick="guardarCatalogo()">Guardar Material</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% load static %}
+<script src="{% static 'js/inventario.js' %}"></script>
+{% endblock %}

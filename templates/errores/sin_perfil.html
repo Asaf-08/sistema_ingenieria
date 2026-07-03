@@ -1,0 +1,94 @@
+{% extends "layouts/base-auth.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  :root {
+    --color-primary: #F57C00;       /* Naranja Corporativo */
+    --color-dark: #212529;          /* Gris Oscuro Corporativo */
+  }
+
+  .error-card-premium {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    border: none;
+  }
+
+  .icon-bounce {
+    font-size: 5rem !important;
+    color: #ff9800;
+    animation: simpleBounce 2s infinite;
+  }
+
+  @keyframes simpleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+</style>
+{% endblock extrastyle %}
+
+{% block body %} bg-gray-200 {% endblock body %}  
+
+{% block content %}
+<main class="main-content mt-0">
+  <div class="page-header align-items-start min-vh-100" style="background-image: url('{% static 'assets/img/fondo_login.webp' %}');">
+    <span class="mask bg-gradient-dark opacity-7"></span>
+    
+    <div class="container my-auto">
+      <div class="row">
+        <div class="col-md-6 col-sm-10 mx-auto text-center">
+          
+          <div class="card error-card-premium z-index-0 p-4 py-5 my-4 border-radius-xl bg-white match-to-dashboard">
+            <div class="card-body">
+              
+              <div class="mb-4">
+                <i class="material-symbols-rounded icon-bounce">no_accounts</i>
+              </div>
+
+              <h2 class="font-weight-black text-dark mb-2" style="letter-spacing: -1px;">Acceso Restringido</h2>
+              
+              <div class="w-15 bg-gray-300 h-2px mx-auto my-3 rounded"></div>
+              
+              <p class="text-muted text-sm px-lg-5 mb-5">
+                {% if mensaje %}
+                  {{ mensaje }}
+                {% else %}
+                  Su cuenta de usuario actual no tiene asociado un perfil válido dentro de la tabla de Personal del plantel.
+                {% endif %}
+                <br><br>
+                <span class="text-xs text-secondary opacity-7">Por favor, comuníquese con el administrador del sistema o el área de Coordinación General para enlazar su cuenta correctamente.</span>
+              </p>
+
+              <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'login' %}" class="btn bg-gradient-dark mb-0 px-4">
+                  <i class="material-symbols-rounded text-sm align-middle me-1">arrow_back</i> Regresar
+                </a>
+                <form action="{% url 'logout' %}" method="POST" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-secondary mb-0 px-4">
+                    <i class="material-symbols-rounded text-sm align-middle me-1">logout</i> Cerrar Sesión
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer position-absolute bottom-2 py-2 w-100">
+      <div class="container">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-12 text-center">
+            <div class="copyright text-center text-sm text-white opacity-6">
+              &copy; {% now "Y" %} — Ingenieria Torre Blanca | Control de Autenticación y Seguridad Perimetral
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+</main>
+{% endblock content %}

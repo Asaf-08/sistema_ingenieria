@@ -1,0 +1,122 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Periodos Lectivos (Años Escolares)</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button type="button" class="btn btn-sm bg-gradient-primary mb-0"
+                            onclick="abrirModalCrearPeriodo()">
+                            <i class="material-symbols-rounded text-sm">add</i> Nuevo Periodo
+                        </button>
+                    </div>
+
+                    <div class="table-responsive p-0 px-4">
+                        {% csrf_token %}
+                        <table class="table align-items-center mb-0" id="tabla-periodos">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Nombre del Periodo</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Bimestre actual</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Estado</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for periodo in periodos %}
+                                <tr>
+                                    <td>
+                                        <h6 class="mb-0 text-sm ps-3">{{ periodo }}</h6>
+                                    </td>
+                                    <td>
+                                        <h6 class="mb-0 text-sm ps-3">Bimestre {{ periodo.bimestre_actual }}</h6>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        {% if periodo.activo %}
+                                        <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
+                                        {% else %}
+                                        <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button onclick="abrirModalEditarPeriodo('{{ periodo.pk }}')"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 16px;">edit</i>
+                                        </button>
+                                        <button
+                                            onclick="confirmarEliminarPeriodo('{{ periodo.pk }}', '{{ periodo }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 16px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPeriodo" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div id="modalHeaderPeriodo"
+                    class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1 w-100">
+                    <h6 class="modal-title text-white font-weight-bolder text-center" id="modalTituloPeriodo">Nuevo
+                        Periodo</h6>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="formPeriodo" onsubmit="event.preventDefault();">
+                    {% csrf_token %}
+                    <input type="hidden" name="periodo_id" id="periodo_id">
+                    <div class="input-group input-group-static mb-4">
+                        <label>Año Escolar</label>
+                        {{ form.anio }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Bimestre Actual</label>
+                        {{ form.bimestre_actual }}
+                    </div>
+                    <div class="form-check form-switch d-flex align-items-center mb-3">
+                        {{ form.activo }}
+                        <label class="form-check-label mb-0 ms-3">¿Es el periodo actual?</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarPeriodo()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/periodos.js' %}"></script>
+{% endblock scripts %}

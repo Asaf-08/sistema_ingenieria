@@ -1,0 +1,373 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Informe Progresivo - {{ estudiante.nombres }} {% endblock title %}
+
+{% block extra_css %}
+<style>
+/* ========================================================= 
+       ESTILOS DEL LIENZO A4 CORREGIDOS
+       ========================================================= */
+    .a4-wrapper {
+        display: block; 
+        background-color: #e9ecef;
+        padding: 20px 0;
+        overflow-x: auto;
+    }
+
+    /* El Papel Físico */
+    .a4-container {
+        width: 210mm; 
+        height: 296.5mm; /* Alto estricto, evita que se cree la hoja 2 */
+        margin: 0 auto; 
+        padding: 8mm; /* Este es el margen blanco exterior que empuja tu borde hacia adentro */
+        background: white;
+        box-sizing: border-box;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        font-family: 'Arial', sans-serif;
+        color: #000;
+        overflow: hidden; /* Corta cualquier pixel rebelde */
+    }
+
+    /* El Contenedor del Borde Interno */
+    .a4-inner {
+        width: 100%;
+        height: 100%;
+        border: 4px double #a0a0a0; /* El borde ahora vive adentro de la hoja */
+        padding: 5mm 10mm; /* Espacio entre el borde y el texto */
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* 1. CABECERA: Logo y Grado */
+    .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 12px;
+        margin-bottom: 25px;
+        margin-top: 0px;
+    }
+
+    .doc-header .logo img {
+        height: 55px;
+        object-fit: contain;
+    }
+
+    .doc-header .grade-box {
+        border: 2px solid #000;
+        padding: 5px 20px;
+        font-weight: 900;
+        font-size: 11pt;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* 2. TÍTULOS Y BIMESTRE CENTRADO */
+    .title-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .doc-title {
+        color: #ed7d31;
+        font-weight: 900;
+        font-size: 20pt;
+        margin: 0 0 10px 0;
+        text-transform: uppercase;
+    }
+
+    .doc-bimestre {
+        display: inline-block;
+        border: 1px solid #ccc;
+        color: #a0a0a0;
+        font-weight: bold;
+        font-size: 12pt;
+        padding: 4px 30px;
+        letter-spacing: 2px;
+    }
+
+    /* 3. CAJA EMPRENDEDOR */
+    .student-box {
+        border: 1px solid #5b9bd5;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 13pt;
+        font-weight: bold;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .student-box span {
+        flex-grow: 1;
+        border-bottom: 2px dotted #5b9bd5;
+        margin-left: 10px;
+        color: #000;
+        padding-left: 10px;
+        text-transform: uppercase;
+    }
+
+    /* 4. TABLA ACTITUDINAL */
+    .doc-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+
+    .doc-table th, .doc-table td {
+        border: 1px solid #000;
+        padding: 8px 5px;
+        text-align: center;
+        font-size: 8.5pt;
+        vertical-align: top;
+        width: 20%; /* Asegura que las 5 columnas sean iguales al quitar PPFF */
+    }
+
+    .doc-table th {
+        background-color: #ed7d31;
+        color: white;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .doc-table td.desc {
+        text-align: justify;
+        font-size: 7.5pt;
+        line-height: 1.2;
+    }
+
+    /* 5. GRÁFICO DE BARRAS Y LEYENDA */
+    .chart-section {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 30px;
+    }
+
+    .chart-container {
+        width: 45%;
+    }
+
+    .chart-legend {
+        width: 35%;
+        font-size: 8.5pt;
+        line-height: 1.6;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    /* 6. RECOMENDACIONES (Checkmarks) */
+    .recommendations-box {
+        border: 1px solid #d3d3d3;
+        padding: 5px 20px 0px 20px;
+        margin-bottom: 30px;
+    }
+
+    .recommendations-title {
+        color: #000080;
+        font-weight: bold;
+        text-decoration: underline;
+        font-size: 11pt;
+        margin-bottom: 15px;
+    }
+
+    .recommendations-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .recommendations-list li {
+        font-size: 10pt;
+        margin-bottom: 12px;
+        text-align: justify;
+        display: flex;
+    }
+
+    .recommendations-list li::before {
+        content: "✓";
+        margin-right: 15px;
+        font-weight: bold;
+        font-size: 11pt;
+    }
+
+    /* 7. FIRMAS */
+    .signature-container {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 50px 5px 50px;
+        margin-bottom: 5px;
+        margin-top: auto; 
+    }
+
+    .signature-line {
+        font-weight: bold;
+        font-size: 11pt;
+        text-decoration: underline;
+    }
+
+    /* 8. PIE DE PÁGINA */
+    .doc-footer {
+        border: 1px solid #5b9bd5;
+        border-radius: 10px;
+        padding: 8px;
+        text-align: center;
+        color: #000080;
+        font-style: italic;
+        font-size: 9.5pt;
+        font-weight: 500;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 text-dark">Generación de Informe Técnico</h4>
+            <p class="text-sm text-secondary mb-0">Vista previa del documento oficial.</p>
+        </div>
+        <button id="btn-exportar" class="btn bg-gradient-danger mb-0 d-flex align-items-center"
+            data-apellidos="{{ estudiante.apellidos|default:'Alumno' }}">
+        <i class="material-symbols-rounded text-sm me-2">picture_as_pdf</i> Exportar a PDF
+    </button>
+    </div>
+
+    <div class="a4-wrapper" id="a4-wrapper">
+        <div id="informe-pdf" class="a4-container">
+
+        <div class="a4-inner">
+            
+            <div class="doc-header">
+                <div class="logo">
+                    <img loading="lazy" src="{% static 'assets/img/logo_colegio_completo.webp' %}" style="height: 45px;" alt="Colegio Ingeniería" onerror="this.src='https://via.placeholder.com/200x55?text=LOGO+COLEGIO'">
+                </div>
+                <div class="grade-box">
+                    {{ aula.grado|default:"1ER GRADO" }} - {{ aula.nivel|default:"PRIMARIA" }}
+                </div>
+            </div>
+
+            <div class="title-container">
+                <h1 class="doc-title">INFORME TÉCNICO PEDAGÓGICO PROGRESIVO</h1>
+                <div class="doc-bimestre">BIMESTRE I</div>
+            </div>
+            
+            <div class="student-box">
+                EMPRENDEDOR: <span>{{ estudiante.apellidos }}, {{ estudiante.nombres }}</span>
+            </div>
+            
+            <table class="doc-table">
+                <thead>
+                    <tr>
+                        <th>PUNTUALIDAD</th>
+                        <th>PRESENTACIÓN</th>
+                        <th>PARTICIPACIÓN</th>
+                        <th>DISCIPLINA</th>
+                        <th>RESPONSABILIDAD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="desc">{{ textos_tabla.Puntualidad }}</td>
+                        <td class="desc">{{ textos_tabla.Presentacion }}</td>
+                        <td class="desc">{{ textos_tabla.Participacion }}</td>
+                        <td class="desc">{{ textos_tabla.Disciplina }}</td>
+                        <td class="desc">{{ textos_tabla.Responsabilidad }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="chart-section">
+                <div class="chart-container">
+                    <canvas id="graficoActitudinal" height="200"
+                        data-puntualidad="{{ notas_actitudinales.Puntualidad|default:'0' }}"
+                        data-presentacion="{{ notas_actitudinales.Presentacion|default:'0' }}"
+                        data-participacion="{{ notas_actitudinales.Participacion|default:'0' }}"
+                        data-disciplina="{{ notas_actitudinales.Disciplina|default:'0' }}"
+                        data-responsabilidad="{{ notas_actitudinales.Responsabilidad|default:'0' }}">
+                    </canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dc3545;"></div>
+                        <div><b>EN PROCESO</b><br>0 - 50 (%)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #fd7e14;"></div>
+                        <div><b>REGULAR</b><br>51 - 65 (%)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffc107;"></div>
+                        <div><b>ADECUADO</b><br>66 - 80 (%)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #0d6efd;"></div>
+                        <div><b>BUENO</b><br>81 - 90 (%)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #198754;"></div>
+                        <div><b>EXCELENTE</b><br>91 - 100 (%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recommendations-box">
+                <div class="recommendations-title">RECOMENDACIONES:</div>
+                
+                {% if recomendaciones_ia %}
+                    <ul class="recommendations-list">
+                        {% for rec in recomendaciones_ia %}
+                            <li>{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                {% elif evaluacion_id %}
+                    <div id="loading-ia" class="text-center py-4">
+                        <div class="spinner-border text-info" role="status" style="width: 2rem; height: 2rem;">
+                            <span class="sr-only">Cargando...</span>
+                        </div>
+                        <p class="text-sm text-secondary mt-2 mb-0"><b>Gemini IA</b> está analizando el perfil del estudiante...</p>
+                    </div>
+                    <ul class="recommendations-list" id="lista-recomendaciones" style="display: none;" data-evaluacion="{{ evaluacion_id }}">
+                    </ul>
+                {% else %}
+                    <ul class="recommendations-list">
+                        <li>Aún no se han registrado notas actitudinales para este bimestre.</li>
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="signature-container">
+                <div class="signature-line">TUTOR DE AULA</div>
+                <div class="signature-line">DIRECCIÓN</div>
+            </div>
+
+            <div class="doc-footer">
+                "El principio de la Educación es predicar con el Ejemplo"
+            </div>
+        </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
+<script src="{% static 'plugins/html2pdf/html2pdf.bundle.min.js' %}"></script>
+<script src="{% static 'js/reporte_progresivo.js' %}"></script>
+{% endblock extra_js %}

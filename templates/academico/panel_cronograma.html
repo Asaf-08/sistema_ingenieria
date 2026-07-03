@@ -1,0 +1,181 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-gradient-info shadow-info border-radius-lg p-3 d-flex flex-row align-items-center justify-content-between">
+        <div>
+          <h5 class="text-white mb-0">Gestión de Tiempos y Agenda</h5>
+          <p class="text-xs text-white opacity-8 mb-0">
+            {% if es_coordinador %}Panel de Administración Académica{% else %}Tu itinerario para el día de hoy{% endif %}
+          </p>
+        </div>
+        {% if es_coordinador %}
+        <div class="d-flex gap-2">
+          <button type="button" class="btn bg-white text-info mb-0 font-weight-bold" onclick="abrirModalEvento()">
+            <i class="material-symbols-rounded align-middle me-1 text-sm">event</i> Nuevo Evento
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+  <div class="col-12 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-body p-3">
+        <div id="calendario-visual" style="min-height: 600px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    const ES_COORDINADOR = {% if es_coordinador %}true{% else %}false{% endif %};
+</script>
+</div>
+
+{% if es_coordinador %}
+<div class="modal fade" id="modalHorario" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-info">
+        <h5 class="modal-title text-white">Asignar Horario de Clase</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formHorario" method="POST" onsubmit="guardarHorario(event)">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label>Docente</label>
+              {{ form_horario.personal }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Aula</label>
+              {{ form_horario.aula }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Curso</label>
+              {{ form_horario.curso }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Periodo Lectivo</label>
+              {{ form_horario.periodo }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Día de la Semana</label>
+              {{ form_horario.dia_semana }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Hora Inicio</label>
+              {{ form_horario.hora_inicio }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Hora Fin</label>
+              {{ form_horario.hora_fin }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" id="btnGuardarHorario" class="btn bg-gradient-info">Guardar Asignación</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEvento" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl shadow-lg">
+      <div class="modal-header bg-gradient-dark">
+        <h5 class="modal-title text-white" id="modalEventoTitulo">Registrar Evento</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEvento" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <input type="hidden" id="evento_id" name="evento_id">
+        
+        <div class="modal-body p-4">
+          <div class="input-group input-group-static mb-3">
+            <label class="font-weight-bold">Título del Aviso / Recordatorio</label>
+            {{ form_evento.titulo }}
+          </div>
+          
+          <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="input-group input-group-static">
+              <label class="font-weight-bold">📅 Fecha Inicio</label>
+              <input type="date" class="form-control" id="id_fecha_inicio" name="fecha_inicio" required>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="input-group input-group-static">
+              <label class="font-weight-bold">📅 Fecha Fin</label>
+              <input type="date" class="form-control" id="id_fecha_fin" name="fecha_fin" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" id="div_bloque_horas" style="display: none;">
+        <div class="col-md-6 mb-3">
+          <div class="input-group input-group-static">
+            <label class="font-weight-bold">⏰ Hora Inicio</label>
+            <input type="time" class="form-control" id="id_hora_inicio" name="hora_inicio">
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="input-group input-group-static">
+            <label class="font-weight-bold">⏰ Hora Fin</label>
+            <input type="time" class="form-control" id="id_hora_fin" name="hora_fin">
+          </div>
+        </div>
+      </div>
+          
+          <div class="row align-items-center">
+            <div class="col-md-4 mb-3">
+              <div class="input-group input-group-static">
+                <label class="font-weight-bold">🎨 Color Etiqueta</label>
+                {{ form_evento.color }}
+              </div>
+            </div>
+            <div class="col-md-8 mb-3">
+              <div class="input-group input-group-static">
+                <label class="font-weight-bold">Filtro de Aula (Opcional)</label>
+                {{ form_evento.aula_afectada }}
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group input-group-static mb-3">
+            <label class="font-weight-bold">Detalles o Indicaciones Adicionales</label>
+            {{ form_evento.descripcion }}
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" id="btnEliminarEventoModal" class="btn bg-gradient-danger mb-0" style="display: none;" onclick="ejecutarEliminacionDesdeModal()">
+            <i class="material-symbols-rounded text-sm align-middle me-1">delete</i> Eliminar
+          </button>
+          <div class="d-flex gap-2 ms-auto">
+            <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" id="btnGuardarEvento" class="btn bg-gradient-dark mb-0" onclick="guardarEvento()">Guardar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'plugins/fullcalendar/index.global.min.js' %}"></script>
+<script src="{% static 'plugins/fullcalendar/es.global.min.js' %}"></script>
+<script src="{% static 'js/cronograma.js' %}"></script>
+{% endblock scripts %}
+

@@ -1,0 +1,141 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3">
+                        <h6 class="text-white"><i class="material-symbols-rounded align-middle me-2">school</i> Asistencia de Estudiantes</h6>
+                    </div>
+                </div>
+
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center px-4 mt-3 mb-3 gap-3">
+                        <button class="btn bg-gradient-dark btn-sm mb-0 w-100 w-md-auto" onclick="abrirModalCrearEstudiante()">
+                            <i class="material-symbols-rounded text-sm me-1">add</i> Registro Manual
+                        </button>
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center px-4 gap-2 gap-md-3">
+                        <p class="text-sm mb-0 font-weight-bold text-dark">Rango de Búsqueda:</p>
+                        
+                        <form method="GET" action="." class="d-flex flex-column flex-sm-row align-items-center bg-white border-radius-md px-3 py-2 shadow-sm border mb-0 w-100 w-md-auto gap-2">
+                            <div class="d-flex align-items-center me-3">
+                                <label class="text-xs mb-0 me-2 text-secondary font-weight-bold">Desde:</label>
+                                <input type="date" name="fecha_inicio" class="form-control form-control-sm border-bottom border-2 py-0" value="{{ fecha_inicio|date:'Y-m-d' }}" required>
+                            </div>
+                            <div class="d-flex align-items-center me-3">
+                                <label class="text-xs mb-0 me-2 text-secondary font-weight-bold">Hasta:</label>
+                                <input type="date" name="fecha_fin" class="form-control form-control-sm border-bottom border-2 py-0" value="{{ fecha_fin|date:'Y-m-d' }}" required>
+                            </div>
+                            <button type="submit" class="btn btn-sm bg-gradient-primary mb-0 px-3 py-1 d-flex align-items-center" title="Filtrar">
+                                <i class="material-symbols-rounded text-white" style="font-size: 18px;">search</i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive px-4">
+                        <table id="tabla-asistencia-estudiantes" class="table align-items-center mb-0 w-100">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estudiante</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Estado</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Llegada</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Fecha</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in estudiantes %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column justify-content-center px-2 py-1">
+                                            <h6 class="mb-0 text-sm">{{ a.estudiante.apellidos }}, {{ a.estudiante.nombres }}</h6>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm bg-gradient-{% if a.estado == 'P' %}success{% elif a.estado == 'T' %}warning{% elif a.estado == 'J' %}info{% else %}danger{% endif %}">
+                                            {{ a.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center text-sm font-weight-bold">{{ a.hora_registro|time:"h:i A"|default:"--" }}</td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="text-secondary font-weight-bold">{{ a.fecha|date:"d/m/Y" }}</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-2" style="width: 35px; height: 35px; padding: 0;"
+                                            onclick="abrirModalEditarEstudiante('{{ a.id }}', '{{ a.estudiante.id }}', '{{ a.hora_registro|time:'H:i' }}', '{{ a.estado }}')">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">edit</i>
+                                        </button>
+                                        <button type="button" class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0" style="width: 35px; height: 35px; padding: 0;"
+                                            onclick="confirmarEliminacionEstudiante('{{ a.id }}')">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAsistenciaEstudiante" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary">
+                <h5 class="modal-title text-white" id="modalTituloEstudiante">Asistencia Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAsistenciaEstudiante">
+                    {% csrf_token %}
+                    <input type="hidden" id="asistencia_est_id">
+                    <div class="input-group input-group-static mb-3">
+                        <label>Estudiante</label>
+                        <select class="form-control" id="id_estudiante">
+                            <option value="">Seleccione...</option>
+                            {% for e in lista_estudiantes %}
+                            <option value="{{ e.id }}">{{ e.apellidos }}, {{ e.nombres }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group input-group-static mb-3">
+                        <label>Hora de Llegada</label>
+                        <input type="time" class="form-control" id="id_hora_registro" required>
+                    </div>
+                    <div class="input-group input-group-static mb-3">
+                        <label>Estado</label>
+                        <select class="form-control" id="id_estado_est">
+                            <option value="P">Presente</option>
+                            <option value="T">Tardanza</option>
+                            <option value="F">Falta</option>
+                            <option value="J">Falta Justificada</option>
+                        </select>
+                    </div>
+                    <div class="input-group input-group-static mb-3" id="div_justificacion_est" style="display: none;">
+                        <label>Justificación (Requerida)</label>
+                        <textarea class="form-control" id="id_justificacion_est" rows="2" placeholder="Motivo de la inasistencia..."></textarea>
+                    </div>
+
+                    <div class="input-group input-group-static mb-3">
+                        <label>Observaciones (Opcional)</label>
+                        <textarea class="form-control" id="id_observaciones_est" rows="2" placeholder="Detalles adicionales..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-primary" onclick="guardarAsistenciaEstudiante()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/asistencia_estudiantes.js' %}"></script>{% endblock %}

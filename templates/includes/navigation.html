@@ -1,0 +1,145 @@
+{% load static %}
+
+<nav class="navbar navbar-main navbar-expand-lg px-0 mx-3 shadow-none border-radius-xl position-sticky blur shadow-blur top-1 z-index-sticky" id="navbarBlur" data-scroll="true">
+  <div class="container-fluid py-1 px-3">
+    
+    <div class="d-flex align-items-center">
+      <div class="d-none d-xl-block cursor-pointer me-3 mt-1" id="iconSidenavDesktop">
+        <i class="material-symbols-rounded text-dark opacity-8" style="font-size: 26px;">menu_open</i>
+      </div>
+
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+          <span class="d-sm-inline d-none">
+            {{ request.user.perfil_personal.apellidos }}, {{ request.user.perfil_personal.nombres }}
+            <small class="text-xs text-muted d-block">{{ request.user.perfil_personal.get_cargo_display }}</small>
+          </span>
+        </ol>
+      </nav>
+    </div>
+
+    <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+      <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+        <div class="input-group input-group-outline"></div>
+      </div>
+      
+      <ul class="navbar-nav d-flex align-items-center justify-content-end">
+        <li class="nav-item d-xl-none px-3 pb-1 d-flex align-items-center">
+          <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+            <div class="sidenav-toggler-inner">
+              <i class="sidenav-toggler-line"></i>
+              <i class="sidenav-toggler-line"></i>
+              <i class="sidenav-toggler-line"></i>
+            </div>
+          </a>
+        </li>
+
+        {% if request.user.perfil_personal.cargo == 'COO' %}
+        <li class="nav-item px-3 d-flex align-items-center">
+          <a href="{% url 'academico:configuracion' %}" class="nav-link text-body p-0" title="Configuración Global">
+            <i class="material-symbols-rounded fixed-plugin-button-nav cursor-pointer">settings</i>
+          </a>
+        </li>
+        {% endif %}
+
+        <li class="nav-item dropdown pe-3 d-flex align-items-center">
+          <a href="javascript:;" class="nav-link text-body p-0 position-relative" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="material-symbols-rounded">notifications</i>
+            {% if count_notificaciones > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge badge-pulse rounded-pill bg-danger shadow-sm border border-2 border-white d-flex align-items-center justify-content-center" 
+                      style="font-size: 0.65rem; min-width: 22px; height: 22px; padding: 0 4px; margin-top: -3px; margin-left: -5px;">
+                  {% if count_notificaciones > 9 %}9+{% else %}{{ count_notificaciones }}{% endif %}
+                </span>
+            {% endif %}
+          </a>
+          
+          <ul class="dropdown-menu dropdown-menu-end px-2 me-sm-n4" aria-labelledby="dropdownMenuButton" style="min-width: 300px; max-height: 400px; overflow-y: auto;">
+            
+            <li class="mb-2 text-center border-bottom pb-2 position-sticky top-0 bg-white" style="z-index: 10;">
+                <span class="text-xs font-weight-bold text-secondary text-uppercase">Tus Notificaciones</span>
+            </li>
+
+            {% if comunicados_dropdown %}
+              {% for com in comunicados_dropdown %}
+              <li class="mb-2">
+                <a class="dropdown-item border-radius-md {% if not com.ya_leido %}bg-gray-100{% endif %}" 
+                  href="javascript:;" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#modalComunicadoInfo"
+                  {% if not com.ya_leido %} onclick="marcarAvisoLeidoSilencioso('{{ com.id }}', this)" {% endif %}>
+                  <div class="d-flex py-1">
+                    <div class="my-auto">
+                      <div class="avatar avatar-sm {% if com.importancia == 'URGENTE' %}bg-gradient-danger{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
+                        <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
+                          {% if com.importancia == 'URGENTE' %}campaign{% else %}info{% endif %}
+                        </i>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                      <h6 class="text-sm font-weight-bold {% if com.importancia == 'URGENTE' %}text-danger{% else %}text-info{% endif %} mb-1 text-wrap" style="max-width: 220px;">
+                        {% if com.importancia == 'URGENTE' %}Urgente:{% else %}Aviso:{% endif %} {{ com.titulo|truncatechars:20 }}
+                      </h6>
+                      <p class="text-xs text-secondary mb-0">
+                        <i class="fa fa-clock me-1"></i> Hace {{ com.fecha_creacion|timesince }}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              </li>
+              {% endfor %}
+              <li><hr class="dropdown-divider"></li>
+            {% endif %}
+            
+            {% if lista_notificaciones %}
+                {% for noti in lista_notificaciones %}
+                <li class="mb-2">
+                  <a class="dropdown-item border-radius-md {% if not noti.leida %}bg-gray-100{% endif %}" href="{% if noti.enlace %}{{ noti.enlace }}{% else %}javascript:;{% endif %}">
+                    <div class="d-flex py-1">
+                      <div class="my-auto">
+                        <div class="avatar avatar-sm {% if noti.tipo == 'ALERTA' %}bg-gradient-warning{% elif noti.tipo == 'EXITO' %}bg-gradient-success{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
+                          <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
+                              {% if noti.tipo == 'ALERTA' %}warning{% elif noti.tipo == 'EXITO' %}check_circle{% else %}info{% endif %}
+                          </i>
+                        </div>
+                      </div>
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="text-sm font-weight-normal mb-1">
+                          <span class="font-weight-bold {% if noti.tipo == 'ALERTA' %}text-warning{% endif %}">{{ noti.titulo }}</span>
+                        </h6>
+                        <p class="text-xs text-secondary mb-0" style="white-space: normal;">
+                          {{ noti.mensaje }}
+                        </p>
+                        <p class="text-xxs text-muted mt-1 mb-0"><i class="fa fa-clock me-1"></i>Hace {{ noti.fecha_creacion|timesince }}</p>
+                      </div>
+                    </div>
+                  </a>
+                </li>
+                {% endfor %}
+            {% endif %}
+
+            {% if not lista_notificaciones and not comunicados_dropdown %}
+                <li class="text-center py-3">
+                    <p class="text-xs text-secondary mb-0">No tienes notificaciones nuevas.</p>
+                </li>
+            {% endif %}
+          </ul>
+        </li>
+
+        <li class="nav-item d-flex align-items-center ps-2">
+          {% if request.user.is_authenticated %}
+            <button type="button" class="nav-link text-danger p-0 border-0 bg-transparent" title="Cerrar Sesión"
+                    onclick="showConfirmModal('¿Cerrar Sesión?', '¿Está seguro de que desea salir del sistema? Perderá los cambios que no hayan sido guardados.', '{% url 'logout' %}', 'danger', 'Salir')" 
+                    data-bs-toggle="modal" data-bs-target="#confirmLogoutModal">
+              <i class="material-symbols-rounded" style="font-size: 24px;">logout</i>
+            </button>
+          {% else %}
+            <a href="{% url 'login' %}" class="nav-link text-body p-0">
+              <i class="material-symbols-rounded" style="font-size: 24px;">account_circle</i>
+            </a>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>

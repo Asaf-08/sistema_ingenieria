@@ -1,0 +1,45 @@
+{% extends 'layouts/base.html' %} 
+{% load static %}
+
+{% block title %}Escáner de Asistencia{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-info text-white text-center pb-0">
+                    <h5 class="text-white mb-0">Control de Asistencia</h5>
+                    <p class="text-sm mb-3 text-white">Enfoca el código QR en el recuadro</p>
+                </div>
+                
+                <div class="card-body p-0 text-center">
+                    <div id="qr-reader" style="width: 100%; min-height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                        <span class="text-secondary text-sm" id="texto-espera">La cámara está apagada</span>
+                    </div>
+                    
+                    <div class="p-3">
+                        <button id="btn-iniciar-camara" class="btn bg-gradient-success w-100">
+                            <i class="material-symbols-rounded align-middle me-1">photo_camera</i> Activar Cámara
+                        </button>
+
+                        <button id="btn-reiniciar" class="btn bg-gradient-primary w-100 btn-lg py-3 d-none mt-3 shadow-lg rounded-pill text-md">
+                            <i class="material-symbols-rounded align-middle me-2" style="font-size: 24px;">qr_code_scanner</i> 
+                            Escanear Siguiente
+                        </button>
+                        
+                        <div id="resultado-escaneo" class="mt-3 text-sm font-weight-bold"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="{% static 'js/escaner_qr.js' %}"></script>
+{% endblock scripts %}

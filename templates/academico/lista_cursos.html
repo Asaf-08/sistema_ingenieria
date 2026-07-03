@@ -1,0 +1,119 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">Gestión de Cursos</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button type="button" class="btn btn-sm bg-gradient-primary mb-0"
+                            onclick="abrirModalCrearCurso()">
+                            <i class="material-symbols-rounded text-sm">add</i> Nuevo Curso
+                        </button>
+                    </div>
+
+                    <div class="table-responsive p-0 px-4">
+                        {% csrf_token %}
+                        <table class="table align-items-center mb-0" id="tabla-cursos">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Nombre del Curso</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Área Académica</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Estado</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for curso in cursos %}
+                                <tr>
+                                    <td>
+                                        <h6 class="mb-0 text-sm ps-3">{{ curso.nombre }}</h6>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="text-secondary text-xs font-weight-bold">{{ curso.get_area_display }}</span>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        {% if curso.activo %}
+                                        <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
+                                        {% else %}
+                                        <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button onclick="abrirModalEditarCurso('{{ curso.pk }}')"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 16px;">edit</i>
+                                        </button>
+                                        <button onclick="confirmarEliminarCurso('{{ curso.pk }}', '{{ curso.nombre }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 16px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCurso" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div id="modalHeaderCurso" class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1 w-100">
+                    <h6 class="modal-title text-white font-weight-bolder text-center" id="modalTituloCurso">Nuevo Curso
+                    </h6>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="formCurso" onsubmit="event.preventDefault();">
+                    {% csrf_token %}
+                    <input type="hidden" name="curso_id" id="curso_id">
+                    <div class="input-group input-group-static mb-4">
+                        <label>Nombre del Curso</label>
+                        {{ form.nombre }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Área Académica</label>
+                        {{ form.area }}
+                    </div>
+                    <div class="form-check form-switch d-flex align-items-center mb-3">
+                        {{ form.activo }}
+                        <label class="form-check-label mb-0 ms-3">¿Curso Activo?</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarCurso()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/cursos.js' %}"></script>
+{% endblock scripts %}

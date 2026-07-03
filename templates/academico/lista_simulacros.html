@@ -1,0 +1,137 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">Banco de Simulacros Mensuales</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button type="button" class="btn btn-sm bg-gradient-primary mb-0" onclick="abrirModalCrearSimulacro()">
+                            <i class="material-symbols-rounded text-sm">add</i> Nuevo Simulacro
+                        </button>
+                    </div>
+
+                    <div class="table-responsive p-0 px-4">
+                        {% csrf_token %}
+                        <table class="table align-items-center mb-0" id="tabla-simulacros">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Examen / Título</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Grado y Nivel</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Preguntas Cargadas</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado Reclutamiento</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                {% for sim in simulacros %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column ps-3">
+                                            <h6 class="mb-0 text-sm">{{ sim.titulo }}</h6>
+                                            <p class="text-xs text-secondary mb-0">Mes: {{ sim.mes }} | Fecha: {{ sim.fecha_examen }}</p>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="text-dark font-weight-bold text-xs">{{ sim.grado }} - {{ sim.nivel }}</span>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge bg-light text-dark font-weight-bold">{{ sim.preguntas.count }} / {{ sim.preguntas_esperadas }}</span>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        {% if sim.activo %}
+                                        <span class="badge badge-sm bg-gradient-success">ABIERTO (RECIBIENDO)</span>
+                                        {% else %}
+                                        <span class="badge badge-sm bg-gradient-secondary">CERRADO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <a href="{% url 'academico:exportar_simulacro' sim.id %}" 
+                                           class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                           data-bs-toggle="tooltip" data-bs-title="Descargar Examen Armado (.docx)" style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 16px;">description</i>
+                                        </a>
+
+                                        <a href="{% url 'academico:monitoreo_simulacro' sim.id %}" class="btn btn-icon-only bg-gradient-warning rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Ver quién falta subir preguntas" style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 16px;">analytics</i>
+                                        </a>
+
+                                        <button onclick="abrirModalEditarSimulacro('{{ sim.pk }}')"
+                                            class="btn btn-icon-only bg-gradient-dark rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 30px; height: 30px;">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 16px;">edit</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSimulacro" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div id="modalHeaderSimulacro" class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1 w-100">
+                    <h6 class="modal-title text-white font-weight-bolder text-center" id="modalTituloSimulacro">Configurar Nuevo Simulacro</h6>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="formSimulacro" onsubmit="event.preventDefault();">
+                    {% csrf_token %}
+                    <input type="hidden" name="simulacro_id" id="simulacro_id">
+                    
+                    <div class="input-group input-group-static mb-3">
+                        <label>Título Oficial del Examen</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="input-group input-group-static mb-3">
+                        <label>Mes Evaluado</label>
+                        {{ form.mes }}
+                    </div>
+                    <div class="input-group input-group-static mb-3">
+                        <label>Grado Escolar</label>
+                        {{ form.grado }}
+                    </div>
+                    <div class="input-group input-group-static mb-3">
+                        <label>Nivel Educativo</label>
+                        {{ form.nivel }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Fecha del Examen</label>
+                        {{ form.fecha_examen }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Total de Preguntas Esperadas</label>
+                        {{ form.preguntas_esperadas }}
+                    </div>
+                    <div class="form-check form-switch d-flex align-items-center mb-3">
+                        {{ form.activo }}
+                        <label class="form-check-label mb-0 ms-3">¿Permitir que los profesores suban preguntas?</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarSimulacro()">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/simulacros.js' %}"></script>
+{% endblock scripts %}

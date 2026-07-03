@@ -1,0 +1,231 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Panel del Docente {% endblock title %}
+
+{% block extra_css %}
+<style>
+  .card-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+  .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+  .btn-mega { height: 80px; font-size: 1.1rem; border-radius: 15px; }
+  .btn-mega i { font-size: 2rem !important; }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  
+  <div class="row mb-4 align-items-center">
+    <div class="col-12">
+      <h3 class="mb-0 h4 font-weight-bolder text-dark">Bienvenido, Profesor(a)</h3>
+      <p class="text-sm text-secondary mb-0">Gestión Académica y Control de Cursos</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <div class="card shadow-sm card-hover h-100">
+        <div class="card-header p-3 pt-2">
+          <div class="icon icon-lg icon-shape bg-gradient-danger shadow-danger text-center border-radius-xl mt-n4 position-absolute">
+            <i class="material-symbols-rounded opacity-10">grading</i>
+          </div>
+          <div class="text-end pt-1">
+            <p class="text-sm mb-0 text-capitalize font-weight-bold">Notas Pendientes</p>
+            <h4 class="mb-0 {% if notas_pendientes > 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ notas_pendientes }} vacías
+            </h4>
+          </div>
+        </div>
+        <hr class="dark horizontal my-0">
+        <div class="card-footer p-3">
+          <p class="mb-0 text-sm text-secondary">Alumnos sin calificar en tus cursos</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <div class="card shadow-sm card-hover h-100">
+        <div class="card-header p-3 pt-2">
+          <div class="icon icon-lg icon-shape {% if alerta_material %}bg-gradient-warning shadow-warning{% else %}bg-gradient-success shadow-success{% endif %} text-center border-radius-xl mt-n4 position-absolute">
+            <i class="material-symbols-rounded opacity-10">upload_file</i>
+          </div>
+          <div class="text-end pt-1">
+            <p class="text-sm mb-0 text-capitalize font-weight-bold">Último Material Subido</p>
+            <h4 class="mb-0 text-dark text-truncate" style="max-width: 150px; float: right;">
+              {% if ultimo_material %}{{ ultimo_material.get_tema_display|default:ultimo_material.tema }}{% else %}Ninguno{% endif %}
+            </h4>
+          </div>
+        </div>
+        <hr class="dark horizontal my-0">
+        <div class="card-footer p-3">
+          <p class="mb-0 text-sm text-secondary">
+            {% if ultimo_material %}
+              Enviado el <span class="text-dark font-weight-bolder">{{ ultimo_material.fecha_subida|date:"d/m/Y" }}</span>
+            {% else %}
+              <span class="text-warning font-weight-bolder">¡Atención!</span> Sube tu primer tema.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <div class="card shadow-sm card-hover h-100">
+        <div class="card-header p-3 pt-2">
+          <div class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
+            <i class="material-symbols-rounded opacity-10">groups</i>
+          </div>
+          <div class="text-end pt-1">
+            <p class="text-sm mb-0 text-capitalize font-weight-bold">Total: {{ mis_alumnos_count }} Alumnos</p>
+            <div class="mt-2 d-flex flex-wrap justify-content-end gap-1">
+            {% for b in breakdown_alumnos %}
+                <span class="badge bg-gradient-info px-1 py-2">{{ b.nivel }}: {{ b.total }}</span>
+            {% empty %}
+                <p class="text-xs mb-0 text-secondary">Sin alumnos asignados</p>
+            {% endfor %}
+            </div>
+          </div>
+        </div>
+        <hr class="dark horizontal my-0">
+        <div class="card-footer p-3 d-flex align-items-center">
+            <p class="mb-0 text-sm text-secondary">Distribución por nivel educativo</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+      <div class="card shadow-sm bg-gradient-dark text-white card-hover h-100">
+        <div class="card-body p-3 d-flex flex-column justify-content-center">
+          <p class="text-sm mb-0 text-capitalize font-weight-bold opacity-8">Mi Aula de Tutoría</p>
+          {% if aula_tutoria %}
+            <h4 class="mb-0 text-white font-weight-black mt-2">{{ aula_tutoria.grado }} "{{ aula_tutoria.seccion }}"</h4>
+            <p class="text-xs mt-1 mb-0 opacity-8">{{ aula_tutoria.nivel }}</p>
+          {% else %}
+            <h4 class="mb-0 text-white font-weight-light text-sm mt-2">Sin aula a cargo</h4>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <h6 class="text-dark font-weight-bold mb-3"><i class="material-symbols-rounded align-middle me-2 text-primary">touch_app</i>Accesos Rápidos</h6>
+      <div class="row">
+        <div class="col-12 col-md-4 mb-3">
+          <a href="{% url 'personal:mis_cursos' %}" class="btn bg-gradient-primary w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
+            <div class="bg-white text-primary rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">edit_square</i></div>
+            <div class="text-start">
+              <span class="d-block text-lg font-weight-bold text-white text-capitalize">Registrar Notas</span>
+              <span class="d-block text-xs text-white opacity-8 text-lowercase">evaluaciones y desafíos</span>
+            </div>
+          </a>
+        </div>
+        <div class="col-12 col-md-4 mb-3">
+          <a href="{% url 'personal:centro_materiales' %}" class="btn bg-gradient-info w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
+            <div class="bg-white text-info rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">cloud_upload</i></div>
+            <div class="text-start">
+              <span class="d-block text-lg font-weight-bold text-white text-capitalize">Subir Materiales</span>
+              <span class="d-block text-xs text-white opacity-8 text-lowercase">fichas, desafíos y sesiones</span>
+            </div>
+          </a>
+        </div>
+        {% if aula_tutoria %}
+        <div class="col-12 col-md-4 mb-3">
+          <a href="{% url 'academico:mi_aula' %}" class="btn bg-gradient-warning w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
+            <div class="bg-white text-warning rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">psychology</i></div>
+            <div class="text-start">
+              <span class="d-block text-lg font-weight-bold text-white text-capitalize">Panel de Tutoría</span>
+              <span class="d-block text-xs text-white opacity-8 text-lowercase">análisis de IA del aula</span>
+            </div>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm h-100 card-hover border border-info border-1">
+        
+        <div class="card-header pb-0 bg-transparent">
+          <div class="d-flex align-items-center">
+            <div class="icon icon-shape icon-sm bg-gradient-info shadow-info text-center border-radius-md me-2 d-flex align-items-center justify-content-center">
+              <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">auto_stories</i>
+            </div>
+            <h6 class="text-info mb-0">Mis Cursos Asignados</h6>
+          </div>
+          <p class="text-sm text-secondary mb-0 mt-2">Tu carga académica en este periodo.</p>
+        </div>
+
+        <div class="card-body p-3">
+          <ul class="list-group list-group-flush mt-2">
+            {% for asig in mis_cursos_lista %}
+            <li class="list-group-item px-3 py-3 d-flex justify-content-between align-items-center border-radius-lg mb-2 shadow-xs" style="background-color: #f8f9fa; border: none;">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="material-symbols-rounded text-info" style="font-size: 1.8rem;">book</i>
+                </div>
+                <div class="d-flex flex-column">
+                  <h6 class="mb-0 text-sm text-dark font-weight-bold text-capitalize">{{ asig.curso.nombre|lower }}</h6>
+                  <span class="text-xs text-secondary font-weight-bold">{{ asig.aula.grado }} "{{ asig.aula.seccion }}"</span>
+                </div>
+              </div>
+              <span class="badge bg-gradient-dark px-2 py-1">{{ asig.aula.nivel }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item px-0 text-center py-4 border-0 mt-3">
+              <div class="d-flex flex-column align-items-center">
+                <i class="material-symbols-rounded text-secondary mb-2 opacity-5" style="font-size: 2.5rem;">sentiment_dissatisfied</i>
+                <p class="text-sm text-secondary mb-0">Aún no tienes cursos asignados.</p>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="row">
+        <div class="col-12 mb-3">
+          <h6 class="text-dark font-weight-bold mb-0"><i class="material-symbols-rounded align-middle me-2 text-success">military_tech</i>Top Estudiantes por Nivel</h6>
+        </div>
+        
+        {% for nivel, alumnos in mejores_por_nivel.items %}
+        <div class="{% if mejores_por_nivel|length == 1 %}col-12{% elif mejores_por_nivel|length == 2 %}col-md-6{% else %}col-md-4{% endif %} mb-4">
+          <div class="card shadow-sm h-100 card-hover">
+            <div class="card-header pb-0 bg-transparent">
+              <h6 class="text-dark mb-0 text-center">Nivel {{ nivel }}</h6>
+            </div>
+            <div class="card-body p-3">
+              <div class="chart">
+                <canvas id="chart-{{ nivel }}" class="chart-canvas" height="250"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <script id="data-{{ nivel }}" type="application/json">
+          {
+            "labels": [{% for a in alumnos %}"{{ a.apellidos }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+            "data": [{% for a in alumnos %}{{ a.promedio|stringformat:".1f"|default:"0" }}{% if not forloop.last %},{% endif %}{% endfor %}]
+          }
+        </script>
+        {% empty %}
+          <div class="col-12"><p class="text-sm text-secondary">Aún no hay calificaciones registradas para generar el gráfico.</p></div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
+<script src="{% static 'js/dashboard_docente.js' %}"></script>
+{% endblock extra_js %}

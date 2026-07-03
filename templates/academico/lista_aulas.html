@@ -1,0 +1,132 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">Gestión de Grados y Secciones (Aulas)</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button type="button" class="btn btn-sm bg-gradient-primary mb-0" onclick="abrirModalCrear()">
+                            <i class="material-symbols-rounded opacity-5 text-sm">add</i> Nueva Aula
+                        </button>
+                    </div>
+
+                    <div class="table-responsive p-0 px-4">
+                        <table class="table align-items-center mb-0" id="tabla-aulas">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Grado/Año</th>
+                                    <th
+                                        class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                                        Nivel</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Sección</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Denominación</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for aula in aulas %}
+                                <tr>
+                                    <td>
+                                        <h6 class="mb-0 text-sm ps-3">{{ aula.grado }}</h6>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{ aula.nivel }}</p>
+                                    </td>
+                                    <td class="align-middle text-center"><span
+                                            class="text-secondary text-xs font-weight-bold">{{ aula.seccion }}</span>
+                                    </td>
+                                    <td class="align-middle text-center"><span
+                                            class="text-secondary text-xs">{{aula.denominacion|default:"-"}}</span></td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" onclick="abrirModalEditar('{{ aula.pk }}')"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Editar aula"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">edit</i>
+                                        </button>
+
+                                        <button type="button"
+                                            onclick="confirmarEliminacion('{{ aula.pk }}', '{{ aula.grado }} {{ aula.seccion }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Eliminar aula"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAula" tabindex="-1" role="dialog" aria-labelledby="modalAulaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div id="modalHeaderColor" class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1 w-100">
+                    <h6 class="modal-title text-white font-weight-bolder text-center" id="modalTitulo">Nueva Aula</h6>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="formAula">
+                    {% csrf_token %}
+                    <input type="hidden" name="aula_id" id="aula_id">
+                    <div class="input-group input-group-static mb-4">
+                        <label>Nivel</label>
+                        {{ form.nivel }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Grado/Año</label>
+                        {{ form.grado }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Sección</label>
+                        {{ form.seccion }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Denominación (Opcional)</label>
+                        {{ form.denominacion }}
+                    </div>
+                    <div class="input-group input-group-static mb-4">
+                        <label>Tutor del Aula (Opcional)</label>
+                        {{ form.tutor }}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnGuardar" class="btn bg-gradient-primary"
+                    onclick="guardarAula()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{% load static %}
+
+<script src="{% static 'js/aulas.js' %}"></script>
+{% endblock scripts %}

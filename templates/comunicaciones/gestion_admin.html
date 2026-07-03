@@ -1,0 +1,231 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">
+                            <i class="material-symbols-rounded align-middle me-2">campaign</i>
+                            Gestión de Comunicados</h6>
+                    </div>
+                </div>
+
+                <div class="card-body px-0 pt-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button class="btn bg-gradient-success mb-0" onclick="abrirModalComunicado()">
+                            <i class="material-symbols-rounded align-middle text-sm me-1">add</i> Redactar Aviso
+                        </button>
+                    </div>
+
+                    <div class="table-responsive px-4">
+                        <table id="tabla-comunicados" class="table align-items-center mb-0">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Título y Fecha</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Importancia</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Adjunto</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 w-25">Progreso de Lectura</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in datos_comunicados %}
+                                <tr id="fila-comunicado-{{ item.obj.id }}">
+                                    <td class="ps-3">
+                                        <h6 class="mb-0 text-sm font-weight-bold text-wrap" style="max-width: 250px;">{{item.obj.titulo }}</h6>
+                                        <span class="text-xs text-secondary">{{ item.obj.fecha_creacion|date:"d/m/Y H:i"}}</span>
+                                    </td>
+                                    
+                                    <td class="align-middle text-center">
+                                        {% if item.obj.estado_actual == 'Vigente' %}
+                                            <span class="badge badge-sm bg-gradient-success">Vigente</span>
+                                        {% elif item.obj.estado_actual == 'Inactivo' %}
+                                            <span class="badge badge-sm bg-gradient-warning">Inactivo (Apagado)</span>
+                                        {% else %}
+                                            <span class="badge badge-sm bg-gradient-secondary">Expirado</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="align-middle text-center">
+                                        <span class="badge badge-sm bg-gradient-{% if item.obj.importancia == 'URGENTE' %}danger{% else %}info{% endif %}">
+                                            {{ item.obj.get_importancia_display }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        {% if item.obj.archivo_adjunto %}
+                                        <a href="{{ item.obj.archivo_adjunto.url }}" target="_blank" class="btn btn-link text-dark p-0 mb-0">
+                                            <i class="material-symbols-rounded text-lg align-middle">attachment</i> Ver
+                                        </a>
+                                        {% else %}
+                                        <span class="text-xs text-secondary">Ninguno</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-xs font-weight-bold text-dark">{{ item.leidos }} / {{item.total_destinatarios }} Personas</span>
+                                            <span class="text-xs font-weight-bold text-info">{{item.porcentaje}}%</span>
+                                        </div>
+                                        <div class="progress progress-xs progress w-100">
+                                            <div class="progress-bar bg-gradient-info" role="progressbar"
+                                                style= "width: {{ item.porcentaje }}%;"
+                                                aria-valuenow="{{ item.porcentaje }}" aria-valuemin="0"
+                                                aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-dark hover-scale me-2" 
+                                                onclick="verComunicadoAsistente('{{ item.obj.titulo|escapejs }}', '{{ item.obj.mensaje|escapejs }}', '{{ item.obj.fecha_creacion|date:'d/m/Y H:i' }}', '{% if item.obj.archivo_adjunto %}{{ item.obj.archivo_adjunto.url }}{% endif %}', '{{ item.obj.es_imagen }}', '{{ item.obj.es_pdf }}')" title="Ver anuncio">
+                                            <i class="material-symbols-rounded" style="font-size: 20px;">visibility</i>
+                                        </button>
+
+                                        <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-info hover-scale me-2" 
+                                                onclick="abrirModalEditarComunicado({{ item.obj.id }})" title="Editar anuncio">
+                                            <i class="material-symbols-rounded" style="font-size: 20px;">edit</i>
+                                        </button>
+                                        
+                                        <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-danger hover-scale" data-id="{{ item.obj.id }}" data-url="{% url 'comunicaciones:eliminar_comunicado_ajax' item.obj.id %}" onclick="eliminarComunicado(this)" title="Eliminar definitivamente">
+                                            <i class="material-symbols-rounded" style="font-size: 20px;">delete_forever</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal para Crear Comunicado -->
+<div class="modal fade" id="modalCrearComunicado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark p-3">
+                <h5 class="modal-title text-white">Publicar Nuevo Comunicado</h5>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="formComunicado" onsubmit="event.preventDefault();">
+                {% csrf_token %}
+                <input type="hidden" name="comunicado_id" id="comunicado_id" value="">
+                
+                <div class="row px-4 mt-2" id="div_activo" style="display: none;">
+                    <div class="col-12 bg-gray-100 p-2 border-radius-md">
+                        <div class="form-check form-switch d-flex align-items-center mb-0">
+                            {{ form.activo }}
+                            <label class="form-check-label ms-2 mb-0 font-weight-bold text-dark" for="id_activo">
+                                Comunicado Vigente (Visible para los docentes)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="text-uppercase text-xs font-weight-bolder text-secondary">Título del Anuncio</label>
+                            {{ form.titulo }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-uppercase text-xs font-weight-bolder text-secondary">Importancia</label>
+                            {{ form.importancia }}
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label class="text-uppercase text-xs font-weight-bolder text-secondary">Mensaje Detallado</label>
+                            {{ form.mensaje }}
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label class="text-uppercase text-xs font-weight-bolder text-secondary">Fecha de Expiración (Opcional)</label>
+                            {{ form.fecha_expiracion }}
+                            <small class="text-xxs text-secondary d-block mt-1">Si se deja vacío, el aviso no caducará automáticamente.</small>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <label class="text-uppercase text-xs font-weight-bolder text-secondary">Archivo Adjunto (Imagen o PDF)</label>
+                            
+                            <div id="dropzone-adjunto" class="border-dashed border-2 border-info border-radius-md p-4 text-center cursor-pointer position-relative" style="background-color: #f8f9fa; transition: 0.3s;">
+                                <i class="material-symbols-rounded text-info" style="font-size: 48px;">cloud_upload</i>
+                                <h6 class="text-info mb-1 mt-2">Arrastra tu archivo aquí o haz clic para buscar</h6>
+                                <p class="text-xs text-secondary mb-0">Formatos soportados: PNG, JPG, JPEG, PDF</p>
+                                
+                                {{ form.archivo_adjunto }}
+                                <style>
+                                    #id_archivo_adjunto {
+                                        position: absolute;
+                                        top: 0;
+                                        left: 0;
+                                        width: 100%;
+                                        height: 100%;
+                                        opacity: 0;
+                                        cursor: pointer;
+                                        z-index: 10;
+                                    }
+                                    .border-dashed { border-style: dashed !important; }
+                                </style>
+                            </div>
+                            
+                            <div class="mt-3 text-center d-none position-relative bg-light border-radius-lg p-3" id="contenedor-preview-adjunto">
+                                <img loading="lazy" id="img-preview-adjunto" src="#" alt="Vista previa" class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
+                                <iframe id="pdf-preview-adjunto" src="#" class="w-100 border-radius-md shadow-sm d-none" style="height: 350px; border: none;"></iframe>
+                                <br>
+                                <button type="button" class="btn btn-sm bg-gradient-danger mt-3 mb-0" id="btn-remover-adjunto">
+                                    <i class="material-symbols-rounded text-sm me-1">delete</i> Quitar Archivo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn bg-gradient-success mb-0" id="btnGuardarComunicado" onclick="guardarComunicado()">
+                        <i class="material-symbols-rounded align-middle text-sm me-1">send</i> Publicar Anuncio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVerComunicado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-info p-3">
+        <h5 class="modal-title text-white font-weight-bolder">
+          <i class="material-symbols-rounded opacity-10 me-2 align-middle">campaign</i> AVISO INSTITUCIONAL
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <h4 class="text-dark font-weight-bold" id="verComTitulo"></h4>
+        <div class="text-dark mt-3" id="verComMensaje" style="white-space: pre-wrap; font-size: 0.95rem;"></div>
+        
+        <div id="verComAdjunto" class="mt-4 border rounded p-2 text-center bg-gray-100 d-none">
+            </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/comunicaciones_admin.js' %}"></script>
+{% endblock %}

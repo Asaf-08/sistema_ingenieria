@@ -1,0 +1,216 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">Gestión de Personal</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <button type="button" class="btn btn-sm bg-gradient-primary mb-0"
+                            onclick="abrirModalCrearPersonal()">
+                            <i class="material-symbols-rounded text-sm">add</i> Nuevo Personal
+                        </button>
+                    </div>
+
+                    <div class="table-responsive p-0 px-4">
+                        {% csrf_token %}
+                        <table class="table align-items-center mb-0" id="tabla-personal">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Nombre</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Cargo</th>
+                                    <th
+                                        class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                                        Tipo</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Contacto</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Estado</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for personal in personal %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex px-3 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm">{{ personal.apellidos }}, {{personal.nombres}}
+                                                </h6>
+                                                <p class="text-xs text-secondary mb-0">DNI: {{ personal.dni }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{ personal.get_cargo_display}}</p>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{ personal.tipo_contrato}}</p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <p class="text-xs text-secondary mb-0">{{ personal.telefono|default:"-" }}</p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        {% if personal.estado == 'Activo' %}
+                                        <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
+                                        {% else %}
+                                        <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button onclick="abrirModalEditarPersonal('{{ personal.pk }}')"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Editar"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">edit</i>
+                                        </button>
+                                        <button type="button"
+                                            onclick="abrirModalEstado('{{ personal.pk }}', '{{ personal.estado }}')"
+                                            class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Cambiar Estado">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">published_with_changes</i>
+                                        </button>
+                                        <button
+                                            onclick="confirmarEliminarPersonal('{{ personal.pk }}', '{{ personal.nombres }} {{ personal.apellidos }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Eliminar"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPersonal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div id="modalHeaderPersonal"
+                    class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1 w-100">
+                    <h6 class="modal-title text-white font-weight-bolder text-center" id="modalTituloPersonal">Nuevo
+                        Personal</h6>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="formPersonal" onsubmit="event.preventDefault();">
+                    {% csrf_token %}
+                    <input type="hidden" name="personal_id" id="personal_id">
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>DNI</label>
+                                {{ form.dni }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Nombres</label>
+                                {{ form.nombres }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Apellidos</label>
+                                {{ form.apellidos }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Cargo</label>
+                                {{ form.cargo }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Tipo de contrato</label>
+                                {{ form.tipo_contrato }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Teléfono</label>
+                                {{ form.telefono }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Correo (Opcional)</label>
+                                {{ form.correo }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Fecha de Ingreso (Opcional)</label>
+                                {{ form.fecha_ingreso }}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarPersonal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalEstado" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title font-weight-bold">Actualizar Estado</h6>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                <input type="hidden" id="personal_id_estado">
+                <div class="input-group input-group-static">
+                    <label>Nuevo Estado</label>
+                    <select class="form-control" id="select_nuevo_estado">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarNuevoEstado()">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/personal.js' %}"></script>
+{% endblock scripts %}

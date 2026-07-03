@@ -1,0 +1,110 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center px-4">
+                        <h6 class="text-white mb-0">
+                            <i class="material-symbols-rounded align-middle me-2">campaign</i>
+                            Tablón de Anuncios Oficiales
+                        </h6>
+                        {% if no_leidos_count > 0 %}
+                            <span class="badge bg-white text-info shadow-sm">{{ no_leidos_count }} Nuevos</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body px-0 pt-0 pb-2">
+                    <div class="table-responsive px-4 mt-4">
+                        <table id="tabla-tablon" class="table align-items-center mb-0">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Título y Fecha</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Importancia</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Adjunto</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mi Estado</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in datos_comunicados %}
+                                <tr>
+                                    <td class="ps-3">
+                                        <h6 class="mb-0 text-sm font-weight-bold text-wrap" style="max-width: 250px;">{{ item.obj.titulo }}</h6>
+                                        <span class="text-xs text-secondary">{{ item.obj.fecha_creacion|date:"d M Y, H:i" }}</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge badge-sm bg-gradient-{% if item.obj.importancia == 'URGENTE' %}danger{% else %}info{% endif %}">
+                                            {{ item.obj.get_importancia_display }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        {% if item.obj.archivo_adjunto %}
+                                            <a href="{{ item.obj.archivo_adjunto.url }}" target="_blank" class="btn btn-link text-dark p-0 mb-0">
+                                                <i class="material-symbols-rounded text-lg align-middle">attachment</i> Ver
+                                            </a>
+                                        {% else %}
+                                            <span class="text-xs text-secondary">Ninguno</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center" id="td-estado-{{ item.obj.id }}">
+                                        {% if item.leido %}
+                                            <span class="badge badge-sm bg-gradient-success">
+                                                <i class="material-symbols-rounded text-xxs align-middle me-1">done_all</i> Leído
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-sm bg-gradient-info">
+                                                <i class="material-symbols-rounded text-xxs align-middle me-1">mark_email_unread</i> Nuevo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-dark hover-scale" 
+                                                onclick="verComunicadoDocente({{ item.obj.id }}, '{{ item.obj.titulo|escapejs }}', '{{ item.obj.mensaje|escapejs }}', '{{ item.obj.fecha_creacion|date:'d/m/Y H:i' }}', '{% if item.obj.archivo_adjunto %}{{ item.obj.archivo_adjunto.url }}{% endif %}', '{{ item.obj.es_imagen }}', '{{ item.obj.es_pdf }}', '{{ item.leido }}')" title="Leer anuncio">
+                                            <i class="material-symbols-rounded" style="font-size: 20px;">visibility</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVerComunicado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-info p-3">
+        <h5 class="modal-title text-white font-weight-bolder">
+          <i class="material-symbols-rounded opacity-10 me-2 align-middle">campaign</i> AVISO INSTITUCIONAL
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <h4 class="text-dark font-weight-bold" id="verComTitulo"></h4>
+        <div class="text-dark mt-3" id="verComMensaje" style="white-space: pre-wrap; font-size: 0.95rem;"></div>
+        
+        <div id="verComAdjunto" class="mt-4 border rounded p-2 text-center bg-gray-100 d-none">
+            </div>
+      </div>
+      <div class="modal-footer">
+          <button type="button" class="btn btn-outline-dark mb-0" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/tablon_docente.js' %}"></script>
+{% endblock %}

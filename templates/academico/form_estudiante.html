@@ -1,0 +1,77 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card my-4">
+        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+          <div class="{{ color_clase }} shadow-primary border-radius-lg pt-4 pb-3">
+            <h6 class="text-white text-capitalize ps-3">{{ titulo }}</h6>
+          </div>
+        </div>
+        <div class="card-body px-4 pb-4">
+          <form method="POST">
+            {% csrf_token %}
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombres</label>
+                <div class="input-group input-group-outline">
+                  {{ form.nombres }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Apellidos</label>
+                <div class="input-group input-group-outline">
+                  {{ form.apellidos }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">DNI</label>
+                <div class="input-group input-group-outline">
+                  {{ form.dni }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Teléfono Apoderado</label>
+                <div class="input-group input-group-outline">
+                  {{ form.telefono_apoderado }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="form-label">Dirección</label>
+                <div class="input-group input-group-outline">
+                  {{ form.direccion }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <div class="input-group input-group-outline bg-white">
+                  {{ form.estado }}
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+              <a href="{% url 'academico:lista_estudiantes' %}" class="btn btn-light me-2">Cancelar</a>
+              <button type="submit" class="btn {{ color_clase }} shadow-primary">
+                {% if 'Editar' in titulo %} Actualizar Estudiante {% else %} Guardar Estudiante {% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

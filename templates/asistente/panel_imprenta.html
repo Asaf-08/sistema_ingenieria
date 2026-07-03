@@ -1,0 +1,137 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .border-dashed { border-style: dashed !important; }
+    /* Colores solicitados */
+    .bg-orange { background-image: linear-gradient(195deg, #fb8c00 0%, #ffb74d 100%) !important; }
+    .bg-green { background-image: linear-gradient(195deg, #43a047 0%, #66bb6a 100%) !important; }
+    .text-orange { color: #fb8c00 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card my-4 shadow-lg">
+        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+          <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+            <h6 class="text-white text-capitalize mb-0">Gestión de Impresiones</h6>
+          </div>
+        </div>
+        <div class="card-body px-0 pb-2">
+          <div class="table-responsive p-4"> <table id="tabla-imprenta" class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">N°</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Estado</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente / Curso</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Fecha Envío</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Resumen</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Copias</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Gestión</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sol in solicitudes %}
+                <tr id="fila-{{ sol.id }}">
+                  <td class="ps-3"><span class="text-xs font-weight-bold">{{ forloop.counter }}</span></td>
+                  
+                  <td class="text-center" id="icon-{{ sol.id }}">
+                    {% if sol.estado == 'PENDIENTE' %}
+                      <i class="material-symbols-rounded text-warning animate__animated animate__flash animate__infinite" style="font-size: 24px;">schedule</i>
+                    {% else %}
+                      <i class="material-symbols-rounded text-success" style="font-size: 24px;">check_circle</i>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <h6 class="mb-0 text-sm">Prof. {{ sol.docente.nombres }}</h6>
+                    <p class="text-xs text-secondary mb-0">{{ sol.asignacion.curso.nombre }}</p>
+                  </td>
+
+                  <td>
+                    <span class="text-xs font-weight-bold">{{ sol.fecha_subida|date:"d/m/Y H:i" }}</span>
+                  </td>
+
+                  <td>
+                    <div class="d-flex flex-column gap-1">
+                        {% regroup sol.archivos.all by get_tipo_display as materiales_list %}
+                        {% for item in materiales_list %}
+                            <span class="text-xs text-dark font-weight-bold d-block">
+                                <i class="material-symbols-rounded text-info text-xs align-middle">check</i> 
+                                {{ item.grouper }} <br><span class="text-secondary ms-3">{{ item.list|length }} archivos</span>
+                            </span>
+                        {% endfor %}
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <span class="badge bg-light text-dark border shadow-none">{{ sol.obtener_total_alumnos }}</span>
+                  </td>
+
+                  <td class="text-center">
+                    <select class="form-select form-select-sm text-white font-weight-bold border-0 shadow-sm px-2
+                        {% if sol.estado == 'LISTO' or sol.estado == 'ENTREGADO' %}bg-success{% else %}bg-warning{% endif %}" 
+                        data-id="{{ sol.id }}" onchange="cambiarEstadoAsistente(this)">
+                        <option value="PENDIENTE" class="bg-white text-dark" {% if sol.estado == 'PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
+                        <option value="LISTO" class="bg-white text-dark" {% if sol.estado == 'LISTO' %}selected{% endif %}>LISTO / RECOGER</option>
+                        <option value="ENTREGADO" class="bg-white text-dark" {% if sol.estado == 'ENTREGADO' %}selected{% endif %}>ENTREGADO</option>
+                    </select>
+                  </td>
+
+                  <td class="text-center">
+                        <button class="btn btn-link text-info pr-5 mb-0" 
+                                data-id="{{ sol.id }}" 
+                                data-copias="{{ sol.obtener_total_alumnos }}"
+                                onclick="abrirModalArchivos(this)" 
+                                title="Ver e Imprimir">
+                            <i class="material-symbols-rounded text-lg">print</i>
+                        </button>
+                        
+                        <button class="btn btn-link text-secondary p-0 mb-0" 
+                                data-nota="{{ sol.instrucciones|default:'Sin notas adicionales' }}" 
+                                onclick="verInstrucciones(this)">
+                            <i class="material-symbols-rounded text-lg">info</i>
+                        </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="hidden" id="csrf_token_global" value="{{ csrf_token }}">
+
+<div class="modal fade" id="modalArchivos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-dark">
+        <h5 class="modal-title text-white">
+            Archivos a Imprimir 
+            <span id="modal-badge-copias" class="badge bg-white text-dark ms-2 shadow-sm fs-6">0 Copias</span>
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="lista-archivos-modal">
+            </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{% static 'js/asistente_imprenta.js' %}"></script>
+{% endblock %}

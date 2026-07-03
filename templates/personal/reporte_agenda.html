@@ -1,0 +1,163 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+  .ticket-agenda {
+      background: #fff;
+      border: 2px dashed #b0bec5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      margin-top: 15px; /* Empuja el ticket un poco hacia abajo para dar espacio a la tijera */
+      position: relative;
+  }
+  .ticket-agenda::before {
+      content: "✂️ Línea de corte";
+      position: absolute;
+      top: -14px;
+      left: 20px;
+      background: #f8f9fa;
+      padding: 0 10px;
+      color: #6c757d;
+      font-size: 12px;
+  }
+  .table-ticket th, .table-ticket td {
+      padding: 4px 8px !important;
+      font-size: 13px !important;
+      border-color: #e9ecef;
+  }
+  .firma-box {
+      border-top: 1px solid #000;
+      width: 200px;
+      margin: 30px auto 0 auto;
+      padding-top: 5px;
+  }
+
+  @media print {
+      body { background: #fff; }
+      .sidenav, .navbar, .no-print, footer, .fixed-plugin { display: none !important; }
+      .main-content { margin-left: 0 !important; padding: 0 !important; }
+      .container-fluid { padding: 0 !important; }
+      
+      /* 💥 MAGIA DE IMPRESIÓN: Da un margen superior al papel físico */
+      @page {
+          margin-top: 15mm; 
+          margin-bottom: 15mm;
+      }
+      
+      .ticket-agenda { 
+          border: 1px dashed #000; 
+          margin-bottom: 25px;
+          margin-top: 20px;
+          break-inside: avoid;
+          page-break-inside: avoid;
+      }
+      .ticket-agenda::before { background: #fff; content: "✂️"; }
+  }
+</style>
+
+<div class="container-fluid py-4">
+  
+  <div class="d-flex align-items-center mb-4 no-print">
+      <a href="{% url 'academico:mi_aula' %}" class="text-dark me-3 transition-hover" title="Volver atrás">
+          <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
+      </a>
+      <div>
+          <h4 class="font-weight-black text-dark mb-0">🎟️ Tickets de Agenda: {{ aula.grado }} "{{ aula.seccion }}"</h4>
+          <p class="text-sm text-secondary mb-0">Reporte de Desafíos por Tema Evaluado.</p>
+      </div>
+  </div>
+  
+  <div class="card shadow-sm mb-4 no-print border-radius-lg">
+    <div class="card-body p-4">
+      <form method="GET" class="d-flex flex-column flex-md-row gap-3 align-items-md-end w-100">
+          
+          <div class="flex-grow-1">
+              <label class="text-xs font-weight-bold text-secondary mb-1">Seleccionar Tema Evaluado:</label>
+              <select name="tema" class="form-select border px-3 py-2 w-100" onchange="this.form.submit()">
+                  {% if not temas_disponibles %}
+                      <option value="">No hay desafíos registrados aún</option>
+                  {% else %}
+                      {% for t in temas_disponibles %}
+                          <option value="{{ t }}" {% if t == tema_seleccionado %}selected{% endif %}>{{ t }}</option>
+                      {% endfor %}
+                  {% endif %}
+              </select>
+          </div>
+          
+          <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn bg-gradient-info mb-0 d-flex align-items-center justify-content-center flex-grow-1 flex-md-grow-0" onclick="window.print()">
+                  <i class="material-symbols-rounded text-sm me-1">print</i> Imprimir
+              </button>
+              <button type="submit" name="excel" value="1" class="btn bg-gradient-success mb-0 d-flex align-items-center justify-content-center flex-grow-1 flex-md-grow-0">
+                  <i class="material-symbols-rounded text-sm me-1">table_view</i> Excel
+              </button>
+          </div>
+          
+      </form>
+    </div>
+  </div>
+
+  <div class="row" id="areaImpresion">
+    
+    {% for alumno in datos_reporte %}
+    <div class="col-md-6">
+        <div class="ticket-agenda">
+            
+            <div class="text-center mb-3">
+                <img loading="lazy" src="{% static 'assets/img/logo_colegio.webp' %}" alt="Logo Colegio" style="height: 45px; object-fit: contain; margin-bottom: 8px;">
+                <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 14px;">INGENIERÍA - Torre Blanca</h6>
+                <span class="text-xs font-weight-bold text-secondary text-uppercase d-block mt-1">REPORTE DE DESAFÍOS DIARIOS</span>
+                
+                <div class="mt-2 p-1 border-radius-sm" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
+                    <span class="text-xs text-dark font-weight-bold d-block">{{ tema_seleccionado }}</span>
+                    <span class="text-sm font-weight-black {% if alumno.promedio_global >= 11 %}text-success{% else %}text-danger{% endif %}">
+                        PROMEDIO TOTAL: {{ alumno.promedio_global|floatformat:1 }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <p class="text-sm text-dark font-weight-bold mb-0">Estudiante: <span class="font-weight-normal">{{ alumno.estudiante }}</span></p>
+                <p class="text-sm text-dark font-weight-bold mb-0">Aula: <span class="font-weight-normal">{{ aula.grado }} "{{ aula.seccion }}"</span></p>
+            </div>
+
+            <table class="table table-bordered table-sm table-ticket w-100 text-center mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="text-start text-dark font-weight-bold">CURSO</th>
+                        <th class="text-dark font-weight-bold">NOTA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for curso in alumno.cursos %}
+                    <tr>
+                        <td class="text-start text-dark font-weight-bold">{{ curso.nombre }}</td>
+                        <td class="text-secondary font-weight-bold">
+                            {% for nota in curso.notas %}{{ nota|floatformat:0 }}{% if not forloop.last %} - {% endif %}{% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="text-center pt-5">
+                <div class="firma-box">
+                    <p class="text-xs text-secondary font-weight-bold mb-0">Firma del Apoderado</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 no-print">
+        <div class="alert alert-light" role="alert">
+            No se encontraron notas de desafíos para el tema "{{ tema_seleccionado }}".
+        </div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}

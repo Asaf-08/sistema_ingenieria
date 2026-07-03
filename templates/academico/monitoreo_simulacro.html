@@ -1,0 +1,60 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card">
+        <div class="card-header bg-gradient-primary p-3 d-flex align-items-center">
+            <a href="{% url 'academico:lista_simulacros' %}" class="text-white me-3" title="Volver al Banco de Simulacros">
+                <i class="material-symbols-rounded text-3xl align-middle">arrow_back</i>
+            </a>
+            <div>
+                <h6 class="text-white mb-0">Seguimiento de Carga: {{ simulacro.titulo }}</h6>
+                <p class="text-xs text-white opacity-8 mb-0">{{ simulacro.grado }} de {{ simulacro.nivel }}</p>
+            </div>
+        </div>
+        <div class="card-body px-0 pb-2">
+            <div class="table-responsive p-0 px-4">
+                <table class="table align-items-center mb-0" id="tabla-monitoreo">
+                    <thead>
+                        <tr>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso Obligatorio</th>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente Asignado</th>
+                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Preguntas en BD</th>
+                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado de Carga</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in reporte %}
+                        <tr>
+                            <td><h6 class="mb-0 text-sm ps-3">{{ item.curso }}</h6></td>
+                            <td><span class="text-xs font-weight-bold">{{ item.docente }}</span></td>
+                            <td class="align-middle text-center"><span class="badge bg-light text-dark font-weight-bold">{{ item.cantidad }}</span></td>
+                            <td class="align-middle text-center">
+                                {% if item.finalizado %}
+                                    <span class="badge badge-sm bg-gradient-success d-inline-flex align-items-center">
+                                        <i class="material-symbols-rounded text-white text-xs me-1">check_circle</i> LISTO (ENTREGADO)
+                                    </span>
+                                {% elif item.cantidad > 0 %}
+                                    <span class="badge badge-sm bg-gradient-warning d-inline-flex align-items-center">
+                                        <i class="material-symbols-rounded text-white text-xs me-1">edit_document</i> EN REDACCIÓN
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-sm bg-gradient-danger d-inline-flex align-items-center">
+                                        <i class="material-symbols-rounded text-white text-xs me-1">cancel</i> FALTA SUBIR
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/simulacros.js' %}"></script>
+{% endblock scripts %}

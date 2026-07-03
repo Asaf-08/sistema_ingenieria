@@ -1,0 +1,57 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white ps-3">Mis Simulacros Asignados</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="table-responsive p-0 px-4 mt-3">
+                        <table class="table align-items-center mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Examen Evaluado</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Fecha de Examen</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sim in simulacros %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column ps-3">
+                                            <h6 class="mb-0 text-sm">{{ sim.titulo }}</h6>
+                                            <p class="text-xs text-secondary mb-0">{{ sim.grado }} - {{ sim.nivel }}</p>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="text-secondary text-xs font-weight-bold">{{ sim.fecha_examen }}</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <a href="{% url 'academico:cargar_preguntas_simulacro' sim.id %}" class="btn bg-gradient-primary btn-sm mb-0">
+                                            <i class="material-symbols-rounded text-sm me-1">login</i> Entrar al Panel
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-secondary text-sm py-4">
+                                        No hay simulacros abiertos para recepción de preguntas en este momento.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

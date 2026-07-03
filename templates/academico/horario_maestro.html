@@ -1,0 +1,142 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-gradient-warning shadow-sm border-radius-lg p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="text-white mb-0 font-weight-black">Panel de Horarios Escolares</h5>
+            <p class="text-sm text-white opacity-8 mb-0">Visualización oficial por Aula o por Docente encargado</p>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-white text-success mb-0 d-flex align-items-center gap-1" onclick="descargarExcelHorario()">
+              <i class="material-symbols-rounded text-sm">table_view</i>
+              Exportar Excel
+            </button>
+
+            {% if es_coordinador %}
+            <button class="btn btn-white text-warning mb-0" onclick="irAEditarAula()">
+              <i class="material-symbols-rounded align-middle me-1 text-sm">edit_calendar</i>
+              Armar / Editar Horario
+            </button>
+
+            <button class="btn btn-white text-dark mb-0 px-3" onclick="$('#modalConfigurarRecreo').modal('show')" title="Configurar Recreos">
+              <i class="material-symbols-rounded align-middle text-sm">settings</i>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="row align-items-end">
+          <div class="col-md-3 mb-2">
+            <label class="text-xs font-weight-bold text-white mb-1">Periodo Lectivo</label>
+            <select class="form-control bg-white text-dark px-2 py-1 filtro-horario" style="border: 1px solid #fff;" id="filtroPeriodo">
+              {% for periodo in periodos %}
+                <option value="{{ periodo.id }}">{{ periodo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-md-4 mb-2">
+            <label class="text-xs font-weight-bold text-white mb-1">Visualizar por Aula Específica</label>
+            <select class="form-control bg-white text-dark px-2 py-1 filtro-horario" style="border: 1px solid #fff;" id="filtroAula">
+              {% for a in aulas %}
+                <option value="{{ a.id }}" {% if forloop.first %}selected{% endif %}>
+                  🏢 {{ a.grado }} "{{ a.seccion }}" — {{ a.get_nivel_display }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-md-5 mb-2">
+            <label class="text-xs font-weight-bold text-white mb-1">O alternar para ver el Horario de un Docente</label>
+            <select class="form-control bg-white text-dark px-2 py-1 filtro-horario" style="border: 1px solid #fff;" id="filtroDocente">
+              <option value="">-- Ver por Aula Seleccionada Arriba --</option>
+              {% for d in docentes %}
+                <option value="{{ d.id }}">👨‍🏫 {{ d.apellidos }}, {{ d.nombres }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12 mb-4">
+      
+      <div id="infoFiltroDinamico" class="card shadow-none bg-light border p-3 mb-3" style="display: none; border-left: 5px solid #333333 !important;">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-shape icon-sm bg-gradient-dark shadow text-center border-radius-sm d-flex align-items-center justify-content-center">
+            <i class="material-symbols-rounded text-white" id="iconInfoFiltro" style="font-size: 1.1rem;">school</i>
+          </div>
+          <div>
+            <h6 class="text-dark mb-0 font-weight-bold" id="tituloInfoFiltro">Cargando información...</h6>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-1">
+          <div id="calendario-horario"></div>
+        </div>
+      </div>
+    </div>
+</div>
+
+{% if es_coordinador %}
+<div class="modal fade" id="modalConfigurarRecreo" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark">
+        <h6 class="modal-title text-white">⚙️ Configurar Recreos</h6>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <form id="formConfigurarRecreo" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="input-group input-group-static mb-4">
+            <label class="font-weight-bold text-dark">Nivel Escolar</label>
+            <select class="form-control" name="nivel" required>
+              <option value="">-- Seleccione el Nivel --</option>
+              <option value="INICIAL">Inicial</option>
+              <option value="PRIMARIA">Primaria</option>
+              <option value="SECUNDARIA">Secundaria</option>
+            </select>
+          </div>
+          
+          <div class="input-group input-group-static is-filled mb-4">
+            <label class="font-weight-bold text-dark">Hora de Inicio</label>
+            <input type="time" class="form-control" name="hora_inicio" required>
+          </div>
+          
+          <div class="input-group input-group-static is-filled mb-2">
+            <label class="font-weight-bold text-dark">Hora de Fin</label>
+            <input type="time" class="form-control" name="hora_fin" required>
+          </div>
+        </div>
+        
+        <div class="modal-footer d-flex justify-content-end">
+          <button type="button" class="btn btn-light mb-0 me-2" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn bg-gradient-dark mb-0" onclick="guardarRecreoGlobal(event)">Guardar Recreo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>
+
+<script>const ES_COORDINADOR = {% if es_coordinador %}true{% else %}false{% endif %};</script>
+<script src="{% static 'plugins/fullcalendar/index.global.min.js' %}"></script>
+<script src="{% static 'plugins/fullcalendar/es.global.min.js' %}"></script>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/horario_fijo.js' %}"></script>
+{% endblock scripts %}

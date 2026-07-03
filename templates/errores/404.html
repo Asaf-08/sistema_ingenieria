@@ -1,0 +1,31 @@
+{% extends 'layouts/base-auth.html' %}
+{% load static %}
+
+{% block body %} bg-gray-200 {% endblock body %}
+
+{% block content %}
+<main class="main-content mt-0">
+    <div class="page-header align-items-start min-vh-100">
+        <div class="container my-auto">
+            <div class="row">
+                <div class="col-lg-8 col-md-10 col-12 mx-auto text-center">
+                    
+                    <h1 class="display-1 text-bolder text-info text-gradient mb-0" style="font-size: 10rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.1);">
+                        404
+                    </h1>
+                    
+                    <h2 class="text-dark font-weight-bold mt-3">¡Uy! Página no encontrada</h2>
+                    <p class="text-secondary text-lg mb-5">
+                        La dirección a la que intentas acceder no existe, fue movida o no tienes permisos para visualizarla.
+                    </p>
+                    
+                    <a href="{% url 'index' %}" class="btn bg-gradient-info mt-2 px-5 py-3 shadow-sm hover-scale" style="border-radius: 50px;">
+                        <i class="material-symbols-rounded align-middle me-2">arrow_back</i> Regresar al Inicio Seguro
+                    </a>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock content %}

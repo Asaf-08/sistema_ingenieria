@@ -1,0 +1,193 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="row mb-5">
+    <div class="col-12">
+      <div class="card shadow-lg border-radius-xl">
+        <div class="card-header p-4 bg-gradient-dark d-flex justify-content-between align-items-center">
+          <h5 class="text-white mb-0"><i class="material-symbols-rounded align-middle me-2">upload_file</i> Centro de
+            Carga de Materiales</h5>
+          <span class="badge bg-gradient-info text-md">Bimestre {{ bimestre_actual }}</span>
+        </div>
+
+        <div class="card-body p-4">
+          <form id="mainForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="total_secciones" id="total_secciones" value="0">
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="input-group input-group-static">
+                  <label class="text-primary font-weight-bold">Curso y Nivel</label>
+                  <select name="asignacion_id" class="form-control" required>
+                    <option value="">-- Seleccionar curso --</option>
+                    {% for asig in asignaciones %}
+                    <option value="{{ asig.id }}">{{ asig.curso.nombre }} - {{ asig.aula.nivel }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group input-group-static">
+                  <label class="text-primary font-weight-bold">Tema / Sesión</label>
+                  <select name="tema" class="form-control" required>
+                    <option value="">-- Seleccionar tema --</option>
+                    <option value="TEMA_1">Tema 1</option>
+                    <option value="TEMA_2">Tema 2</option>
+                    <option value="TEMA_3">Tema 3</option>
+                    <option value="TEMA_4">Tema 4</option>
+                    <option value="TEMA_5">Tema 5</option>
+                    <option value="TEMA_6">Tema 6</option>
+                    <option value="ASESORIA">Asesorías</option>
+                    <option value="REPASO">Repaso / Adicional</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div id="secciones-container" class="d-flex flex-column gap-4"></div>
+
+            <div class="text-center mt-4">
+              <button type="button" class="btn btn-outline-primary w-100 border-2 py-3" onclick="crearNuevaSeccion()">
+                <i class="material-symbols-rounded align-middle me-1">add_box</i> AÑADIR OTRO TIPO DE MATERIAL
+              </button>
+            </div>
+
+            <div class="input-group input-group-static mt-5">
+              <label class="text-primary font-weight-bold">Instrucciones Adicionales (Opcional)</label>
+              <textarea name="instrucciones" class="form-control" rows="2"></textarea>
+            </div>
+
+            <button type="submit" class="btn bg-gradient-success w-100 py-3 mt-4 text-lg" id="submit-all" disabled>
+              ENVIAR TODO A IMPRESIÓN
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header pb-0 p-4">
+          <h6 class="text-uppercase font-weight-bolder">Envíos Recientes</h6>
+        </div>
+        <div class="card-body px-0 pt-0 pb-2">
+          <div class="table-responsive p-4">
+            <table id="tabla-personal-materiales" class="table align-items-center mb-0">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="text-xxs font-weight-bolder opacity-7 ps-4">N°</th>
+                  <th class="text-xxs font-weight-bolder opacity-7">Curso / Tema</th>
+                  <th class="text-xxs font-weight-bolder opacity-7">Fecha de Envío</th>
+                  <th class="text-xxs font-weight-bolder opacity-7">Materiales</th>
+                  <th class="text-xxs font-weight-bolder opacity-7 text-center">Estado</th>
+                  <th class="text-xxs font-weight-bolder opacity-7 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-historial-body">
+                {% for req in historial %}
+                <tr id="fila-solicitud-{{ req.id }}">
+                  <td class="ps-4">
+                    <span class="text-xs font-weight-bold"></span>
+                  </td>
+                  <td>
+                    <div class="d-flex px-3 py-1 flex-column justify-content-center">
+                      <h6 class="mb-0 text-sm">{{ req.asignacion.curso.nombre }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ req.get_tema_display }}</p>
+                    </div>
+                  </td>
+                  <td><span class="text-xs font-weight-bold">{{ req.fecha_subida|date:"d/m/Y H:i" }}</span></td>
+                  <td>
+                    <div class="d-flex flex-column gap-1">
+                      {% regroup req.archivos.all by get_tipo_display as materiales_list %}
+                      {% for item in materiales_list %}
+                      <span class="text-xs text-dark font-weight-bold d-block">
+                        <i class="material-symbols-rounded text-info text-xs align-middle">check</i>
+                        {{ item.grouper }} <br><span class="text-secondary ms-3">{{ item.list|length }} archivos</span>
+                      </span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td class="align-middle text-center"
+                    data-order="{% if req.estado == 'PENDIENTE' %}0{% elif req.estado == 'LISTO' %}1{% else %}2{% endif %}">
+                    <span
+                      class="badge badge-sm bg-gradient-{% if req.estado == 'PENDIENTE' %}secondary{% elif req.estado == 'LISTO' %}info{% else %}success{% endif %}">
+                      {{req.get_estado_display}}
+                    </span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <div class="d-flex gap-2 justify-content-center">
+                      <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-info"
+                        style="width: 35px; height: 35px;" data-id="{{ req.id }}"
+                        onclick="abrirModalArchivosPersonal(this)" title="Ver archivos enviados">
+                        <i class="material-symbols-rounded" style="font-size: 18px;">visibility</i>
+                      </button>
+
+                      {% if req.estado == 'PENDIENTE' %}
+                      <button type="button" class="btn bg-white shadow-sm border-radius-md p-2 m-0 text-danger"
+                        style="width: 35px; height: 35px;" data-id="{{ req.id }}"
+                        data-url="{% url 'personal:eliminar_solicitud' req.id %}" onclick="confirmarEliminacion(this)"
+                        title="Eliminar envío">
+                        <i class="material-symbols-rounded" style="font-size: 18px;">delete_forever</i>
+                      </button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalVerArchivosPersonal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-info">
+        <h5 class="modal-title text-white">
+            Materiales Enviados
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="lista-archivos-personal-modal">
+            </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/personal_materiales.js' %}"></script>
+<style>
+  .border-dashed {
+    border-style: dashed !important;
+    border-color: #d2d6da !important;
+  }
+
+  .drop-zone:hover {
+    border-color: #e91e63 !important;
+    background-color: #fff !important;
+  }
+
+  /* Esta clase le ganará al hover cuando estemos arrastrando un archivo */
+  .drag-active {
+    background-color: #e1f5fe !important;
+    border-color: #17c1e8 !important;
+  }
+
+
+</style>
+{% endblock scripts %}

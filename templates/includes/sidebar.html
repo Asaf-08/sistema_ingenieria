@@ -1,0 +1,269 @@
+{% load i18n static admin_material %}
+
+<aside style="z-index: 1;" class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2 bg-white my-2 shadow-sm" id="sidenav-main">
+
+  <div class="sidenav-header d-flex align-items-center px-4">
+    <a class="navbar-brand px-4 py-4 m-0 d-flex align-items-center" href="{% url 'index' %}">
+      {% if institucion_global and institucion_global.logo %}
+          <img loading="lazy" src="{{ institucion_global.logo.url }}" class="navbar-brand-img me-2" style="width: 36px; height: 36px; object-fit: contain;" alt="main_logo">
+      {% else %}
+          <img loading="lazy" src="{% static 'assets/img/logo_colegio.webp' %}" class="navbar-brand-img me-2" style="width: 36px; height: 36px; object-fit: contain;" alt="main_logo">
+      {% endif %}
+      <span class="text-md text-dark font-weight-bold transition-text">
+          {{ institucion_global.nombre|default:"Ingeniería"|truncatechars:15 }}
+      </span>
+    </a>
+  </div>
+
+  <hr class="horizontal dark my-0">
+
+  <div class="collapse navbar-collapse w-auto h-auto" id="sidenav-collapse-main">
+    <ul class="navbar-nav">
+
+      {% if request.user.is_superuser %}
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8 text-danger">Base de Datos</h6>
+      </li>
+      {% admin_get_menu as app_list %}
+      {% if app_list %}
+        {% for app in app_list %}
+          {% if app.has_perms and not app.pinned %}
+          <li class="nav-item">
+            <a data-bs-toggle="collapse" href="#apps" class="nav-link text-dark" aria-controls="apps" role="button" aria-expanded="false">
+              <i class="material-symbols-rounded opacity-5">database</i>
+              <span class="nav-link-text ms-2 ps-1">{{ app.label|slice:10 }}{% if app.label|length > 10 %}..{%endif%}</span>
+            </a>
+            {% if app.models %}
+            <div class="collapse" id="apps">
+              <ul class="nav">
+                {% for model in app.models %}
+                  {% if model.url %}
+                  <li class="nav-item">
+                    <a class="nav-link text-dark" href="{{ model.url }}">
+                      <span class="sidenav-mini-icon"> {{ model.label|first }} </span>
+                      <span class="sidenav-normal ms-2 ps-1"> {{ model.label }} </span>
+                    </a>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          </li>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% endif %}
+
+      <li class="nav-item mt-2">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">General</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'home' %} active {% else %} text-dark {% endif %}" href="{% url 'core:home' %}">
+          <i class="material-symbols-rounded opacity-5">dashboard</i>
+          <span class="nav-link-text ms-1">Dashboard</span>
+        </a>
+      </li>
+      {% if request.user.perfil_personal.cargo == 'COO'%}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'gestion_comunicados' %} active {% else %} text-dark {% endif %}" href="{% url 'comunicaciones:gestion_comunicados' %}">
+          <i class="material-symbols-rounded opacity-5">campaign</i>
+          <span class="nav-link-text ms-1">Comunicados</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if request.user.perfil_personal.cargo == 'DOC'%}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'tablon' %} active {% else %} text-dark {% endif %}" href="{% url 'comunicaciones:tablon' %}">
+          <i class="material-symbols-rounded opacity-5">campaign</i>
+          <span class="nav-link-text ms-1">Comunicados</span>
+        </a>
+      </li>
+      {% endif %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'horario_maestro' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:horario_maestro' %}">
+          <i class="material-symbols-rounded opacity-5">calendar_month</i>
+          <span class="nav-link-text ms-1">Horario de clases</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'panel_cronograma' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:panel_cronograma' %}">
+          <i class="material-symbols-rounded opacity-5">schedule</i>
+          <span class="nav-link-text ms-1">Cronograma</span>
+        </a>
+      </li>
+
+      {% if request.user.perfil_personal.cargo == 'DOC'%}
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8 text-info">Portal Docente</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'mis_cursos' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:mis_cursos' %}">
+          <i class="material-symbols-rounded opacity-5">book</i>
+          <span class="nav-link-text ms-1">Mis Cursos</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'mi_aula' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:mi_aula' %}">
+          <i class="material-symbols-rounded opacity-5">family_group</i>
+          <span class="nav-link-text ms-1">Mi Aula (Tutoría)</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'centro_materiales' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:centro_materiales' %}">
+          <i class="material-symbols-rounded opacity-5">upload_file</i>
+          <span class="nav-link-text ms-1">Centro de Materiales</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'mis_simulacros_docente' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:mis_simulacros_docente' %}">
+          <i class="material-symbols-rounded opacity-5">post_add</i>
+          <span class="nav-link-text ms-1">Cargar Simulacro</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' or request.user.perfil_personal.cargo == 'ASI'%}
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">Estructura Académica</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_periodos' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_periodos' %}">
+          <i class="material-symbols-rounded opacity-5">date_range</i>
+          <span class="nav-link-text ms-1">Periodo Lectivo</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_cursos' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_cursos' %}">
+          <i class="material-symbols-rounded opacity-5">library_books</i>
+          <span class="nav-link-text ms-1">Cursos Generales</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_aulas' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_aulas' %}">
+          <i class="material-symbols-rounded opacity-5">meeting_room</i>
+          <span class="nav-link-text ms-1">Aulas y Secciones</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_personal' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:lista_personal' %}">
+          <i class="material-symbols-rounded opacity-5">badge</i>
+          <span class="nav-link-text ms-1">Personal Institucional</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_estudiantes' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_estudiantes' %}">
+          <i class="material-symbols-rounded opacity-5">groups</i>
+          <span class="nav-link-text ms-1">Estudiantes</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_matriculas' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_matriculas' %}">
+          <i class="material-symbols-rounded opacity-5">how_to_reg</i>
+          <span class="nav-link-text ms-1">Matrículas</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_asignaciones' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_asignaciones' %}">
+          <i class="material-symbols-rounded opacity-5">assignment_ind</i>
+          <span class="nav-link-text ms-1">Carga Académica</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'inventario_general' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:inventario_general' %}">
+          <i class="material-symbols-rounded opacity-5">inventory_2</i>
+          <span class="nav-link-text ms-1">Inventario General</span>
+        </a>
+      </li>
+
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">Control de Asistencia</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'escaner' %} active {% else %} text-dark {% endif %}" href="{% url 'asistencia:escaner' %}">
+          <i class="material-symbols-rounded opacity-5">qr_code_scanner</i>
+          <span class="nav-link-text ms-1">Escáner QR</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'reporte_asistencia_estudiantes' %} active {% else %} text-dark {% endif %}" href="{% url 'asistencia:reporte_asistencia_estudiantes' %}">
+          <i class="material-symbols-rounded opacity-5">fact_check</i>
+          <span class="nav-link-text ms-1">Reporte Alumnos</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'reporte_asistencia_personal' %} active {% else %} text-dark {% endif %}" href="{% url 'asistencia:reporte_asistencia_personal' %}">
+          <i class="material-symbols-rounded opacity-5">how_to_reg</i>
+          <span class="nav-link-text ms-1">Reporte Personal</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' %}
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8 text-primary">Dirección Académica</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'panel_supervision' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:panel_supervision' %}">
+          <i class="material-symbols-rounded opacity-5">admin_panel_settings</i>
+          <span class="nav-link-text ms-1">Panel de Supervisión</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'lista_simulacros' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_simulacros' %}">
+          <i class="material-symbols-rounded opacity-5">assignment</i>
+          <span class="nav-link-text ms-1">Simulacros Mensuales</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'consolidado_notas' %}active {% else %} text-dark {% endif %}" href="{% url 'reportes:consolidado_notas' %}">
+          <i class="material-symbols-rounded opacity-5">analytics</i>
+          <span class="nav-link-text ms-1">Consolidado de Notas</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if request.user.perfil_personal.cargo == 'COO' %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'configuracion' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:configuracion' %}">
+          <i class="material-symbols-rounded opacity-5">settings_applications</i>
+          <span class="nav-link-text ms-1">Ajustes del Sistema</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if request.user.perfil_personal.cargo == 'ASI' or request.user.perfil_personal.cargo == 'SEC' or request.user.perfil_personal.cargo == 'COO' %}
+      <li class="nav-item mt-3">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">Servicios</h6>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'panel_imprenta' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:panel_imprenta' %}">
+          <i class="material-symbols-rounded opacity-5">print</i>
+          <span class="nav-link-text ms-1">Centro de Impresiones</span>
+        </a>
+      </li>
+      {% endif %}
+
+      <li class="nav-item mt-4">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">Mi Cuenta</h6>
+      </li>
+
+      {% if request.user.is_authenticated %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'mi_perfil' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:mi_perfil' %}">
+          <i class="material-symbols-rounded opacity-5">person</i>
+          <span class="nav-link-text ms-1">Mi Perfil</span>
+        </a>
+      </li>
+
+      <li class="nav-item mb-4">
+        <button type="button" onclick="showConfirmModal('¿Cerrar Sesión?', '¿Está seguro de que desea salir del sistema? Perderá los cambios que no hayan sido guardados.', '{% url 'logout' %}', 'danger', 'Salir')" class="nav-link text-dark w-100 text-start border-0 bg-transparent" style="outline: none;">
+          <i class="material-symbols-rounded opacity-5 text-danger">logout</i>
+          <span class="nav-link-text ms-1 text-danger font-weight-bold">Cerrar Sesión</span>
+        </button>
+      </li>
+      {% endif %}
+
+    </ul>
+  </div>
+</aside>

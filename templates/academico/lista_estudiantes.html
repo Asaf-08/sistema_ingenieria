@@ -1,0 +1,139 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Lista de Estudiantes</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                        <a href="{% url 'academico:crear_estudiante' %}" class="btn btn-sm bg-gradient-primary mb-0">
+                            <i class="material-symbols-rounded opacity-5 text-sm">add</i> Nuevo Estudiante
+                        </a>
+                    </div>
+                    <div class="table-responsive p-0 px-4">
+                        <table class="table align-items-center mb-0" id="tabla-estudiantes">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Apellidos y Nombres</th>
+                                    <th
+                                        class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                                        DNI</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Aula Actual</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Estado</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for estudiante in estudiantes %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex px-2 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm">{{ estudiante.apellidos }},
+                                                    {{estudiante.nombres}}</h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{ estudiante.dni }}</p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <p class="text-xs font-weight-bold mb-0">
+                                            {% with matricula=estudiante.matricula_set.first %}
+                                                {% if matricula %}
+                                                    {{ matricula.aula.grado }} "{{ matricula.aula.seccion }}"
+                                                {% else %}
+                                                    <span class="text-danger font-weight-bold">⚠️ No Matriculado</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge badge-sm
+                                            {% if estudiante.estado == 'Activo' %} bg-gradient-success
+                                            {% elif estudiante.estado == 'Suspendido' %} bg-gradient-warning
+                                            {% elif estudiante.estado == 'Retirado' %} bg-gradient-danger
+                                            {% endif %}">
+                                            {{ estudiante.estado }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <a href="{% url 'academico:editar_estudiante' estudiante.pk %}"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Editar">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">edit</i>
+                                        </a>
+
+                                        <button type="button"
+                                            onclick="abrirModalCambiarEstado('{{ estudiante.pk }}', '{{ estudiante.estado }}')"
+                                            class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Cambiar Estado">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">published_with_changes</i>
+                                        </button>
+
+                                        <button type="button"
+                                            onclick="confirmarEliminarEstudiante('{{ estudiante.pk }}', '{{ estudiante.apellidos }} {{ estudiante.nombres }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Eliminar">
+                                            <i class="material-symbols-rounded text-white"
+                                                style="font-size: 18px;">delete</i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalEstado" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title font-weight-bold">Actualizar Estado</h6>
+            </div>
+            <div class="modal-body">
+                <form id="formEstadoEstudiante" onsubmit="event.preventDefault();">
+                    <input type="hidden" id="estudiante_id_estado" name="estudiante_id">
+                    <div class="input-group input-group-static">
+                        <label>Nuevo Estado</label>
+                        <select class="form-control" id="select_nuevo_estado" name="nuevo_estado" required>
+                            <option value="Activo">Activo</option>
+                            <option value="Retirado">Retirado</option>
+                            <option value="Suspendido">Suspendido</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-primary ms-auto" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn bg-gradient-info" onclick="guardarNuevoEstado()">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{% load static %}
+
+<script src="{% static 'js/estudiantes.js' %}"></script>
+{% endblock scripts %}

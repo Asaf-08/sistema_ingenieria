@@ -1,0 +1,22 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3
+
+# Entornos Virtuales
+venv/
+env/
+
+# Archivos subidos por los usuarios (Imágenes, PDFs)
+media/
+
+# Node.js (Tu bot de WhatsApp)
+whatsapp_bot/node_modules/
+whatsapp_bot/.wwebjs_auth/
+
+# Variables de entorno o configuraciones locales
+.env
+
+credenciales_google.json
