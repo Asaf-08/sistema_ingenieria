@@ -34,6 +34,14 @@
           </a>
         </li>
 
+        {% if request.user.perfil_personal %}
+        <li class="nav-item px-3 d-flex align-items-center">
+          <a href="javascript:;" class="nav-link text-body p-0" title="Mi Carnet QR" data-bs-toggle="modal" data-bs-target="#modalMiQR">
+            <i class="material-symbols-rounded cursor-pointer text-dark" style="font-size: 24px;">qr_code_2</i>
+          </a>
+        </li>
+        {% endif %}
+
         {% if request.user.perfil_personal.cargo == 'COO' %}
         <li class="nav-item px-3 d-flex align-items-center">
           <a href="{% url 'academico:configuracion' %}" class="nav-link text-body p-0" title="Configuración Global">
@@ -53,76 +61,82 @@
             {% endif %}
           </a>
           
-          <ul class="dropdown-menu dropdown-menu-end px-2 me-sm-n4" aria-labelledby="dropdownMenuButton" style="min-width: 300px; max-height: 400px; overflow-y: auto;">
-            
-            <li class="mb-2 text-center border-bottom pb-2 position-sticky top-0 bg-white" style="z-index: 10;">
-                <span class="text-xs font-weight-bold text-secondary text-uppercase">Tus Notificaciones</span>
+          <ul class="dropdown-menu dropdown-menu-end p-0 me-sm-n4 shadow-lg border-0 border-radius-xl" aria-labelledby="dropdownMenuButton" style="min-width: 300px; overflow: hidden;">
+    
+            <li class="text-center border-bottom p-3 bg-white bg-gradient-primary">
+                <span class="text-xs font-weight-bold text-white text-uppercase">Notificaciones</span>
             </li>
 
-            {% if comunicados_dropdown %}
-              {% for com in comunicados_dropdown %}
-              <li class="mb-2">
-                <a class="dropdown-item border-radius-md {% if not com.ya_leido %}bg-gray-100{% endif %}" 
-                  href="javascript:;" 
-                  data-bs-toggle="modal" 
-                  data-bs-target="#modalComunicadoInfo"
-                  {% if not com.ya_leido %} onclick="marcarAvisoLeidoSilencioso('{{ com.id }}', this)" {% endif %}>
-                  <div class="d-flex py-1">
-                    <div class="my-auto">
-                      <div class="avatar avatar-sm {% if com.importancia == 'URGENTE' %}bg-gradient-danger{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
-                        <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
-                          {% if com.importancia == 'URGENTE' %}campaign{% else %}info{% endif %}
-                        </i>
+            <li>
+                <div style="max-height: 350px; overflow-y: auto;" class="px-2 py-2">
+                    
+                    {% if comunicados_dropdown %}
+                      {% for com in comunicados_dropdown %}
+                      <div class="mb-2">
+                        <a class="dropdown-item border-radius-md {% if not com.ya_leido %}bg-gray-100{% endif %}" 
+                          href="javascript:;" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#modalComunicadoInfo"
+                          {% if not com.ya_leido %} onclick="marcarAvisoLeidoSilencioso('{{ com.id }}', this)" {% endif %}>
+                          <div class="d-flex py-1">
+                            <div class="my-auto">
+                              <div class="avatar avatar-sm {% if com.importancia == 'URGENTE' %}bg-gradient-danger{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
+                                <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
+                                  {% if com.importancia == 'URGENTE' %}campaign{% else %}info{% endif %}
+                                </i>
+                              </div>
+                            </div>
+                            <div class="d-flex flex-column justify-content-center">
+                              <h6 class="text-sm font-weight-bold {% if com.importancia == 'URGENTE' %}text-danger{% else %}text-info{% endif %} mb-1 text-wrap" style="max-width: 220px;">
+                                {% if com.importancia == 'URGENTE' %}Urgente:{% else %}Aviso:{% endif %} {{ com.titulo|truncatechars:20 }}
+                              </h6>
+                              <p class="text-xs text-secondary mb-0">
+                                <i class="fa fa-clock me-1"></i> Hace {{ com.fecha_creacion|timesince }}
+                              </p>
+                            </div>
+                          </div>
+                        </a>
                       </div>
-                    </div>
-                    <div class="d-flex flex-column justify-content-center">
-                      <h6 class="text-sm font-weight-bold {% if com.importancia == 'URGENTE' %}text-danger{% else %}text-info{% endif %} mb-1 text-wrap" style="max-width: 220px;">
-                        {% if com.importancia == 'URGENTE' %}Urgente:{% else %}Aviso:{% endif %} {{ com.titulo|truncatechars:20 }}
-                      </h6>
-                      <p class="text-xs text-secondary mb-0">
-                        <i class="fa fa-clock me-1"></i> Hace {{ com.fecha_creacion|timesince }}
-                      </p>
-                    </div>
-                  </div>
-                </a>
-              </li>
-              {% endfor %}
-              <li><hr class="dropdown-divider"></li>
-            {% endif %}
-            
-            {% if lista_notificaciones %}
-                {% for noti in lista_notificaciones %}
-                <li class="mb-2">
-                  <a class="dropdown-item border-radius-md {% if not noti.leida %}bg-gray-100{% endif %}" href="{% if noti.enlace %}{{ noti.enlace }}{% else %}javascript:;{% endif %}">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <div class="avatar avatar-sm {% if noti.tipo == 'ALERTA' %}bg-gradient-warning{% elif noti.tipo == 'EXITO' %}bg-gradient-success{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
-                          <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
-                              {% if noti.tipo == 'ALERTA' %}warning{% elif noti.tipo == 'EXITO' %}check_circle{% else %}info{% endif %}
-                          </i>
+                      {% endfor %}
+                      <hr class="dropdown-divider">
+                    {% endif %}
+                    
+                    {% if lista_notificaciones %}
+                        {% for noti in lista_notificaciones %}
+                        <div class="mb-2">
+                          <a class="dropdown-item border-radius-md {% if not noti.leida %}bg-gray-100{% endif %}" href="{% if noti.enlace %}{{ noti.enlace }}{% else %}javascript:;{% endif %}">
+                            <div class="d-flex py-1">
+                              <div class="my-auto">
+                                <div class="avatar avatar-sm {% if noti.tipo == 'ALERTA' %}bg-gradient-warning{% elif noti.tipo == 'EXITO' %}bg-gradient-success{% else %}bg-gradient-info{% endif %} me-3 d-flex align-items-center justify-content-center shadow-sm">
+                                  <i class="material-symbols-rounded text-white" style="font-size: 1.2rem;">
+                                      {% if noti.tipo == 'ALERTA' %}warning{% elif noti.tipo == 'EXITO' %}check_circle{% else %}info{% endif %}
+                                  </i>
+                                </div>
+                              </div>
+                              <div class="d-flex flex-column justify-content-center">
+                                <h6 class="text-sm font-weight-normal mb-1">
+                                  <span class="font-weight-bold {% if noti.tipo == 'ALERTA' %}text-warning{% endif %}">{{ noti.titulo }}</span>
+                                </h6>
+                                <p class="text-xs text-secondary mb-0" style="white-space: normal;">
+                                  {{ noti.mensaje }}
+                                </p>
+                                <p class="text-xxs text-muted mt-1 mb-0"><i class="fa fa-clock me-1"></i>Hace {{ noti.fecha_creacion|timesince }}</p>
+                              </div>
+                            </div>
+                          </a>
                         </div>
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          <span class="font-weight-bold {% if noti.tipo == 'ALERTA' %}text-warning{% endif %}">{{ noti.titulo }}</span>
-                        </h6>
-                        <p class="text-xs text-secondary mb-0" style="white-space: normal;">
-                          {{ noti.mensaje }}
-                        </p>
-                        <p class="text-xxs text-muted mt-1 mb-0"><i class="fa fa-clock me-1"></i>Hace {{ noti.fecha_creacion|timesince }}</p>
-                      </div>
-                    </div>
-                  </a>
-                </li>
-                {% endfor %}
-            {% endif %}
+                        {% endfor %}
+                    {% endif %}
 
-            {% if not lista_notificaciones and not comunicados_dropdown %}
-                <li class="text-center py-3">
-                    <p class="text-xs text-secondary mb-0">No tienes notificaciones nuevas.</p>
-                </li>
-            {% endif %}
-          </ul>
+                    {% if not lista_notificaciones and not comunicados_dropdown %}
+                        <div class="text-center py-3">
+                            <p class="text-xs text-secondary mb-0">No tienes notificaciones nuevas.</p>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </li>
+</ul>
         </li>
 
         <li class="nav-item d-flex align-items-center ps-2">
@@ -143,3 +157,31 @@
     </div>
   </div>
 </nav>
+
+{% if request.user.perfil_personal %}
+<div class="modal fade" id="modalMiQR" tabindex="-1" aria-labelledby="modalMiQRLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark">
+        <h6 class="modal-title text-white" id="modalMiQRLabel"><i class="material-symbols-rounded align-middle me-2">qr_code_2</i>Mi Carnet de Asistencia</h6>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <p class="text-sm text-secondary mb-3">Muestra este código al escáner de la institución para registrar tu asistencia.</p>
+        
+        <div class="bg-white border-radius-md p-2 mb-3 d-inline-block shadow">
+          <img src="{% url 'asistencia:generar_qr' 'PER' request.user.perfil_personal.id %}" alt="Código QR" class="img-fluid" style="width: 200px; height: 200px; object-fit: contain;">
+        </div>
+        
+        <h6 class="mb-0 text-dark">{{ request.user.perfil_personal.nombres }} {{ request.user.perfil_personal.apellidos }}</h6>
+        <p class="text-xs text-muted mb-0">{{ request.user.perfil_personal.get_cargo_display }} - DNI: {{ request.user.perfil_personal.dni }}</p>
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <a href="{% url 'asistencia:generar_qr' 'PER' request.user.perfil_personal.id %}" download="Mi_Carnet_QR_{{ request.user.perfil_personal.dni }}.png" class="btn bg-gradient-info w-100 mb-0 shadow-sm">
+          <i class="material-symbols-rounded align-middle me-2 text-sm">download</i> Descargar QR
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

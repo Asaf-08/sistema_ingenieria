@@ -12,7 +12,7 @@ from apps.asistencia.models import AsistenciaEstudiante
 @login_required
 def dashboard_principal(request):
     """ Vista inteligente multirrol para el inicio del sistema """
-    hoy = timezone.now()
+    hoy = timezone.now().date()
     user_personal = getattr(request.user, 'perfil_personal', None)
     
     # Inicializamos el contexto base
@@ -179,3 +179,56 @@ def dashboard_principal(request):
         })
 
         return render(request, 'core/dashboard_docente.html', context)
+    # =========================================================================
+    # FLUJO C: VISTA OPERATIVA (SECRETARIA, ASISTENTE, AUXILIAR)
+    # =========================================================================
+    elif user_personal.cargo in ['SEC', 'ASI', 'AUX']:
+        total_estudiantes = Estudiante.objects.filter(estado='Activo').count()
+        
+        asistencias_hoy = AsistenciaEstudiante.objects.filter(fecha=hoy)
+        presentes_hoy = asistencias_hoy.filter(estado__in=['P', 'T', 'J']).count()
+        porcentaje_asistencia = int((presentes_hoy / total_estudiantes * 100)) if total_estudiantes > 0 else 0
+
+        # Trabajos de Imprenta (Vital para la Asistente)
+        from apps.academico.models import SolicitudImpresion
+        impresiones_pendientes = SolicitudImpresion.objects.filter(estado__in=['PENDIENTE', 'EN_PROCESO']).count()
+        
+        # Inventario de Aulas
+        alertas_inventario = CatalogoMaterial.objects.filter(
+            Q(inventarios_aula__mal_estado__gt=0) | Q(inventarios_aula__se_requiere__gt=0),
+            activo=True
+        ).distinct().count()
+
+        context.update({
+            'rol': 'OPERATIVO',
+            'cargo_nombre': user_personal.get_cargo_display(),
+            'total_estudiantes': total_estudiantes,
+            'porcentaje_asistencia': porcentaje_asistencia,
+            'impresiones_pendientes': impresiones_pendientes,
+            'alertas_inventario': alertas_inventario,
+        })
+        return render(request, 'core/dashboard_admin.html', context)
+
+    # =========================================================================
+    # FLUJO D: VISTA MANTENIMIENTO (PERSONAL DE LIMPIEZA)
+    # =========================================================================
+    elif user_personal.cargo == 'LIM':
+        alertas_inventario = CatalogoMaterial.objects.filter(
+            Q(inventarios_aula__mal_estado__gt=0) | Q(inventarios_aula__se_requiere__gt=0),
+            activo=True
+        ).distinct().count()
+
+        context.update({
+            'rol': 'MANTENIMIENTO',
+            'cargo_nombre': user_personal.get_cargo_display(),
+            'alertas_inventario': alertas_inventario,
+        })
+        return render(request, 'core/dashboard_admin.html', context)
+
+    # =========================================================================
+    # RED DE SEGURIDAD (Obligatorio para evitar el Error 500)
+    # =========================================================================
+    else:
+        return render(request, 'errores/sin_perfil.html', {
+            'mensaje': f'El rol "{user_personal.get_cargo_display()}" no tiene un panel asignado.'
+        })

@@ -37,7 +37,7 @@
                             <tbody>
                                 {% for item in datos_comunicados %}
                                 <tr id="fila-comunicado-{{ item.obj.id }}">
-                                    <td class="ps-3">
+                                    <td class="ps-3" data-sort="{{ item.obj.fecha_creacion|date:'Y-m-d H:i' }}">
                                         <h6 class="mb-0 text-sm font-weight-bold text-wrap" style="max-width: 250px;">{{item.obj.titulo }}</h6>
                                         <span class="text-xs text-secondary">{{ item.obj.fecha_creacion|date:"d/m/Y H:i"}}</span>
                                     </td>

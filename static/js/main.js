@@ -250,6 +250,81 @@ function showConfirmModal(title, message, action, type = 'danger', btnText = 'Co
 // ==========================================
 // 6. LÓGICA DE COMUNICADOS (MARCAR LEÍDO)
 // ==========================================
+
+function toggleBotonAceptar() {
+    const check = document.getElementById('checkEnterado');
+    const btn = document.getElementById('btnConfirmarLectura');
+    btn.disabled = !check.checked;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Si el modal obligatorio existe, lo forzamos a abrirse
+    const modalObligatorio = document.getElementById('modalComunicadoUrgente');
+    if (modalObligatorio) {
+        var myModal = new bootstrap.Modal(modalObligatorio);
+        myModal.show();
+    }
+});
+
+// Nota: El ID del comunicado y el CSRF token ahora los recibimos como parámetros
+function marcarLeido(comunicadoId, csrfToken) {
+    const btn = document.getElementById('btnConfirmarLectura');
+    const check = document.getElementById('checkEnterado');
+    
+    // Deshabilitamos ambos para evitar doble clic
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...';
+    btn.disabled = true;
+    check.disabled = true; 
+
+    fetch('/comunicaciones/api/marcar-leido/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ comunicado_id: comunicadoId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error al registrar lectura');
+            btn.disabled = false;
+            check.disabled = false;
+            btn.innerHTML = 'Aceptar';
+        }
+    });
+}
+
+// Script para el Pin/Interruptor del Sidebar en Desktop
+$(document).ready(function() {
+    // Referencias a los elementos usando jQuery
+    const $iconSidenavDesktop = $("#iconSidenavDesktop");
+    const $body = $("body");
+
+    // Lógica del interruptor en PC
+    if ($iconSidenavDesktop.length) {
+      const $iconMaterial = $iconSidenavDesktop.find('i');
+      
+      $iconSidenavDesktop.on("click", function() {
+        if ($body.hasClass("g-sidenav-hidden")) {
+          // ABRIR SIDEBAR
+          $body.removeClass("g-sidenav-hidden").addClass("g-sidenav-pinned");
+          if ($iconMaterial.length) $iconMaterial.text('menu_open'); // Cambia a ícono abierto
+        } else {
+          // ESCONDER SIDEBAR
+          $body.removeClass("g-sidenav-pinned").addClass("g-sidenav-hidden");
+          if ($iconMaterial.length) $iconMaterial.text('menu'); // Cambia a ícono de 3 rayas
+        }
+      });
+    }
+    
+    // (Opcional) Si en móviles el usuario hace clic fuera del sidebar, 
+    // Material Dashboard ya lo cierra automáticamente, por lo que no necesitamos más código.
+  });
+
+
 function marcarAvisoLeidoSilencioso(comunicadoId, elementoBoton) {
     const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
     if (!csrfTokenInput) {

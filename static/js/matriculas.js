@@ -83,3 +83,22 @@ function matricularSeleccionados() {
         }
     });
 }
+
+// ==========================================
+// ABRIR MODAL DEL CARNET QR ESTUDIANTE
+// ==========================================
+function abrirModalQREstudiante(nombre, dni, urlQr) {
+    // 1. Inyectar datos en el Modal
+    $('#nombreQrEstudiante').text(nombre);
+    $('#dniQrEstudiante').text(dni);
+    
+    // 2. Inyectar la URL al <img> para que el navegador la solicite al servidor
+    $('#imgQrEstudiante').attr('src', urlQr);
+    
+    // 3. Configurar el botón de descarga para que guarde la imagen con el DNI del alumno
+    $('#btnDescargarQrEstudiante').attr('href', urlQr);
+    $('#btnDescargarQrEstudiante').attr('download', `Carnet_QR_Estudiante_${dni}.png`);
+    
+    // 4. Mostrar el Modal
+    $('#modalQrEstudiante').modal('show');
+}

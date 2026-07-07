@@ -7,8 +7,7 @@
         <div class="col-12">
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                    <div
-                        class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center">
                         <h6 class="text-white text-capitalize ps-3 mb-0">Directorio de Estudiantes Matriculados</h6>
                     </div>
                 </div>
@@ -24,20 +23,11 @@
                         <table class="table align-items-center mb-0" id="tabla-lista-matriculas">
                             <thead>
                                 <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Estudiante</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        DNI</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Aula Asignada</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Periodo</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Acciones</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estudiante</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">DNI</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Aula Asignada</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Periodo</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -46,8 +36,7 @@
                                     <td>
                                         <div class="d-flex px-3 py-1">
                                             <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm">{{ matricula.estudiante.apellidos }},
-                                                    {{matricula.estudiante.nombres }}</h6>
+                                                <h6 class="mb-0 text-sm">{{ matricula.estudiante.apellidos }}, {{matricula.estudiante.nombres }}</h6>
                                             </div>
                                         </div>
                                     </td>
@@ -56,29 +45,37 @@
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <span class="badge badge-sm bg-gradient-success">
-                                            {{ matricula.aula.grado }} "{{ matricula.aula.seccion }}" -
-                                            {{matricula.aula.nivel }}
+                                            {{ matricula.aula.grado }} "{{ matricula.aula.seccion }}" - {{matricula.aula.nivel }}
                                         </span>
                                     </td>
                                     <td class="align-middle text-center text-sm">
-                                        <p class="text-xs font-weight-bold text-secondary mb-0">
-                                            {{matricula.periodo }}</p>
+                                        <p class="text-xs font-weight-bold text-secondary mb-0">{{matricula.periodo }}</p>
                                     </td>
                                     <td class="align-middle text-center">
-                                        <button
-                                            onclick="confirmarQuitarMatricula('{{ matricula.pk }}', '{{ matricula.estudiante.apellidos }}, {{ matricula.estudiante.nombres }}')"
-                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
-                                            style="width: 30px; height: 30px;" data-bs-toggle="tooltip"
-                                            title="Quitar del aula">
-                                            <i class="material-symbols-rounded text-white"
-                                                style="font-size: 16px;">person_remove</i>
+                                        
+                                        <button type="button"
+                                            onclick="abrirModalQREstudiante('{{ matricula.estudiante.nombres }} {{ matricula.estudiante.apellidos }}', '{{ matricula.estudiante.dni }}', '{% url 'asistencia:generar_qr' 'EST' matricula.estudiante.id %}')"
+                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            data-bs-toggle="tooltip" data-bs-title="Generar Carnet QR"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">qr_code_2</i>
                                         </button>
+
                                         <a href="{% url 'academico:reporte_progresivo' matricula.id %}" target="_blank" 
-                                            class="btn btn-icon-only bg-gradient-warning rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
+                                            class="btn btn-icon-only bg-gradient-warning rounded-circle mb-0 d-inline-flex align-items-center justify-content-center ms-1"
                                             data-bs-toggle="tooltip" data-bs-title="Generar Informe Progresivo"
                                             style="width: 35px; height: 35px; padding: 0;">
                                             <i class="material-symbols-rounded text-white" style="font-size: 18px;">summarize</i>
                                         </a>
+
+                                        <button type="button"
+                                            onclick="confirmarQuitarMatricula('{{ matricula.pk }}', '{{ matricula.estudiante.apellidos }}, {{ matricula.estudiante.nombres }}')"
+                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center ms-1"
+                                            data-bs-toggle="tooltip" data-bs-title="Quitar del aula"
+                                            style="width: 35px; height: 35px; padding: 0;">
+                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">person_remove</i>
+                                        </button>
+                                        
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -89,6 +86,32 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="modalQrEstudiante" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark">
+        <h6 class="modal-title text-white"><i class="material-symbols-rounded align-middle me-2">qr_code_2</i>Carnet del Alumno</h6>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <p class="text-sm text-secondary mb-3">Escanea este código para registrar entrada o salida del plantel.</p>
+        
+        <div class="bg-white border-radius-md p-2 mb-3 d-inline-block shadow">
+          <img id="imgQrEstudiante" src="" alt="Código QR" class="img-fluid" style="width: 200px; height: 200px; object-fit: contain;">
+        </div>
+        
+        <h6 class="mb-0 text-dark" id="nombreQrEstudiante">Cargando...</h6>
+        <p class="text-xs text-muted mb-0">Estudiante - DNI: <span id="dniQrEstudiante"></span></p>
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <a id="btnDescargarQrEstudiante" href="#" download="Carnet_QR.png" class="btn bg-gradient-info w-100 mb-0 shadow-sm">
+          <i class="material-symbols-rounded align-middle me-2 text-sm">download</i> Descargar Carnet QR
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock content %}
 

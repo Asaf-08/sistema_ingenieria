@@ -859,16 +859,30 @@ def actualizar_evento_drag_ajax(request):
 def horario_maestro(request):
     """ Panel principal del Horario Fijo (Vista de Lectura y Filtros) """
     personal_actual = obtener_personal_logueado(request)
-    es_coordinador = personal_actual.cargo in ['COO', 'DIR'] or request.user.is_superuser
+    cargo = personal_actual.cargo
     
-    docentes = Personal.objects.filter(cargo='DOC', estado='Activo')
-    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+    # 1. Definición estricta de Roles
+    es_coordinador = cargo in ['COO', 'DIR'] or request.user.is_superuser
+    puede_ver_todo = cargo in ['COO', 'DIR', 'SEC', 'ASI'] or request.user.is_superuser
+    
+    # 2. Filtrado de Datos según el Rol
+    if puede_ver_todo:
+        docentes = Personal.objects.filter(cargo='DOC', estado='Activo')
+        aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+    else:
+        # 💥 Perfil Docente: Solo se ve a sí mismo
+        docentes = Personal.objects.filter(id=personal_actual.id)
+        # 💥 Solo ve las aulas donde tiene Asignaciones Académicas (evita duplicados con distinct)
+        aulas = Aula.objects.filter(
+            asignaciones__personal=personal_actual
+        ).distinct().order_by('nivel', 'grado', 'seccion')
+
     periodos = PeriodoLectivo.objects.all()
-    
     form_horario = HorarioClaseForm()
     
     return render(request, 'academico/horario_maestro.html', {
         'es_coordinador': es_coordinador,
+        'puede_ver_todo': puede_ver_todo, # Enviamos esta variable clave al HTML
         'docentes': docentes,
         'aulas': aulas,
         'periodos': periodos,

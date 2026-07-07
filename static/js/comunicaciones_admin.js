@@ -2,9 +2,60 @@
  * ARCHIVO: comunicaciones_admin.js
  * Módulo de Gestión de Avisos Institucionales
  */
+// Variable global
+let tablaComunicados;
+
+// 💥 1. Creamos una función exclusiva para esta tabla
+function inicializarTablaComunicados() {
+    if ($.fn.DataTable.isDataTable('#tabla-comunicados')) {
+        $('#tabla-comunicados').DataTable().destroy();
+    }
+
+    tablaComunicados = $('#tabla-comunicados').DataTable({
+        language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+            search: "_INPUT_",
+            searchPlaceholder: "Buscar comunicados...",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            infoEmpty: "Mostrando 0 a 0 de 0 registros",
+            zeroRecords: "No se encontraron resultados",
+            paginate: {
+                first: "Primero",
+                last: "Último",
+                next: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_right</i>',
+                previous: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_left</i>'
+            }
+        },
+        pageLength: 10,
+        lengthChange: true,
+        order: [[0, "desc"]], // Orden por fecha (columna 0)
+        info: true,
+        autoWidth: false,
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center px-4 pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
+        initComplete: function () {
+            $('.dataTables_filter input')
+                .addClass('form-control border-bottom border-2 px-3 py-1')
+                .attr('placeholder', 'Buscar comunicados...');
+                
+            $('.dataTables_filter label').contents().filter(function () {
+                return this.nodeType === 3;
+            }).remove();
+
+            $('.dataTables_length select')
+                .addClass('form-control border-bottom border-2 px-2 py-1 mx-2')
+                .css({
+                    'display': 'inline-block',
+                    'width': 'auto',
+                    'background-color': 'transparent'
+                });
+        }
+    });
+}
 
 $(document).ready(function() {
-    inicializarTablaGlobal('#tabla-comunicados', 'Buscar comunicados...');
+    inicializarTablaComunicados();
 
     // 💥 LÓGICA DEL DRAG & DROP DE IMÁGENES/PDF 
     const dropzone = $('#dropzone-adjunto');
@@ -117,8 +168,12 @@ function abrirModalEditarComunicado(id) {
     });
 }
 
-// 💥 NUEVA FUNCIÓN PARA PODER SUBIR ARCHIVOS (Ignorando guardarRegistroAjax)
-async function guardarComunicado() {
+// 💥 1. Asegúrate de poner la palabra 'event' dentro de los paréntesis
+async function guardarComunicado(event) {
+    if (event) {
+        event.preventDefault(); 
+    }
+
     if (!$('#id_titulo').val() || !$('#id_mensaje').val()) {
         mostrarErroresModal({'Datos incompletos': ['El título y el mensaje son obligatorios.']});
         return;
@@ -143,12 +198,16 @@ async function guardarComunicado() {
 
         if (data.success || data.status === 'ok') {
             $('#modalCrearComunicado').modal('hide');
+            
+            // 💥 2. LA SOLUCIÓN: Forzamos el cierre de la alerta de carga
+            Swal.close(); 
+            
+            // Y ahora sí lanzamos nuestro Toast suave y elegante
             mostrarNotificacionExito(data.mensaje || 'Comunicado publicado con éxito.');
             
+            // 💥 3. Recargamos la tabla y llamamos a NUESTRA función personalizada
             $('.table-responsive').load(window.location.href + ' #tabla-comunicados', function() {
-                if (typeof inicializarTablaGlobal === 'function') {
-                    inicializarTablaGlobal('#tabla-comunicados', 'Buscar comunicados...');
-                }
+                inicializarTablaComunicados();
             });
         } else {
             if (data.errors) {
@@ -162,7 +221,11 @@ async function guardarComunicado() {
     }
 }
 
-function eliminarComunicado(id) {
+function eliminarComunicado(btn) {
+    // 💥 1. Extraemos el ID numérico del botón que pasaste como "this"
+    const id = btn.getAttribute('data-id');
+
+    // 💥 2. Llamamos a tu función global INTACTA, ahora con el ID correcto
     confirmarEliminacionAjax({
         titulo: '¿Eliminar comunicado?',
         texto: "Esta acción no se puede deshacer y desaparecerá del tablón de los docentes.",

@@ -72,7 +72,7 @@
         </a>
       </li>
       {% endif %}
-      {% if request.user.perfil_personal.cargo == 'DOC'%}
+      {% if request.user.perfil_personal.cargo == 'DOC' or request.user.perfil_personal.cargo == 'ASI' or request.user.perfil_personal.cargo == 'SEC' or request.user.perfil_personal.cargo == 'AUX'%}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'tablon' %} active {% else %} text-dark {% endif %}" href="{% url 'comunicaciones:tablon' %}">
           <i class="material-symbols-rounded opacity-5">campaign</i>
@@ -103,12 +103,14 @@
           <span class="nav-link-text ms-1">Mis Cursos</span>
         </a>
       </li>
+      {% if request.user.perfil_personal.aulas_tutoradas.all %}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'mi_aula' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:mi_aula' %}">
           <i class="material-symbols-rounded opacity-5">family_group</i>
           <span class="nav-link-text ms-1">Mi Aula (Tutoría)</span>
         </a>
       </li>
+      {% endif %}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'centro_materiales' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:centro_materiales' %}">
           <i class="material-symbols-rounded opacity-5">upload_file</i>
@@ -199,7 +201,7 @@
       </li>
       {% endif %}
 
-      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' %}
+      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' or request.user.perfil_personal.cargo == 'DOC' %}
       <li class="nav-item mt-3">
         <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8 text-primary">Dirección Académica</h6>
       </li>
@@ -209,6 +211,9 @@
           <span class="nav-link-text ms-1">Panel de Supervisión</span>
         </a>
       </li>
+      {% endif %}
+
+      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' %}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'lista_simulacros' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_simulacros' %}">
           <i class="material-symbols-rounded opacity-5">assignment</i>

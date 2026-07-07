@@ -30,7 +30,7 @@ class WhatsAppService:
         Lanza el envío en un "hilo" paralelo para no hacer esperar al usuario web.
         """
         if numero:
-            hilo = threading.Thread(target=cls.enviar_whatsapp_background, args=(numero, mensaje))
+            hilo = threading.Thread(target=cls.enviar_whatsapp_background, args=(numero, mensaje), daemon=True)
             hilo.start()
         return True
 

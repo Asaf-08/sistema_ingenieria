@@ -42,10 +42,15 @@
           </div>
           
           <div class="col-md-4 mb-2">
-            <label class="text-xs font-weight-bold text-white mb-1">Visualizar por Aula Específica</label>
+            <label class="text-xs font-weight-bold text-white mb-1">
+              {% if puede_ver_todo %}Visualizar por Aula Específica{% else %}Mis Aulas Asignadas{% endif %}
+            </label>
             <select class="form-control bg-white text-dark px-2 py-1 filtro-horario" style="border: 1px solid #fff;" id="filtroAula">
+              {% if not puede_ver_todo %}
+                <option value="">-- Ver mi horario semanal completo --</option>
+              {% endif %}
               {% for a in aulas %}
-                <option value="{{ a.id }}" {% if forloop.first %}selected{% endif %}>
+                <option value="{{ a.id }}" {% if puede_ver_todo and forloop.first %}selected{% endif %}>
                   🏢 {{ a.grado }} "{{ a.seccion }}" — {{ a.get_nivel_display }}
                 </option>
               {% endfor %}
@@ -53,11 +58,15 @@
           </div>
           
           <div class="col-md-5 mb-2">
-            <label class="text-xs font-weight-bold text-white mb-1">O alternar para ver el Horario de un Docente</label>
+            <label class="text-xs font-weight-bold text-white mb-1">
+              {% if puede_ver_todo %}O alternar para ver el Horario de un Docente{% else %}Mi Horario Personal{% endif %}
+            </label>
             <select class="form-control bg-white text-dark px-2 py-1 filtro-horario" style="border: 1px solid #fff;" id="filtroDocente">
-              <option value="">-- Ver por Aula Seleccionada Arriba --</option>
+              {% if puede_ver_todo %}
+                <option value="">-- Ver por Aula Seleccionada Arriba --</option>
+              {% endif %}
               {% for d in docentes %}
-                <option value="{{ d.id }}">👨‍🏫 {{ d.apellidos }}, {{ d.nombres }}</option>
+                <option value="{{ d.id }}" {% if not puede_ver_todo %}selected{% endif %}>👨‍🏫 {{ d.apellidos }}, {{ d.nombres }}</option>
               {% endfor %}
             </select>
           </div>
