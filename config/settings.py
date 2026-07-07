@@ -1,11 +1,16 @@
 import os
+import dj_database_url
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-clave'
 
-DEBUG = True
+# Railway enviará una variable diciendo "DEBUG=False" cuando estemos en producción. 
+# Si no la envía (como en tu PC), seguirá en 'True'.
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+# Permitimos todos los dominios por ahora para que la URL gratuita de Railway funcione
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
@@ -18,6 +23,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    'debug_toolbar',  # 💥 Añadido para auditoría de rendimiento
+    'storages', # 💥 Nueva: Para hablar con AWS
 
     'apps.core',
     'apps.academico',
@@ -25,12 +33,13 @@ INSTALLED_APPS = [
     'apps.reportes',
     'apps.comunicaciones',
     'apps.asistencia',
-    'debug_toolbar',  # 💥 Añadido para auditoría de rendimiento
+
+    'django_cleanup.apps.CleanupConfig', # 💥 Nueva: El conserje (SIEMPRE AL FINAL)
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
+    'whitenoise.middleware.WhiteNoiseMiddleware', # 💥 AÑADIDO: Entrega CSS/JS a máxima velocidad
     'django.contrib.sessions.middleware.SessionMiddleware',  # 👈 requerido
     'django.middleware.common.CommonMiddleware',
 
@@ -63,6 +72,15 @@ DATABASES = {
     }
 }
 
+# 💥 NUEVO: Intercepta la base de datos si estamos en Railway
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -91,8 +109,32 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static') # 👉 Apunta a tu nueva carpeta static
 ]
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# 💥 NUEVO: Rutas de producción para Railway
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# =========================================================
+# CONFIGURACIÓN DE ARCHIVOS MULTIMEDIA (LOCAL VS AWS S3)
+# =========================================================
+USE_S3 = os.environ.get('USE_S3', 'False') == 'True'
+
+if USE_S3:
+    # 💥 Entorno de Producción (Nube)
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME')
+    
+    AWS_S3_FILE_OVERWRITE = False # Evita que archivos con el mismo nombre se chanquen
+    AWS_DEFAULT_ACL = None 
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    
+    # Le decimos a Django que mande los subidas (media) a S3
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+else:
+    # 💥 Entorno Local (Tu PC / XAMPP)
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Opcional pero MUY recomendado para permitir iframes del mismo dominio
 X_FRAME_OPTIONS = 'SAMEORIGIN'
@@ -126,3 +168,4 @@ if not DEBUG:
 #INTERNAL_IPS = [
 #    '127.0.0.1',
 #]
+
