@@ -24,20 +24,11 @@
       </div>
       
       <ul class="navbar-nav d-flex align-items-center justify-content-end">
-        <li class="nav-item d-xl-none px-3 pb-1 d-flex align-items-center">
-          <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
-            <div class="sidenav-toggler-inner">
-              <i class="sidenav-toggler-line"></i>
-              <i class="sidenav-toggler-line"></i>
-              <i class="sidenav-toggler-line"></i>
-            </div>
-          </a>
-        </li>
 
         {% if request.user.perfil_personal %}
-        <li class="nav-item px-3 d-flex align-items-center">
+        <li class="nav-item d-flex align-items-center">
           <a href="javascript:;" class="nav-link text-body p-0" title="Mi Carnet QR" data-bs-toggle="modal" data-bs-target="#modalMiQR">
-            <i class="material-symbols-rounded cursor-pointer text-dark" style="font-size: 24px;">qr_code_2</i>
+            <i class="material-symbols-rounded fixed-plugin-button-nav cursor-pointer">qr_code_2</i>
           </a>
         </li>
         {% endif %}
@@ -136,7 +127,7 @@
 
                 </div>
             </li>
-</ul>
+      </ul>
         </li>
 
         <li class="nav-item d-flex align-items-center ps-2">
@@ -151,6 +142,16 @@
               <i class="material-symbols-rounded" style="font-size: 24px;">account_circle</i>
             </a>
           {% endif %}
+        </li>
+        
+        <li class="nav-item d-xl-none px-3 pb-1 d-flex align-items-center">
+          <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+            <div class="sidenav-toggler-inner">
+              <i class="sidenav-toggler-line"></i>
+              <i class="sidenav-toggler-line"></i>
+              <i class="sidenav-toggler-line"></i>
+            </div>
+          </a>
         </li>
 
       </ul>
