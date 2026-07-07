@@ -164,6 +164,16 @@ if not DEBUG:
     # 3. Protección Anti-Clickjacking (W019)
     X_FRAME_OPTIONS = 'DENY'
 
+# ==========================================
+# CONFIGURACIONES DE SEGURIDAD PARA PRODUCCIÓN (RAILWAY)
+# ==========================================
+
+# 1. Romper el Bucle Infinito (Entender el proxy de Railway)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 2. Confiar en los dominios de Railway para evitar errores CSRF 403 al loguearse
+CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
+
 # 💥 IPs permitidas para ver el Debug Toolbar
 #INTERNAL_IPS = [
 #    '127.0.0.1',
