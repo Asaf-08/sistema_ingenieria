@@ -1,0 +1,20 @@
+{
+  "name": "Ingeniería - Sistema Académico",
+  "short_name": "Ingeniería",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#fb8c00",
+  "icons": [
+    {
+      "src": "/static/assets/img/logo_colegio.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/static/assets/img/logo_colegio.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
