@@ -365,25 +365,57 @@ function marcarAvisoLeidoSilencioso(comunicadoId, elementoBoton) {
 }
 
 // ==========================================
-// 7. SCRIPT PARA EL SIDEBAR EN DESKTOP
+// 7. SCRIPT PARA EL SIDEBAR (ESCRITORIO Y MÓVIL)
 // ==========================================
 $(document).ready(function() {
     const $iconSidenavDesktop = $("#iconSidenavDesktop");
     const $body = $("body");
 
     if ($iconSidenavDesktop.length) {
-      const $iconMaterial = $iconSidenavDesktop.find('i');
-      
-      $iconSidenavDesktop.on("click", function() {
-        if ($body.hasClass("g-sidenav-hidden")) {
-          $body.removeClass("g-sidenav-hidden").addClass("g-sidenav-pinned");
-          if ($iconMaterial.length) $iconMaterial.text('menu_open');
-        } else {
-          $body.removeClass("g-sidenav-pinned").addClass("g-sidenav-hidden");
-          if ($iconMaterial.length) $iconMaterial.text('menu');
-        }
-      });
+        // off('click') asegura que no haya eventos duplicados estorbando
+        $iconSidenavDesktop.off('click').on("click", function(e) {
+            // Detenemos cualquier otro evento nativo que intente contradecir al botón
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $iconMaterial = $(this).find('i');
+
+            // Si el sidebar está anclado (abierto) o en su estado por defecto
+            if ($body.hasClass("g-sidenav-pinned") || !$body.hasClass("g-sidenav-hidden")) {
+                // Lo ESCONDEMOS
+                $body.removeClass("g-sidenav-pinned").addClass("g-sidenav-hidden");
+                if ($iconMaterial.length) $iconMaterial.text('menu');
+            } else {
+                // Lo ABRIMOS
+                $body.removeClass("g-sidenav-hidden").addClass("g-sidenav-pinned");
+                if ($iconMaterial.length) $iconMaterial.text('menu_open');
+            }
+        });
     }
+});
+
+// =========================================================
+// 💥 CERRAR SIDEBAR AL HACER CLIC AFUERA (SOLO VISTA MÓVIL)
+// =========================================================
+document.addEventListener('click', function(e) {
+  // 1. Verificamos si es pantalla móvil (< 1200px) y si el sidebar está abierto
+  if (window.innerWidth < 1200 && body.classList.contains(className)) {
+    
+    // 2. Verificamos que el clic NO haya sido dentro del panel (sidenav)
+    // NI en el botón de las 3 rayitas (iconNavbarSidenav)
+    // NI en la X de cerrar (iconSidenav)
+    if (!sidenav.contains(e.target) && 
+        (!iconNavbarSidenav || !iconNavbarSidenav.contains(e.target)) && 
+        (!iconSidenav || !iconSidenav.contains(e.target))) {
+        
+        // 3. Replicamos la lógica exacta de cerrado de Material Dashboard
+        body.classList.remove(className);
+        setTimeout(function() {
+          sidenav.classList.remove('bg-white');
+        }, 100);
+        sidenav.classList.remove('bg-transparent');
+    }
+  }
 });
 
 $(window).on('load', function() {
