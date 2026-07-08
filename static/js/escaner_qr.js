@@ -21,9 +21,23 @@ $(document).ready(function() {
         
         Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
+        // 💥 DETECCIÓN AUTOMÁTICA DEL TIPO DE USUARIO (ROUTING INTELIGENTE)
+        let urlDestino = "";
+        
+        if (decodedText.startsWith("PER-") || decodedText.startsWith("DOC-")) {
+            urlDestino = "/asistencia/api/guardar-personal/"; // Ruta para Profesores/Personal
+        } else if (decodedText.startsWith("EST-")) {
+            urlDestino = "/asistencia/api/registrar/"; // Ruta para Alumnos
+        } else {
+            // Si escanean un código QR de una botella de Coca-Cola por error
+            Swal.fire({ icon: 'error', title: 'Código Inválido', text: 'Este QR no pertenece a la institución.' });
+            btnReiniciar.removeClass('d-none');
+            return;
+        }
+
         // 💥 Petición AJAX al estilo jQuery
         $.ajax({
-            url: "/asistencia/api/registrar/", // Ajusta si tu url cambia
+            url: urlDestino,
             type: "POST",
             contentType: "application/json",
             headers: { 'X-CSRFToken': csrfToken },
