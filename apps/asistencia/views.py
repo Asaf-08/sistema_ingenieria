@@ -40,7 +40,8 @@ def escaner_asistencia(request):
     return render(request, 'asistencia/escaner_qr.html')
 
 def generar_qr(request, tipo, id_usuario):
-    """ Genera una imagen QR al vuelo para el personal (DOC) o Estudiantes (EST). """
+    """ Genera una imagen QR al vuelo para el Personal (PER) o Estudiantes (EST). """
+    # datos_qr será algo como "PER-5" o "EST-120"
     datos_qr = f"{tipo}-{id_usuario}"
     
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
