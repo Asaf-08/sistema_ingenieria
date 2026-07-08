@@ -109,7 +109,8 @@ def registrar_asistencia_api(request):
         HORA_LIMITE = datetime.time(8, 0)
         estado_calculado = 'P' if hora_actual <= HORA_LIMITE else 'T'
 
-        if tipo_usuario == 'DOC':
+        # 💥 ACEPTAMOS TANTO 'DOC' (Docentes antiguos) COMO 'PER' (Personal nuevo)
+        if tipo_usuario == 'DOC' or tipo_usuario == 'PER':
             personal = Personal.objects.filter(id=id_usuario).first()
             if not personal:
                 return JsonResponse({'status': 'error', 'mensaje': 'Personal no encontrado.'}, status=404)
@@ -130,7 +131,7 @@ def registrar_asistencia_api(request):
                 tipo_registro = 'Salida'
             else:
                 return JsonResponse({'status': 'error', 'mensaje': 'El personal ya registró entrada y salida hoy.'}, status=400)
-
+            
         elif tipo_usuario == 'EST':
             estudiante = Estudiante.objects.filter(id=id_usuario).first()
             if not estudiante:

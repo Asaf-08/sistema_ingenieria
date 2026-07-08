@@ -21,15 +21,11 @@ $(document).ready(function() {
         
         Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
-        // 💥 DETECCIÓN AUTOMÁTICA DEL TIPO DE USUARIO (ROUTING INTELIGENTE)
-        let urlDestino = "";
+        // 💥 TODO ESCANEO VA A LA RUTA PRINCIPAL
+        let urlDestino = "/asistencia/api/registrar/"; 
         
-        if (decodedText.startsWith("PER-") || decodedText.startsWith("DOC-")) {
-            urlDestino = "/asistencia/api/guardar-personal/"; // Ruta para Profesores/Personal
-        } else if (decodedText.startsWith("EST-")) {
-            urlDestino = "/asistencia/api/registrar/"; // Ruta para Alumnos
-        } else {
-            // Si escanean un código QR de una botella de Coca-Cola por error
+        // Solo verificamos que sea un código de la institución para que no escaneen basura
+        if (!decodedText.startsWith("PER-") && !decodedText.startsWith("DOC-") && !decodedText.startsWith("EST-")) {
             Swal.fire({ icon: 'error', title: 'Código Inválido', text: 'Este QR no pertenece a la institución.' });
             btnReiniciar.removeClass('d-none');
             return;
