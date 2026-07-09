@@ -178,7 +178,7 @@ CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 # CONFIGURACIÓN DEL MICROSERVICIO DE WHATSAPP
 # ==========================================
 # Reemplaza esto con la URL real que te dio Railway
-WHATSAPP_BOT_URL = 'https://bot-comunicacion-ws.up.railway.app'
+WHATSAPP_BOT_URL = 'https://botcomunicacion-ws.up.railway.app'
 
 # 💥 IPs permitidas para ver el Debug Toolbar
 #INTERNAL_IPS = [
