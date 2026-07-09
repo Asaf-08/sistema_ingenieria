@@ -1,0 +1,7 @@
+# Dependencias de Node.js
+node_modules/
+
+# Sesiones y archivos temporales del Bot
+.wwebjs_auth/
+.node-persist/
+_IGNORE_COLEGIO_BOT/
