@@ -174,6 +174,12 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # 2. Confiar en los dominios de Railway para evitar errores CSRF 403 al loguearse
 CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 
+# ==========================================
+# CONFIGURACIÓN DEL MICROSERVICIO DE WHATSAPP
+# ==========================================
+# Reemplaza esto con la URL real que te dio Railway
+WHATSAPP_BOT_URL = 'https://bot-comunicacion-ws.up.railway.app'
+
 # 💥 IPs permitidas para ver el Debug Toolbar
 #INTERNAL_IPS = [
 #    '127.0.0.1',

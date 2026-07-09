@@ -1,6 +1,7 @@
 import urllib.parse
 import threading
 import requests
+from django.conf import settings
 
 class WhatsAppService:
     """
@@ -10,7 +11,7 @@ class WhatsAppService:
     @staticmethod
     def enviar_whatsapp_background(telefono, mensaje):
         """ Viaja por debajo sin congelar la pantalla (Conexión al bot de Node.js) """
-        url_bot = "http://localhost:3000/api/enviar-mensaje"
+        url_bot = f"{settings.WHATSAPP_BOT_URL}/api/enviar-mensaje"
         datos = {
             "telefono": telefono,
             "mensaje": mensaje

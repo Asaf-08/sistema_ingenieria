@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Count, Q  # 💥 IMPORTACIONES CLAVE PARA OPTIMIZAR
 import requests
 import json
+from django.conf import settings
 
 from apps.comunicaciones.servicios_whatsapp import WhatsAppService
 from .models import Comunicado, LecturaComunicado, Notificacion
@@ -163,23 +164,27 @@ def eliminar_comunicado_ajax(request, pk):
     return JsonResponse({'success': True, 'mensaje': 'Comunicado eliminado del sistema.'})
 
 # =========================================================
-# RUTAS DEL ROBOT WHATSAPP (NODE.JS)
+# RUTAS DEL ROBOT WHATSAPP (NODE.JS) EN PRODUCCIÓN
 # =========================================================
 @login_required
 @require_GET
 def whatsapp_estado_ajax(request):
     try:
-        respuesta = requests.get('http://localhost:3000/api/estado', timeout=5)
+        # Construimos la URL dinámica leyendo el settings
+        url_destino = f"{settings.WHATSAPP_BOT_URL}/api/estado"
+        respuesta = requests.get(url_destino, timeout=5)
         datos = respuesta.json()
         return JsonResponse({'success': True, 'data': datos})
     except Exception:
-        return JsonResponse({'success': False, 'mensaje': 'El servidor de WhatsApp está apagado.'})
+        return JsonResponse({'success': False, 'mensaje': 'El servidor de WhatsApp está apagado o inaccesible.'})
 
 @login_required
 @require_POST
 def whatsapp_desconectar_ajax(request):
     try:
-        respuesta = requests.post('http://localhost:3000/api/desconectar', timeout=10)
+        # Construimos la URL dinámica leyendo el settings
+        url_destino = f"{settings.WHATSAPP_BOT_URL}/api/desconectar"
+        respuesta = requests.post(url_destino, timeout=10)
         if respuesta.status_code == 200:
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'mensaje': 'El robot rechazó la orden.'})
