@@ -56,8 +56,12 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // 💥 LA API AHORA INICIA DESDE EL PRINCIPIO (NO ESPERA A WHATSAPP)
 // ==============================================================
 
-// Ruta para que Django consulte el estado y pida el QR
+// Ruta modificada para espiar qué está pasando en vivo
 app.get('/api/estado', (req, res) => {
+    console.log(`🔍 [ALERTA] Django acaba de consultar el estado.`);
+    console.log(`   ¿WhatsApp Conectado?: ${whatsappConectado}`);
+    console.log(`   ¿Tiene el QR en memoria?: ${qrImageBase64 ? 'SÍ (Enviando Base64...)' : 'NO (Está nulo)'}`);
+    
     res.json({
         conectado: whatsappConectado,
         qr: qrImageBase64
