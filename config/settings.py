@@ -14,7 +14,6 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    # 👉 Agrega la librería aquí arriba
     'admin_material',
     
     'django.contrib.admin',
@@ -42,12 +41,9 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware', # 💥 AÑADIDO: Entrega CSS/JS a máxima velocidad
     'django.contrib.sessions.middleware.SessionMiddleware',  # 👈 requerido
     'django.middleware.common.CommonMiddleware',
-
     'django.middleware.csrf.CsrfViewMiddleware',
-
     'django.contrib.auth.middleware.AuthenticationMiddleware',  # 👈 requerido
     'django.contrib.messages.middleware.MessageMiddleware',  # 👈 requerido
-
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     'apps.core.middleware.NoCacheMiddleware',
@@ -60,9 +56,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_torreblanca', # Ej: bd_torreblanca
-        'USER': 'root', # Por lo general en XAMPP es root
-        'PASSWORD': '', # Por lo general en XAMPP está en blanco
+        'NAME': 'db_torreblanca', 
+        'USER': 'root', 
+        'PASSWORD': '', 
         'HOST': 'localhost',
         'PORT': '3306',
         
@@ -104,14 +100,16 @@ LOGIN_REDIRECT_URL = 'personal:enrutador_principal'
 LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = 'login'
 
+# =========================================================
+# CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS
+# =========================================================
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static') # 👉 Apunta a tu nueva carpeta static
+    os.path.join(BASE_DIR, 'static') 
 ]
 
-# 💥 NUEVO: Rutas de producción para Railway
+# Carpeta raíz donde Railway recolectará todo en producción
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # =========================================================
 # CONFIGURACIÓN DE ARCHIVOS MULTIMEDIA (LOCAL VS AWS S3)
@@ -128,13 +126,21 @@ if USE_S3:
     AWS_S3_FILE_OVERWRITE = False # Evita que archivos con el mismo nombre se chanquen
     AWS_DEFAULT_ACL = None 
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-    
-    # Le decimos a Django que mande los subidas (media) a S3
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 else:
     # 💥 Entorno Local (Tu PC / XAMPP)
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 🚀 MOTOR DE ALMACENAMIENTO UNIFICADO (Django 4.2+)
+# Controla dinámicamente WhiteNoise y AWS S3 sin romper compatibilidades
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage" if USE_S3 else "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Opcional pero MUY recomendado para permitir iframes del mismo dominio
 X_FRAME_OPTIONS = 'SAMEORIGIN'
@@ -147,19 +153,18 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok.io',
 ]
 
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False 
-SESSION_COOKIE_AGE = 1209600  # Duración por defecto si se mantiene iniciada: 2 semanas (en segundos)
-
 if not DEBUG:
     # 1. Forzar HTTPS y HSTS (W008, W004)
-    SECURE_SSL_REDIRECT = True
+    # Nota: Removí el redireccionamiento estricto aquí por si genera bucles con el proxy HTTP de Railway
     SECURE_HSTS_SECONDS = 31536000  # Obliga a usar HTTPS por 1 año
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
     # 2. Cookies Encriptadas (W012, W016)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # IMPORTANTE: Descomenta estas líneas solo si ya tienes HTTPS activo en tu dominio de Railway
+    # SECURE_SSL_REDIRECT = True
+    # SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True
 
     # 3. Protección Anti-Clickjacking (W019)
     X_FRAME_OPTIONS = 'DENY'
@@ -177,25 +182,14 @@ CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 # ==========================================
 # CONFIGURACIÓN DEL MICROSERVICIO DE WHATSAPP
 # ==========================================
-# Reemplaza esto con la URL real que te dio Railway
 WHATSAPP_BOT_URL = 'https://botcomunicacion-ws.up.railway.app'
 
 # ==========================================
-# 🔐 SEGURIDAD DE SESIONES Y COOKIES
+# 🔐 SEGURIDAD DE SESIONES Y COOKIES (SISTEMA HÍBRIDO)
 # ==========================================
-
-# 1. Tiempo de inactividad (Ejemplo: 30 minutos = 1800 segundos)
-# Si el usuario no hace clic en nada por 30 minutos, la sesión muere.
-SESSION_COOKIE_AGE = 1800 
-
-# 2. Renovar el tiempo con cada acción
-# Cada vez que el profesor guarde una nota o cambie de página, el reloj de 30 minutos vuelve a cero.
-SESSION_SAVE_EVERY_REQUEST = True 
-
-# 3. Muerte al cerrar el navegador (Vital para cabinas o sala de profes)
-# Si el profe simplemente le da a la "X" roja del navegador sin cerrar sesión,
-# el alumno no podrá presionar "Ctrl + Shift + T" para revivir la pestaña.
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 1800  # 30 minutos por defecto (Será sobreescrito a 2 semanas por el login si marca "Remember Me")
+SESSION_SAVE_EVERY_REQUEST = True  # Reinicia el contador de inactividad con cada clic
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Destruye la sesión al cerrar el navegador si no se usó el "Remember Me"
 
 # 💥 IPs permitidas para ver el Debug Toolbar
 #INTERNAL_IPS = [
