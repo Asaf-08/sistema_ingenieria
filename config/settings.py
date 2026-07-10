@@ -142,6 +142,9 @@ STORAGES = {
     },
 }
 
+# 💥 NUEVO: Le dice a WhiteNoise que ignore archivos .map o fuentes faltantes y no detenga el despliegue
+WHITENOISE_MANIFEST_STRICT = False
+
 # Opcional pero MUY recomendado para permitir iframes del mismo dominio
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
