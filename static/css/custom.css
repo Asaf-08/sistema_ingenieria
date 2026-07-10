@@ -471,3 +471,8 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 .vista-matriz .dataTables_filter input { margin-left: 0.5rem; border-radius: 0.5rem; border: 1px solid #d2d6da; padding: 0.3rem 0.75rem; }
 .vista-matriz .dataTables_filter input:focus { border-color: #f57c00; outline: 0; }
 .vista-matriz .dt-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+/* 💥 OPTIMIZACIÓN LIGHTHOUSE: Desactivar animaciones costosas de CPU en DataTables */
+.dataTables_length select.form-select {
+    transition: none !important;
+}
