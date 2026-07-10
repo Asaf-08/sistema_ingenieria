@@ -105,7 +105,7 @@ LOGIN_URL = 'login'
 # =========================================================
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static') 
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 # Carpeta raíz donde Railway recolectará todo en producción
@@ -131,14 +131,13 @@ else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 🚀 MOTOR DE ALMACENAMIENTO UNIFICADO (Django 4.2+)
-# Controla dinámicamente WhiteNoise y AWS S3 sin romper compatibilidades
+# 🚀 MOTOR DE ALMACENAMIENTO (Optimizado para Railway)
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage" if USE_S3 else "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", # 💥 CAMBIO AQUÍ: Menos estricto, evita errores de .map
     },
 }
 
