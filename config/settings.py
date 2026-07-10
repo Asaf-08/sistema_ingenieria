@@ -131,17 +131,16 @@ else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 🚀 MOTOR DE ALMACENAMIENTO (Optimizado para Railway)
+# 🚀 MOTOR DE ALMACENAMIENTO UNIFICADO (Django 4.2+ / 5.x)
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage" if USE_S3 else "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", # 💥 CAMBIO AQUÍ: Menos estricto, evita errores de .map
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage", # 💥 LE DEVOLVEMOS LA PALABRA 'Manifest'
     },
 }
 
-# 💥 NUEVO: Le dice a WhiteNoise que ignore archivos .map o fuentes faltantes y no detenga el despliegue
 WHITENOISE_MANIFEST_STRICT = False
 
 # Opcional pero MUY recomendado para permitir iframes del mismo dominio
