@@ -180,6 +180,23 @@ CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 # Reemplaza esto con la URL real que te dio Railway
 WHATSAPP_BOT_URL = 'https://botcomunicacion-ws.up.railway.app'
 
+# ==========================================
+# 🔐 SEGURIDAD DE SESIONES Y COOKIES
+# ==========================================
+
+# 1. Tiempo de inactividad (Ejemplo: 30 minutos = 1800 segundos)
+# Si el usuario no hace clic en nada por 30 minutos, la sesión muere.
+SESSION_COOKIE_AGE = 1800 
+
+# 2. Renovar el tiempo con cada acción
+# Cada vez que el profesor guarde una nota o cambie de página, el reloj de 30 minutos vuelve a cero.
+SESSION_SAVE_EVERY_REQUEST = True 
+
+# 3. Muerte al cerrar el navegador (Vital para cabinas o sala de profes)
+# Si el profe simplemente le da a la "X" roja del navegador sin cerrar sesión,
+# el alumno no podrá presionar "Ctrl + Shift + T" para revivir la pestaña.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # 💥 IPs permitidas para ver el Debug Toolbar
 #INTERNAL_IPS = [
 #    '127.0.0.1',

@@ -80,9 +80,14 @@
             <input type="text" name="{{ form.username.name }}" class="form-control form-control-lg" required autofocus autocomplete="username">
           </div>
 
-          <div class="input-group input-group-outline mb-3">
+          <div class="input-group input-group-outline mb-3 position-relative">
             <label class="form-label">Contraseña</label>
-            <input type="password" name="{{ form.password.name }}" class="form-control form-control-lg" required autocomplete="current-password">
+            <input type="password" id="passwordInput" name="{{ form.password.name }}" class="form-control form-control-lg" required autocomplete="current-password" style="padding-right: 48px;">
+            
+            <!-- Botón del ojo mejorado -->
+            <span class="position-absolute end-0 top-50 translate-middle-y me-2 d-flex align-items-center justify-content-center toggle-eye-btn" id="togglePassword" style="z-index: 10;">
+              <i class="material-symbols-rounded text-secondary" id="toggleIcon" style="font-size: 22px; transition: color 0.3s ease;">visibility</i>
+            </span>
           </div>
 
           <div class="form-check form-switch d-flex align-items-center mb-4 ps-0">

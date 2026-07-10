@@ -64,6 +64,13 @@ function inicializarCalendarioEditor() {
         editable: true,
         selectMirror: true,
 
+        // ==========================================
+        // 📱 AJUSTES DE SENSIBILIDAD PARA MÓVILES
+        // ==========================================
+        longPressDelay: 200,       // Tiempo para considerar un toque como un "clic" general
+        selectLongPressDelay: 200, // Tiempo para activar la selección de celdas vacías
+        eventLongPressDelay: 200,  // Tiempo para poder arrastrar un evento existente
+
         // 💥 CONTROL DEL ALTO: Ajuste exacto para que se corte en la última hora (18:00)
         height: 'auto', // Esto obliga a las celdas a tener el alto exacto de sus slots sin estirarse abajo
         contentHeight: 'auto',

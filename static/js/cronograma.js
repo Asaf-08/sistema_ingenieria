@@ -44,6 +44,13 @@ function inicializarCalendario() {
         selectable: esCoordinadorActivo,
         height: 'auto',
 
+        // ==========================================
+        // 📱 AJUSTES DE SENSIBILIDAD PARA MÓVILES
+        // ==========================================
+        longPressDelay: 200,       // Tiempo para considerar un toque como un "clic" general
+        selectLongPressDelay: 200, // Tiempo para activar la selección de celdas vacías
+        eventLongPressDelay: 200,  // Tiempo para poder arrastrar un evento existente
+
         // 💥 DISEÑO PREMIUM (Íconos + Negrita)
         eventContent: function(arg) {
             let esTodoElDia = arg.event.allDay;

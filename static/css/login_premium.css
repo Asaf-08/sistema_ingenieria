@@ -209,3 +209,22 @@ input:-webkit-autofill:active {
     z-index: 1 !important;
     position: relative;
 }
+
+/* Estilos para el botón de la contraseña */
+.toggle-eye-btn {
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Efecto circular oscuro al pasar el mouse (Hover) */
+.toggle-eye-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Oscurecer el ícono cuando se pasa el mouse */
+.toggle-eye-btn:hover #toggleIcon {
+  color: #fb8c00 !important; /* Tono oscuro de Material Dashboard */
+}

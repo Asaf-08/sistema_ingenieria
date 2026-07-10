@@ -4,7 +4,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#fb8c00",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/static/assets/img/logo_colegio.webp",

@@ -9,6 +9,47 @@
   .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
   .btn-mega { height: 80px; font-size: 1.1rem; border-radius: 15px; }
   .btn-mega i { font-size: 2rem !important; }
+  
+  /* ==================================================
+     📱 MODO APP GRID (SOLO PARA CELULARES)
+     ================================================== */
+  @media (max-width: 767.98px) {
+    .btn-mega {
+      height: 105px !important; /* Más cuadrado */
+      flex-direction: column !important; /* Ícono arriba, texto abajo */
+      justify-content: center !important;
+      padding: 10px 5px !important;
+      border-radius: 20px !important; /* Bordes más curvos estilo iOS */
+    }
+    
+    .btn-mega .rounded-circle {
+      margin-right: 0 !important; /* Quitamos el margen lateral */
+      margin-bottom: 8px !important; /* Espacio entre ícono y texto */
+      width: 42px !important;
+      height: 42px !important;
+      padding: 0 !important;
+      justify-content: center; /* Centrado perfecto del ícono */
+    }
+    
+    .btn-mega .rounded-circle i {
+      font-size: 1.4rem !important; /* Ícono adaptado al nuevo círculo */
+    }
+    
+    .btn-mega .text-start {
+      text-align: center !important; /* Centramos el texto */
+      width: 100%;
+    }
+    
+    .btn-mega .text-lg {
+      font-size: 0.70rem !important; /* Letra pequeña de App */
+      line-height: 1.2 !important;
+      white-space: normal !important; /* Permitir que el texto salte a 2 líneas */
+    }
+    
+    .btn-mega .opacity-8 {
+      display: none !important; /* Escondemos el subtítulo en móvil para un diseño más limpio */
+    }
+  }
 </style>
 {% endblock extra_css %}
 
@@ -111,29 +152,33 @@
   <div class="row mt-4">
     <div class="col-12">
       <h6 class="text-dark font-weight-bold mb-3"><i class="material-symbols-rounded align-middle me-2 text-primary">touch_app</i>Accesos Rápidos</h6>
-      <div class="row">
-        <div class="col-12 col-md-4 mb-3">
-          <a href="{% url 'personal:mis_cursos' %}" class="btn bg-gradient-primary w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
-            <div class="bg-white text-primary rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">edit_square</i></div>
+      
+      <div class="row gx-2">
+        
+        <div class="col mb-3">
+          <a href="{% url 'personal:mis_cursos' %}" class="btn bg-gradient-primary w-100 btn-mega d-flex align-items-center justify-content-start px-md-4 px-2 shadow-sm card-hover">
+            <div class="bg-white text-primary rounded-circle p-2 me-md-3 d-flex align-items-center justify-content-center"><i class="material-symbols-rounded">edit_square</i></div>
             <div class="text-start">
               <span class="d-block text-lg font-weight-bold text-white text-capitalize">Registrar Notas</span>
               <span class="d-block text-xs text-white opacity-8 text-lowercase">evaluaciones y desafíos</span>
             </div>
           </a>
         </div>
-        <div class="col-12 col-md-4 mb-3">
-          <a href="{% url 'personal:centro_materiales' %}" class="btn bg-gradient-info w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
-            <div class="bg-white text-info rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">cloud_upload</i></div>
+        
+        <div class="col mb-3">
+          <a href="{% url 'personal:centro_materiales' %}" class="btn bg-gradient-info w-100 btn-mega d-flex align-items-center justify-content-start px-md-4 px-2 shadow-sm card-hover">
+            <div class="bg-white text-info rounded-circle p-2 me-md-3 d-flex align-items-center justify-content-center"><i class="material-symbols-rounded">cloud_upload</i></div>
             <div class="text-start">
               <span class="d-block text-lg font-weight-bold text-white text-capitalize">Subir Materiales</span>
               <span class="d-block text-xs text-white opacity-8 text-lowercase">fichas, desafíos y sesiones</span>
             </div>
           </a>
         </div>
+        
         {% if aula_tutoria %}
-        <div class="col-12 col-md-4 mb-3">
-          <a href="{% url 'academico:mi_aula' %}" class="btn bg-gradient-warning w-100 btn-mega d-flex align-items-center justify-content-start px-4 shadow-sm card-hover">
-            <div class="bg-white text-warning rounded-circle p-2 me-3 d-flex"><i class="material-symbols-rounded">psychology</i></div>
+        <div class="col mb-3">
+          <a href="{% url 'academico:mi_aula' %}" class="btn bg-gradient-warning w-100 btn-mega d-flex align-items-center justify-content-start px-md-4 px-2 shadow-sm card-hover">
+            <div class="bg-white text-warning rounded-circle p-2 me-md-3 d-flex align-items-center justify-content-center"><i class="material-symbols-rounded">psychology</i></div>
             <div class="text-start">
               <span class="d-block text-lg font-weight-bold text-white text-capitalize">Panel de Tutoría</span>
               <span class="d-block text-xs text-white opacity-8 text-lowercase">análisis de IA del aula</span>
@@ -141,6 +186,7 @@
           </a>
         </div>
         {% endif %}
+        
       </div>
     </div>
   </div>
