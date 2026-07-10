@@ -104,7 +104,7 @@ LOGIN_REDIRECT_URL = 'personal:enrutador_principal'
 LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = 'login'
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static') # 👉 Apunta a tu nueva carpeta static
 ]
