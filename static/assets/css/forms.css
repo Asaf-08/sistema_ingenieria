@@ -513,7 +513,6 @@ body.popup .submit-row {
 .inline-group ul.tools a.add,
 .inline-group div.add-row a,
 .inline-group .tabular tr.add-row td a {
-    background: url(../images/icon-addlink.svg) 0 1px no-repeat;
     padding-left: 16px;
     font-size: 12px;
 }
@@ -535,7 +534,6 @@ body.popup .submit-row {
 .add-another {
     width: 16px;
     height: 16px;
-    background-image: url(../images/icon-addlink.svg);
 }
 
 .related-lookup {
