@@ -68,8 +68,7 @@ function inicializarCalendarioHorario() {
         eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short', hour12: true },
 
         // 💥 CONTROL DEL ALTO: Ajuste exacto para que se corte en la última hora (18:00)
-        height: 'auto', // Esto obliga a las celdas a tener el alto exacto de sus slots sin estirarse abajo
-        contentHeight: 'auto',
+        height: $(window).height() * 0.55, // Esto obliga a las celdas a tener el alto exacto de sus slots sin estirarse abajo
 
         events: function(info, successCallback, failureCallback) {
             let docenteId = $('#filtroDocente').val();

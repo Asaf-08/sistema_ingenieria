@@ -402,7 +402,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 #calendario-horario .fc-timegrid-slot-label-cushion, #calendar-editor-aula .fc-timegrid-slot-label-cushion { 
     font-weight: 700; color: #7b809a; font-size: 0.8rem; padding-top: 10px !important;
 }
-#calendario-horario .fc-timegrid-slot, #calendar-editor-aula .fc-timegrid-slot { height: 3.5em !important; }
+#calendario-horario .fc-timegrid-slot, #calendar-editor-aula .fc-timegrid-slot { height: 5.0em !important; }
 #calendario-horario .fc-event { cursor: pointer !important; transition: transform 0.1s ease; }
 #calendario-horario .fc-event:hover { transform: scale(1.02); }
 #calendar-editor-aula .fc-event { cursor: move !important; padding: 4px; }

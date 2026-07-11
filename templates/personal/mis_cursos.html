@@ -84,7 +84,8 @@
     {% regroup asignaciones by aula as aulas_list %}
     <div class="row mb-2 gx-2">
         {% for aula_group in aulas_list %}
-            {% if personal == aula_group.grouper.tutor or request.user.personal_set.first == aula_group.grouper.tutor %}
+            
+            {% if aula_group.grouper.tutor and aula_group.grouper.tutor.id == personal.id %}
             <div class="col-12 mb-2">
                 <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-0 px-2">Mi Aula a Cargo (Tutoría)</h6>
             </div>
