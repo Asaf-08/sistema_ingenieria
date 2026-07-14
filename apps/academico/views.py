@@ -7,6 +7,7 @@ import os
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.timezone import localtime, now
+from django.utils import timezone
 from httpx import request
 from pydantic import ValidationError
 from apps.comunicaciones.models import Notificacion, User
@@ -565,7 +566,6 @@ def panel_supervision(request):
         return render(request, 'errores/sin_perfil.html', {'mensaje': 'Sin perfil activo.'})
 
     # Asumimos que tienes un campo 'rol' o similar (ej: 'COORDINADOR', 'DOCENTE')
-    # Corrección rápida en tu views.py dentro de panel_supervision:
     es_coordinador = personal_actual.cargo in ['COO', 'DIR'] or request.user.is_superuser
 
     materiales = MaterialInstitucional.objects.all()
@@ -578,6 +578,58 @@ def panel_supervision(request):
     else:
         # El docente solo ve sus propias entregas
         evidencias = EvidenciaDocente.objects.filter(docente=personal_actual)
+    
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+
+    # Lo que DEBEN cumplir
+    asignaciones = AsignacionAcademica.objects.filter(periodo=periodo_actual).select_related('personal', 'curso', 'aula')
+    
+    # Lo que HAN cumplido
+    solicitudes = SolicitudImpresion.objects.filter(asignacion__periodo=periodo_actual).prefetch_related('archivos').order_by('-fecha_subida')
+    
+    # 💥 Obtenemos los simulacros completados de forma rápida
+    entregas_simulacro = set(EntregaSimulacro.objects.filter(finalizado=True).values_list('curso_id', 'docente_id'))
+    
+    matriz_cumplimiento = []
+    for asig in asignaciones:
+        sols_asig = [s for s in solicitudes if s.asignacion_id == asig.id]
+        
+        # Empaquetamos qué temas y qué exámenes ya subió este profesor
+        temas_dict = {}
+        for s in sols_asig:
+            temas_dict[s.tema] = True # Registramos el Tema (TEMA_1, TEMA_2, etc.)
+            
+            # Revisamos dentro de los archivos por si hay un examen
+            tipos_archivos = [a.tipo for a in s.archivos.all()]
+            if 'CALIDAD' in tipos_archivos:
+                temas_dict['CALIDAD'] = True
+            if 'ISO' in tipos_archivos:
+                temas_dict['ISO'] = True
+                
+        tiene_simulacro = (asig.curso_id, asig.personal_id) in entregas_simulacro
+        
+        # 💥 SEMÁFORO GLOBAL DE COLORES
+        if sols_asig and tiene_simulacro:
+            estado_color = 'success' # Verde (Todo al día)
+            icono = 'check_circle'
+        elif sols_asig:
+            estado_color = 'warning' # Naranja (En progreso)
+            icono = 'schedule'
+        else:
+            estado_color = 'danger'  # Rojo (Falta todo)
+            icono = 'cancel'
+            
+        matriz_cumplimiento.append({
+            'asignacion_id': asig.id,
+            'docente': f"{asig.personal.apellidos}, {asig.personal.nombres}",
+            'aula_texto': f"{asig.aula.nivel} - {asig.aula.grado} {asig.aula.seccion}",
+            'curso': asig.curso.nombre,
+            'estado_color': estado_color,
+            'icono': icono,
+            'total_envios': len(sols_asig),
+            'temas_json': json.dumps(temas_dict), # Magia pura para el Frontend
+            'tiene_simulacro': tiene_simulacro,
+        })
 
     return render(request, 'academico/panel_supervision.html', {
         'es_coordinador': es_coordinador,
@@ -586,8 +638,27 @@ def panel_supervision(request):
         'form_material': form_material,
         'form_evidencia': form_evidencia,
         'personal': personal_actual,
+        'matriz_cumplimiento': matriz_cumplimiento,  # 💥 Enviamos la nueva variable al HTML
         'segment': 'supervision'
     })
+
+# 💥 NUEVA VISTA: Para cargar el historial en el Modal
+@login_required
+def auditoria_materiales_ajax(request, asignacion_id):
+    asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
+    solicitudes = SolicitudImpresion.objects.filter(asignacion=asignacion).prefetch_related('archivos').order_by('-fecha_subida')
+    
+    data = []
+    for s in solicitudes:
+        archivos = [{'tipo': a.get_tipo_display(), 'url': a.archivo.url} for a in s.archivos.all()]
+        data.append({
+            'tema': s.get_tema_display(),
+            'fecha': timezone.localtime(s.fecha_subida).strftime('%d/%m/%Y %I:%M %p'),
+            'estado': s.get_estado_display(),
+            'archivos': archivos,
+            'instrucciones': s.instrucciones or 'Sin instrucciones adicionales'
+        })
+    return JsonResponse({'success': True, 'historial': data})
 
 @login_required
 @require_POST
@@ -766,7 +837,8 @@ def api_calendario_eventos(request):
                 'hora_inicio_raw': e.hora_inicio.strftime('%H:%M') if e.hora_inicio else '',
                 'hora_fin_raw': e.hora_fin.strftime('%H:%M') if e.hora_fin else '',
                 'color_raw': e.color,
-                'aula_id': e.aula_afectada.id if e.aula_afectada else ''
+                'aula_id': e.aula_afectada.id if e.aula_afectada else '',
+                'tipo_academico': e.tipo_academico,
             }
         })
 
@@ -2081,3 +2153,71 @@ def configuracion_institucion(request):
         'form': form, 
         'institucion': institucion
     })
+
+@login_required
+@require_POST
+def clonar_horario_ajax(request):
+    """ API para clonar horarios de un año escolar a otro """
+    periodo_origen_id = request.POST.get('periodo_origen')
+    periodo_destino_id = request.POST.get('periodo_destino')
+    
+    if not periodo_origen_id or not periodo_destino_id:
+        return JsonResponse({'success': False, 'mensaje': 'Debe seleccionar el periodo de origen y destino.'})
+        
+    if periodo_origen_id == periodo_destino_id:
+        return JsonResponse({'success': False, 'mensaje': 'El periodo de origen y destino no pueden ser el mismo.'})
+        
+    periodo_origen = get_object_or_404(PeriodoLectivo, id=periodo_origen_id)
+    periodo_destino = get_object_or_404(PeriodoLectivo, id=periodo_destino_id)
+    
+    # 1. Seguridad: Verificamos si el año nuevo ya tiene horarios (para evitar duplicados masivos)
+    if HorarioClase.objects.filter(periodo=periodo_destino).exists():
+        return JsonResponse({
+            'success': False, 
+            'mensaje': f'El {periodo_destino} ya contiene horarios registrados. Vacíelo antes de intentar clonar encima.'
+        })
+        
+    horarios_origen = HorarioClase.objects.filter(periodo=periodo_origen)
+    
+    if not horarios_origen.exists():
+        return JsonResponse({'success': False, 'mensaje': f'No hay horarios registrados en el {periodo_origen} para copiar.'})
+        
+    horarios_nuevos = []
+    conteo_exito = 0
+    conteo_vacantes = 0
+    
+    # 2. Iteramos y aplicamos la inteligencia de retención de personal
+    for h in horarios_origen:
+        docente_clonado = h.personal
+        
+        # Si el profesor ya no está 'Activo' en el colegio, el bloque se queda en None (Vacante)
+        if docente_clonado and docente_clonado.estado != 'Activo':
+            docente_clonado = None
+            conteo_vacantes += 1
+        elif docente_clonado:
+            conteo_exito += 1
+        else:
+            conteo_vacantes += 1 # Ya estaba vacante desde el año pasado
+            
+        horarios_nuevos.append(
+            HorarioClase(
+                personal=docente_clonado,
+                aula=h.aula,
+                curso=h.curso,
+                periodo=periodo_destino,
+                color=h.color,
+                dia_semana=h.dia_semana,
+                hora_inicio=h.hora_inicio,
+                hora_fin=h.hora_fin
+            )
+        )
+        
+    # 3. 💥 OPTIMIZACIÓN SENIOR: Insertamos todo de un solo golpe en la BD
+    try:
+        HorarioClase.objects.bulk_create(horarios_nuevos)
+        return JsonResponse({
+            'success': True, 
+            'mensaje': f'Clonación exitosa: {conteo_exito} horas con docente asignado y {conteo_vacantes} horas vacantes por reasignar.'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': f'Error en el servidor al clonar: {str(e)}'})

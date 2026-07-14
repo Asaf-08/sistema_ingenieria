@@ -40,56 +40,6 @@
 </div>
 
 {% if es_coordinador %}
-<div class="modal fade" id="modalHorario" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-radius-xl">
-      <div class="modal-header bg-gradient-info">
-        <h5 class="modal-title text-white">Asignar Horario de Clase</h5>
-        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form id="formHorario" method="POST" onsubmit="guardarHorario(event)">
-        {% csrf_token %}
-        <div class="modal-body p-4">
-          <div class="row">
-            <div class="col-md-12 mb-3">
-              <label>Docente</label>
-              {{ form_horario.personal }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Aula</label>
-              {{ form_horario.aula }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Curso</label>
-              {{ form_horario.curso }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Periodo Lectivo</label>
-              {{ form_horario.periodo }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Día de la Semana</label>
-              {{ form_horario.dia_semana }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Hora Inicio</label>
-              {{ form_horario.hora_inicio }}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Hora Fin</label>
-              {{ form_horario.hora_fin }}
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" id="btnGuardarHorario" class="btn bg-gradient-info">Guardar Asignación</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 <div class="modal fade" id="modalEvento" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-radius-xl shadow-lg">
@@ -105,6 +55,12 @@
           <div class="input-group input-group-static mb-3">
             <label class="font-weight-bold">Título del Aviso / Recordatorio</label>
             {{ form_evento.titulo }}
+          </div>
+
+          <div class="input-group input-group-static mb-4 bg-gray-100 p-2 border-radius-md" style="border-left: 4px solid #17c1e8;">
+            <label class="font-weight-bold text-info"><i class="material-symbols-rounded align-middle text-sm me-1">smart_toy</i> Hito Académico (Para Alertas Automáticas)</label>
+            {{ form_evento.tipo_academico }}
+            <p class="text-xs text-secondary mt-1 mb-0">Si seleccionas un hito, el sistema usará estas fechas para automatizar los plazos de entrega del colegio.</p>
           </div>
           
           <div class="row">

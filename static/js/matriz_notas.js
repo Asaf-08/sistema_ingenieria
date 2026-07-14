@@ -5,7 +5,7 @@ $(document).ready(function() {
             info: false,         
             ordering: false,     // Mantiene el orden alfabético estricto
             language: { 
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
+                url: "/static/plugins/datatables/js/es-ES.json",
                 emptyTable: "No hay alumnos matriculados o evaluaciones registradas en este bimestre."
             },
             

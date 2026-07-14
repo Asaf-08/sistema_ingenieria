@@ -134,6 +134,7 @@ function abrirModalCrearEvento(info) {
     $('#formEvento')[0].reset();
     $('#evento_id').val('');
     $('#id_fecha_inicio').val(info.startStr.split('T')[0]);
+    $('#id_tipo_academico').val('NINGUNO');
     
     let fechaFin = info.endStr ? info.endStr.split('T')[0] : info.startStr.split('T')[0];
     if (info.allDay && info.end) {
@@ -167,6 +168,7 @@ function abrirModalDetalleEvento(evento) {
         $('#evento_id').val(props.db_id);
         $('#id_titulo').val(evento.title);
         $('#id_fecha_inicio').val(evento.startStr.split('T')[0]);
+        $('#id_tipo_academico').val(props.tipo_academico);
         
         let fechaFin = evento.endStr ? evento.endStr.split('T')[0] : evento.startStr.split('T')[0];
         if (evento.allDay && evento.end) {
@@ -259,24 +261,6 @@ function ejecutarEliminacionDesdeModal() {
                     mostrarErroresModal({'Servidor': ['Fallo de red al intentar eliminar.']});
                 }
             });
-        }
-    });
-}
-
-// 💥 FUNCIÓN RESTAURADA: Evita que el botón de Guardar Horario arroje un error
-function guardarHorario(event) {
-    event.preventDefault();
-    $.ajax({
-        url: '/academico/cronograma/horario/guardar/', 
-        type: 'POST',
-        data: $('#formHorario').serialize(),
-        success: function(data) {
-            if (data.success) {
-                $('#modalHorario').modal('hide');
-                mostrarNotificacionExito('Horario asignado exitosamente.');
-            } else {
-                mostrarErroresModal({'Error': [data.mensaje || 'No se pudo asignar el horario.']});
-            }
         }
     });
 }

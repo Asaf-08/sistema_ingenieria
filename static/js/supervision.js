@@ -10,6 +10,90 @@ $(document).ready(function () {
     
     // 💥 INICIALIZAR EL DRAG & DROP PARA EVIDENCIAS (Docente)
     setupDropzone('id_archivo_evidencia', 'dropzone-evidencia', 'contenedor-preview-evidencia', 'img-preview-evidencia', 'pdf-preview-evidencia', 'doc-preview-evidencia', 'doc-name-evidencia', 'btn-remover-evidencia');
+
+    if ($('#tabla-matriz-cumplimiento').length) {
+        var tablaAuditoria = $('#tabla-matriz-cumplimiento').DataTable({
+            "language": { "url": "/static/plugins/datatables/js/es-ES.json",
+                paginate: {
+                    first: "Primero",
+                    last: "Último",
+                    next: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_right</i>',
+                    previous: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_left</i>'
+                },
+             },
+            "responsive": true,
+            "pageLength": 15,
+            "dom": '<"d-flex justify-content-between px-4 pt-3"f>t<"d-flex justify-content-between px-4 pb-3"ip>'
+        });
+        
+        // Estilizar buscador nativo
+        $('#tabla-matriz-cumplimiento_filter input').addClass('form-control border-bottom border-2 px-3 py-1').attr('placeholder', 'Buscar docente...');
+        $('#tabla-matriz-cumplimiento_filter label').contents().filter(function() { return this.nodeType === 3; }).remove();
+
+        // 💥 AUTO-LLENAR LOS SELECTS DE AULA Y CURSO LEYENDO LA TABLA
+        // Columna 1 es Aula, Columna 2 es Curso
+        tablaAuditoria.column(1).data().unique().sort().each(function(d, j) {
+            $('#filtroAulaAuditoria').append('<option value="'+d+'">'+d+'</option>');
+        });
+        tablaAuditoria.column(2).data().unique().sort().each(function(d, j) {
+            $('#filtroCursoAuditoria').append('<option value="'+d+'">'+d+'</option>');
+        });
+
+        // 💥 MOTOR DE BÚSQUEDA PERSONALIZADA PARA LOS SEMÁFOROS Y SELECTS
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (settings.nTable.id !== 'tabla-matriz-cumplimiento') return true;
+
+            let fAula = $('#filtroAulaAuditoria').val();
+            let fCurso = $('#filtroCursoAuditoria').val();
+            let fFicha = $('#filtroFichaAuditoria').val();   // "SI" o "NO"
+            let fExamen = $('#filtroExamenAuditoria').val(); // "SI" o "NO"
+
+            // Las columnas en 'data[]' inician en 0:
+            // data[1] = Aula, data[2] = Curso, data[4] = Ficha, data[6] = Examen
+            if (fAula && data[1].indexOf(fAula) === -1) return false;
+            if (fCurso && data[2].indexOf(fCurso) === -1) return false;
+            
+            // Evaluamos los checks (recuerda el <span class="d-none"> oculto que pusimos)
+            if (fFicha && data[4].indexOf(fFicha) === -1) return false;
+            if (fExamen && data[6].indexOf(fExamen) === -1) return false;
+
+            return true;
+        });
+
+        // Evento para que la tabla reaccione al instante cuando se cambia cualquier Select
+        $('#filtroAulaAuditoria, #filtroCursoAuditoria, #filtroFichaAuditoria, #filtroExamenAuditoria').on('change', function() {
+            tablaAuditoria.draw();
+        });
+    }
+
+    // 💥 1. REACTIVIDAD: Transformar la columna según el Select
+    $('#filtroTemaDinamico').on('change', function() {
+        let valorFiltro = $(this).val();
+        
+        // Cambiamos el título de la columna
+        if(valorFiltro === 'GENERAL') {
+            $('#th-dinamico').text('Progreso General');
+        } else {
+            $('#th-dinamico').text('Estado: ' + $("#filtroTemaDinamico option:selected").text());
+        }
+
+        // Recorremos todas las filas de la tabla
+        $('.celda-dinamica').each(function() {
+            let temasData = $(this).data('temas'); // jQuery lee el JSON automáticamente
+            let total = $(this).data('total');
+            
+            if (valorFiltro === 'GENERAL') {
+                $(this).html(`<span class="badge bg-gradient-secondary">${total} envíos realizados</span>`);
+            } else {
+                // Buscamos si el tema o examen elegido existe en el JSON de esta fila
+                if (temasData[valorFiltro]) {
+                    $(this).html(`<span class="badge bg-gradient-success px-3"><i class="material-symbols-rounded text-sm align-middle me-1">check</i> Entregado</span>`);
+                } else {
+                    $(this).html(`<span class="badge bg-gradient-danger px-3"><i class="material-symbols-rounded text-sm align-middle me-1">close</i> Pendiente</span>`);
+                }
+            }
+        });
+    });
 });
 
 // ===============================================
@@ -237,6 +321,39 @@ function guardarRevision(event) {
         },
         complete: function() {
             btn.disabled = false;
+        }
+    });
+}
+
+// 💥 2. LA API PARA EL MODAL DE DETALLE
+function abrirHistorialMateriales(asignacionId) {
+    $('#modalHistorialMateriales').modal('show');
+    $('#contenidoHistorial').html('<div class="text-center py-5"><div class="spinner-border text-info"></div></div>');
+    
+    $.get('/academico/supervision/auditoria-materiales/' + asignacionId + '/', function(response) {
+        if(response.success) {
+            let html = '';
+            if(response.historial.length === 0) {
+                html = '<div class="alert alert-dark text-center text-white">Aún no se han enviado materiales para esta clase.</div>';
+            } else {
+                response.historial.forEach(h => {
+                    let archivosHtml = h.archivos.map(a => `<a href="${a.url}" target="_blank" class="badge bg-gradient-info text-white me-1 mb-1" style="text-transform: none;"><i class="material-symbols-rounded text-xs align-middle">download</i> ${a.tipo}</a>`).join('');
+                    
+                    html += `
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0 text-dark font-weight-bold">${h.tema}</h6>
+                                <span class="badge bg-gradient-secondary">${h.estado}</span>
+                            </div>
+                            <p class="text-xs text-muted mb-2"><i class="material-symbols-rounded text-xs align-middle">schedule</i> Enviado el ${h.fecha}</p>
+                            <div class="mb-3">${archivosHtml}</div>
+                            <p class="text-xs text-dark mb-0 bg-light p-2 border-radius-md" style="border-left: 3px solid #17c1e8;"><strong>Indicaciones:</strong> ${h.instrucciones}</p>
+                        </div>
+                    </div>`;
+                });
+            }
+            $('#contenidoHistorial').html(html);
         }
     });
 }

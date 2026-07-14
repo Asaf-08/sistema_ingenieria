@@ -25,10 +25,20 @@ class Comunicado(models.Model):
         ('NORMAL', 'Normal'),
         ('URGENTE', 'Urgente'),
     )
+    
+    AUDIENCIAS = (
+        ('TODOS', 'Todo el Personal (General)'),
+        ('DOCENTES', 'Todos los Docentes'),
+        ('ADMINISTRATIVOS', 'Personal Administrativo'),
+        ('PERSONALIZADO', 'Personalizado (Filtros Avanzados)...'),
+    )
 
     titulo = models.CharField(max_length=200, verbose_name="Título del Comunicado")
     mensaje = models.TextField(verbose_name="Mensaje")
     importancia = models.CharField(max_length=20, choices=NIVELES_IMPORTANCIA, default='NORMAL', db_index=True)
+    
+    audiencia = models.CharField(max_length=20, choices=AUDIENCIAS, default='TODOS', db_index=True)
+    destinatarios_especificos = models.ManyToManyField('personal.Personal', blank=True, related_name='comunicados_especificos')
     
     # 💥 Optimizado: Agregamos el validador de peso aquí
     archivo_adjunto = models.FileField(

@@ -409,7 +409,16 @@ class HorarioClase(models.Model):
         ('VI', 'Viernes'),
     ]
 
-    personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='horarios', limit_choices_to={'cargo': 'DOC'}, verbose_name="Docente")
+    # 💥 OPTIMIZADO: Ahora es opcional y seguro ante eliminaciones (SET_NULL)
+    personal = models.ForeignKey(
+        Personal, 
+        on_delete=models.SET_NULL, # Si se borra el docente, el bloque se queda en NULL pero NO se elimina el horario
+        null=True, 
+        blank=True,
+        related_name='horarios', 
+        limit_choices_to={'cargo': 'DOC'}, 
+        verbose_name="Docente"
+    )
     aula = models.ForeignKey('Aula', on_delete=models.CASCADE, related_name='horarios')
     curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='horarios')
     periodo = models.ForeignKey('PeriodoLectivo', on_delete=models.CASCADE, related_name='horarios')
@@ -434,19 +443,20 @@ class HorarioClase(models.Model):
         if self.hora_inicio >= self.hora_fin:
             raise ValidationError("La hora de inicio debe ser menor que la hora de fin.")
         
-        # Validar si el docente ya tiene otra clase a esa misma hora y día
-        cruces_docente = HorarioClase.objects.filter(
-            periodo=self.periodo,
-            dia_semana=self.dia_semana,
-            personal=self.personal,
-            hora_inicio__lt=self.hora_fin,
-            hora_fin__gt=self.hora_inicio
-        ).exclude(pk=self.pk)
-        
-        if cruces_docente.exists():
-            raise ValidationError(f"Conflicto de disponibilidad: El docente ya está asignado a otra aula en este bloque horario.")
+        # 💥 BLINDAJE SENIOR: Solo validamos disponibilidad de agenda si hay un docente asignado
+        if self.personal:
+            cruces_docente = HorarioClase.objects.filter(
+                periodo=self.periodo,
+                dia_semana=self.dia_semana,
+                personal=self.personal,
+                hora_inicio__lt=self.hora_fin,
+                hora_fin__gt=self.hora_inicio
+            ).exclude(pk=self.pk)
+            
+            if cruces_docente.exists():
+                raise ValidationError(f"Conflicto de disponibilidad: El docente {self.personal} ya está asignado a otra aula en este bloque horario.")
 
-        # Validar si el aula física ya está ocupada por otro curso a esa misma hora
+        # La validación de aula física sí se hace siempre (no puede haber dos cursos distintos en la misma aula)
         cruces_aula = HorarioClase.objects.filter(
             periodo=self.periodo,
             dia_semana=self.dia_semana,
@@ -456,13 +466,35 @@ class HorarioClase(models.Model):
         ).exclude(pk=self.pk)
         
         if cruces_aula.exists():
-            raise ValidationError(f"Conflicto de infraestructura: El aula seleccionada ya está ocupada por otro docente en este bloque horario.")
-
+            raise ValidationError("Conflicto de infraestructura: El aula seleccionada ya está ocupada en este bloque horario.")
 
 class EventoCronograma(models.Model):
+    # 💥 LAS OPCIONES DEL CEREBRO DE ALERTAS
+    TIPOS_ACADEMICOS = [
+        ('NINGUNO', '📌 Evento Regular / Sin alerta'),
+        ('TEMA_1', '📘 Tema 1'),
+        ('TEMA_2', '📘 Tema 2'),
+        ('TEMA_3', '📘 Tema 3'),
+        ('TEMA_4', '📘 Tema 4'),
+        ('TEMA_5', '📘 Tema 5'),
+        ('TEMA_6', '📘 Tema 6'),
+        ('CALIDAD', '📝 Examen: Control de Calidad'),
+        ('ISO', '🎓 Examen: ISO Ingeniería'),
+        ('SIMULACRO', '🏆 Concurso de Aptitud (Simulacro)'),
+    ]
+    
     """ Agenda dinámica administrada por la Coordinación con rango de fechas y color personalizado """
     titulo = models.CharField(max_length=150, verbose_name="Título del Evento")
     descripcion = models.TextField(blank=True, null=True, verbose_name="Detalles o Instrucciones")
+    
+    # 💥 NUEVO CAMPO: El puente para las alertas
+    tipo_academico = models.CharField(
+        max_length=20, 
+        choices=TIPOS_ACADEMICOS, 
+        default='NINGUNO', 
+        verbose_name="Hito Académico",
+        db_index=True # Ayuda a que el sistema busque rápido para lanzar alertas
+    )
     
     # Rango de fechas
     fecha_inicio = models.DateField(verbose_name="Fecha de Inicio", db_index=True) # 💥

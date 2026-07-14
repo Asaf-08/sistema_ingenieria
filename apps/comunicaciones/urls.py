@@ -17,6 +17,7 @@ urlpatterns = [
     path('gestion/guardar/', views.guardar_comunicado_ajax, name='guardar_comunicado_ajax'),
     path('gestion/eliminar/<int:pk>/', views.eliminar_comunicado_ajax, name='eliminar_comunicado_ajax'),
     path('gestion/datos/<int:pk>/', views.obtener_comunicado_data, name='obtener_comunicado_data'),
+    path('api/lecturas/<int:comunicado_id>/', views.api_lecturas_comunicado, name='api_lecturas_comunicado'),
     
     # ==========================================
     # 🤖 RUTAS DEL ROBOT DE WHATSAPP (NODE.JS)

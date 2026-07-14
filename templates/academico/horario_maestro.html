@@ -13,6 +13,13 @@
           </div>
 
           <div class="d-flex gap-2">
+          
+            {% if es_coordinador %}
+            <button class="btn btn-white text-primary mb-0 px-3" onclick="$('#modalClonarHorario').modal('show')" title="Clonar Horarios de un Año a Otro">
+              <i class="material-symbols-rounded align-middle text-sm">content_copy</i>
+            </button>
+            {% endif %}
+          
             <button class="btn btn-white text-success mb-0 d-flex align-items-center gap-1" onclick="descargarExcelHorario()">
               <i class="material-symbols-rounded text-sm">table_view</i>
               Exportar Excel
@@ -139,6 +146,56 @@
   </div>
 </div>
 {% endif %}
+</div>
+
+<div class="modal fade" id="modalClonarHorario" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-primary">
+        <h6 class="modal-title text-white"><i class="material-symbols-rounded align-middle me-1">auto_awesome</i> Clonación Inteligente de Horarios</h6>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <form id="formClonarHorario" onsubmit="event.preventDefault(); clonarHorarioAjax();">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="alert alert-light text-sm text-secondary border mb-4" role="alert">
+            <i class="material-symbols-rounded text-info align-middle me-1">info</i>
+            Este proceso replicará toda la estructura escolar. Si un docente se retiró (Estado: Inactivo), su hora de clase quedará vacante para ser reasignada.
+          </div>
+          
+          <div class="input-group input-group-static mb-4">
+            <label class="font-weight-bold text-dark">1. Clonar DESDE (Año de origen)</label>
+            <select class="form-control" name="periodo_origen" id="clon_origen" required>
+              <option value="">-- Seleccione el año de donde copiar --</option>
+              {% for periodo in periodos %}
+                <option value="{{ periodo.id }}">{{ periodo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="text-center mb-3">
+             <i class="material-symbols-rounded text-primary opacity-5" style="font-size: 32px;">arrow_downward</i>
+          </div>
+
+          <div class="input-group input-group-static mb-2">
+            <label class="font-weight-bold text-dark">2. Hacia el NUEVO AÑO (Destino)</label>
+            <select class="form-control" name="periodo_destino" id="clon_destino" required>
+              <option value="">-- Seleccione el año de destino --</option>
+              {% for periodo in periodos %}
+                <option value="{{ periodo.id }}">{{ periodo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn bg-gradient-primary mb-0">Iniciar Clonación</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>const ES_COORDINADOR = {% if es_coordinador %}true{% else %}false{% endif %};</script>

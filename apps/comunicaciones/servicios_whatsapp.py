@@ -96,19 +96,6 @@ class WhatsAppService:
         mensaje += f"\n👉 Ingrese al sistema para más detalles.\nAtte. Coordinación Académica."
         
         return cls.enviar_mensaje_api(telefono_docente, mensaje)
-
-    @classmethod
-    def notificar_falta_material(cls, nombre_docente, telefono_docente):
-        mensaje = (
-            f"⚠️ *RECORDATORIO DE MATERIALES*\n\n"
-            f"Hola Prof. {nombre_docente}, el sistema detecta que aún no ha subido sus materiales de la semana.\n"
-            f"Le recordamos que el plazo límite son los días *jueves*.\n"
-            f"Por favor, ingrese al sistema a la brevedad para regularizar su envío.\n\n"
-            f"Atte. Coordinación.\n\n"
-            
-            f"_Si ya ha enviado sus materiales, por favor ignore este mensaje._"
-        )
-        return cls.enviar_mensaje_api(telefono_docente, mensaje)
     
     @classmethod
     def alerta_tutor_riesgo(cls, nombre_tutor, telefono_tutor, grado, seccion, cantidad_riesgo):
@@ -131,3 +118,20 @@ class WhatsAppService:
             f"Atte. Coordinación Académica."
         )
         return cls.enviar_mensaje_api(telefono_tutor, mensaje)
+    
+    @classmethod
+    def alerta_dinamica_cronograma(cls, nombre_docente, telefono_docente, nombre_evento, dias_faltantes):
+        """
+        Alerta predictiva disparada por el Cronograma Institucional.
+        """
+        tiempo_texto = "MAÑANA" if dias_faltantes == 1 else f"en {dias_faltantes} días"
+        
+        mensaje = (
+            f"⏳ *RECORDATORIO ACADÉMICO*\n\n"
+            f"Prof. {nombre_docente},\n"
+            f"Le recordamos que el hito oficial de *{nombre_evento}* empieza *{tiempo_texto}*.\n\n"
+            f"Por favor, ingrese al sistema y verifique haber subido sus materiales o evaluaciones correspondientes a tiempo para evitar contratiempos logísticos con la imprenta.\n\n"
+            f"Atte. Coordinación Académica."
+        )
+        # Disparamos el mensaje usando tu motor en segundo plano
+        return cls.enviar_mensaje_api(telefono_docente, mensaje)

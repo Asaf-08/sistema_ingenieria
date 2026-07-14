@@ -15,7 +15,7 @@ $(document).ready(function () {
     // 1. Inicializar DataTables
     tablaPersonal = $('#tabla-personal-materiales').DataTable({
         "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+            "url": "/static/plugins/datatables/js/es-ES.json",
             "paginate": {
                 "previous": "<i class='material-symbols-rounded' style='font-size: 18px;'>chevron_left</i>",
                 "next": "<i class='material-symbols-rounded' style='font-size: 18px;'>chevron_right</i>"

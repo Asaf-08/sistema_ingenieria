@@ -146,7 +146,7 @@ class HorarioClaseForm(forms.ModelForm):
 class EventoCronogramaForm(forms.ModelForm):
     class Meta:
         model = EventoCronograma
-        fields = ['titulo', 'descripcion', 'fecha_inicio', 'fecha_fin', 'color', 'aula_afectada']
+        fields = ['titulo', 'descripcion', 'fecha_inicio', 'fecha_fin', 'color', 'aula_afectada', 'tipo_academico']
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Entrega de Registros', 'required': True}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Detalles opcionales...'}),
@@ -154,6 +154,7 @@ class EventoCronogramaForm(forms.ModelForm):
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
             'color': forms.TextInput(attrs={'class': 'form-control form-control-color w-100', 'type': 'color', 'style': 'height: 40px; border-radius: 0.375rem;'}),
             'aula_afectada': forms.Select(attrs={'class': 'form-control'}),
+            'tipo_academico': forms.Select(attrs={'class': 'form-control border-bottom border-2 px-3 py-1'}),
         }
 
 class SimulacroForm(forms.ModelForm):

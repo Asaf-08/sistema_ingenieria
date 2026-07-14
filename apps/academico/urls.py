@@ -67,6 +67,7 @@ urlpatterns = [
     path('supervision/material/eliminar/<int:pk>/', views.eliminar_material_ajax, name='eliminar_material_ajax'),
     path('supervision/evidencia/guardar/', views.guardar_evidencia_ajax, name='guardar_evidencia_ajax'),
     path('supervision/evidencia/revisar/', views.revisar_evidencia_ajax, name='revisar_evidencia_ajax'),
+    path('supervision/auditoria-materiales/<int:asignacion_id>/', views.auditoria_materiales_ajax, name='auditoria_materiales_ajax'),
     
     # ==========================================
     # 🧠 MÓDULO DE TUTORÍA E INTELIGENCIA ARTIFICIAL
@@ -102,6 +103,8 @@ urlpatterns = [
     path('api/horario/drag-drop/', views.actualizar_horario_drag_ajax, name='actualizar_horario_drag'),
     path('api/horario/recreo/<str:nivel>/', views.obtener_recreo_nivel_ajax, name='obtener_recreo_nivel_ajax'),
     path('api/cursos-docente/<int:docente_id>/', views.api_cursos_docente, name='api_cursos_docente'),
+    
+    path('api/horario/clonar/', views.clonar_horario_ajax, name='clonar_horario_ajax'),
     
     # ==========================================
     # 📦 MÓDULO DE INVENTARIO Y LOGÍSTICA

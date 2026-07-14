@@ -48,7 +48,7 @@ function inicializarTablaGlobal(idTabla, textoBuscador = "Buscar...") {
 
     $(idTabla).DataTable({
         language: {
-            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+            url: "/static/plugins/datatables/js/es-ES.json",
             search: "_INPUT_",
             searchPlaceholder: textoBuscador,
             lengthMenu: "Mostrar _MENU_ registros",
@@ -357,6 +357,16 @@ function marcarAvisoLeidoSilencioso(comunicadoId, elementoBoton) {
                     } else {
                         burbujaRoja.innerText = nuevoNumero; 
                     }
+                }
+
+                // 💥 NUEVO: Si la tabla de comunicados existe en la pantalla actual, ¡Actualízala!
+                if ($('#tabla-comunicados').length > 0) {
+                    $('.tabla-responsive-comunicados').load(window.location.href + ' #tabla-comunicados', function() {
+                        if (typeof inicializarTablaGlobal === 'function') {
+                            inicializarTablaGlobal('#tabla-comunicados', 'Buscar comunicados...');
+                            tablaComunicados = $('#tabla-comunicados').DataTable();
+                        }
+                    });
                 }
             }
         }

@@ -299,3 +299,53 @@ function guardarRecreoGlobal() {
         }
     });
 }
+
+// 💥 FUNCIÓN AJAX DE CLONACIÓN DE HORARIOS
+function clonarHorarioAjax() {
+    let origen = $('#clon_origen').val();
+    let destino = $('#clon_destino').val();
+    
+    if (origen === destino) {
+        Swal.fire('Atención', 'El año de origen y destino deben ser diferentes.', 'warning');
+        return;
+    }
+    
+    // Alerta de confirmación
+    Swal.fire({
+        title: '¿Confirmar Clonación?',
+        text: 'Este proceso es irreversible y copiará toda la estructura académica. ¿Deseas continuar?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e91e63', // Rosa primario
+        cancelButtonColor: '#3a4149',
+        confirmButtonText: 'Sí, Iniciar Clonación',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Pantalla de carga mientras Django procesa
+            Swal.fire({ title: 'Clonando estructura...', text: 'Por favor no cierre esta ventana', didOpen: () => { Swal.showLoading(); }, allowOutsideClick: false });
+            
+            $.ajax({
+                url: '/academico/api/horario/clonar/', 
+                type: 'POST',
+                data: $('#formClonarHorario').serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalClonarHorario').modal('hide');
+                        Swal.fire('¡Clonación Completada!', response.mensaje, 'success').then(() => {
+                            // Seleccionamos el nuevo periodo en el filtro principal y recargamos para verlo
+                            $('#filtroPeriodo').val(destino);
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Atención', response.mensaje, 'info');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error de Red', 'Problema al conectar con el servidor.', 'error');
+                }
+            });
+        }
+    });
+}
