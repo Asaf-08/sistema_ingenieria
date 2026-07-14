@@ -7,6 +7,7 @@
     border-style: dashed !important;
     border-color: #d2d6da !important;
   }
+
   .drag-active {
     background-color: #e1f5fe !important;
     border-color: #17c1e8 !important;
@@ -19,22 +20,24 @@
 
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card bg-gradient-primary shadow-primary border-radius-lg p-3 d-flex flex-row align-items-center justify-content-between">
+      <div
+        class="card bg-gradient-primary shadow-primary border-radius-lg p-3 d-flex flex-row align-items-center justify-content-between">
         <div>
           <h5 class="text-white mb-0">Supervisión Académica y Repositorio</h5>
           <p class="text-xs text-white opacity-8 mb-0">
-            Sesión activa: <strong>{{ personal.apellidos }}, {{ personal.nombres }}</strong> | Rol: {{ personal.get_cargo_display }}
+            Sesión activa: <strong>{{ personal.apellidos }}, {{ personal.nombres }}</strong> | Rol: {{
+            personal.get_cargo_display }}
           </p>
         </div>
         <div>
           {% if es_coordinador %}
-            <button type="button" class="btn bg-white text-primary mb-0 font-weight-bold" onclick="abrirModalMaterial()">
-              <i class="material-symbols-rounded align-middle me-1 text-sm">upload_file</i> Subir Formato Oficial
-            </button>
+          <button type="button" class="btn bg-white text-primary mb-0 font-weight-bold" onclick="abrirModalMaterial()">
+            <i class="material-symbols-rounded align-middle me-1 text-sm">upload_file</i> Subir Formato Oficial
+          </button>
           {% else %}
-            <button type="button" class="btn bg-white text-primary mb-0 font-weight-bold" onclick="abrirModalEvidencia()">
-              <i class="material-symbols-rounded align-middle me-1 text-sm">cloud_upload</i> Entregar Evidencia
-            </button>
+          <button type="button" class="btn bg-white text-primary mb-0 font-weight-bold" onclick="abrirModalEvidencia()">
+            <i class="material-symbols-rounded align-middle me-1 text-sm">cloud_upload</i> Entregar Evidencia
+          </button>
           {% endif %}
         </div>
       </div>
@@ -51,37 +54,44 @@
         <div class="card-body p-3">
           <div class="list-group list-group-flush">
             {% for m in materiales %}
-              <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-start">
-                <div class="d-flex align-items-center">
-                  <div class="icon icon-shape bg-gray-200 text-center border-radius-md me-3 align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="material-symbols-rounded text-dark text-lg">
-                      {% if m.categoria == 'AULA' %}image{% elif m.categoria == 'EVALUACION' %}assignment{% else %}description{% endif %}
-                    </i>
-                  </div>
-                  <div>
-                    <h6 class="mb-0 text-sm text-dark font-weight-bold">{{ m.titulo }}</h6>
-                    <p class="text-xxs text-secondary mb-1">{{ m.get_categoria_display }}</p>
-                    {% if m.descripcion %}
-                      <p class="text-xs text-muted mb-0 italic">{{ m.descripcion }}</p>
-                    {% endif %}
-                  </div>
+            <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-start">
+              <div class="d-flex align-items-center">
+                <div
+                  class="icon icon-shape bg-gray-200 text-center border-radius-md me-3 align-items-center justify-content-center"
+                  style="width: 40px; height: 40px;">
+                  <i class="material-symbols-rounded text-dark text-lg">
+                    {% if m.categoria == 'AULA' %}image{% elif m.categoria == 'EVALUACION' %}assignment{% else
+                    %}description{% endif %}
+                  </i>
                 </div>
-                <div class="text-end d-flex gap-1">
-                  <button type="button" class="btn btn-link text-info text-gradient p-2 mb-0" onclick="verDocumentoEnModal('{{ m.archivo.url }}', '{{ m.titulo|escapejs }}')" title="Ver Archivo">
-                    <i class="material-symbols-rounded text-lg">visibility</i>
-                  </button>
-                  <a href="{{ m.archivo.url }}" class="btn btn-link text-success text-gradient p-2 mb-0" download title="Descargar">
-                    <i class="material-symbols-rounded text-lg">download</i>
-                  </a>
-                  {% if es_coordinador %}
-                    <button type="button" class="btn btn-link text-danger text-gradient p-2 mb-0" onclick="eliminarMaterial('{{ m.id }}', this)" title="Eliminar del repositorio">
-                      <i class="material-symbols-rounded text-lg">delete</i>
-                    </button>
+                <div>
+                  <h6 class="mb-0 text-sm text-dark font-weight-bold">{{ m.titulo }}</h6>
+                  <p class="text-xxs text-secondary mb-1">{{ m.get_categoria_display }}</p>
+                  {% if m.descripcion %}
+                  <p class="text-xs text-muted mb-0 italic">{{ m.descripcion }}</p>
                   {% endif %}
                 </div>
               </div>
+              <div class="text-end d-flex gap-1">
+                <button type="button" class="btn btn-link text-info text-gradient p-2 mb-0"
+                  onclick="verDocumentoEnModal('{{ m.archivo.url }}', '{{ m.titulo|escapejs }}')" title="Ver Archivo">
+                  <i class="material-symbols-rounded text-lg">visibility</i>
+                </button>
+                <a href="{{ m.archivo.url }}" class="btn btn-link text-success text-gradient p-2 mb-0" download
+                  title="Descargar">
+                  <i class="material-symbols-rounded text-lg">download</i>
+                </a>
+                {% if es_coordinador %}
+                <button type="button" class="btn btn-link text-danger text-gradient p-2 mb-0"
+                  onclick="eliminarMaterial('{{ m.id }}', this)" title="Eliminar del repositorio">
+                  <i class="material-symbols-rounded text-lg">delete</i>
+                </button>
+                {% endif %}
+              </div>
+            </div>
             {% empty %}
-              <p class="text-sm text-center text-secondary py-4">No se han subido guías ni formatos institucionales todavía.</p>
+            <p class="text-sm text-center text-secondary py-4">No se han subido guías ni formatos institucionales
+              todavía.</p>
             {% endfor %}
           </div>
         </div>
@@ -103,8 +113,10 @@
                 <tr>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Entrega / Docente</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Archivo</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado
+                  </th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -115,36 +127,40 @@
                       <div class="d-flex flex-column justify-content-center">
                         <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ e.titulo }}</h6>
                         <p class="text-xxs text-secondary mb-0">
-                          {% if es_coordinador %}De: {{ e.docente.apellidos }}, {{ e.docente.nombres }}{% else %}Enviado: {{ e.fecha_envio|date:"d/m/Y h:i A" }}{% endif %}
+                          {% if es_coordinador %}De: {{ e.docente.apellidos }}, {{ e.docente.nombres }}{% else
+                          %}Enviado: {{ e.fecha_envio|date:"d/m/Y h:i A" }}{% endif %}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <button type="button" class="btn btn-link text-info text-gradient p-0 mb-0 d-flex align-items-center" onclick="verDocumentoEnModal('{{ e.archivo_evidencia.url }}', '{{ e.titulo|escapejs }}')">
+                    <button type="button"
+                      class="btn btn-link text-info text-gradient p-0 mb-0 d-flex align-items-center"
+                      onclick="verDocumentoEnModal('{{ e.archivo_evidencia.url }}', '{{ e.titulo|escapejs }}')">
                       <i class="material-symbols-rounded me-1 text-sm">visibility</i> Ver Archivo
                     </button>
                   </td>
                   <td class="align-middle text-center text-sm">
-                    <span class="badge badge-sm bg-gradient-{% if e.estado == 'APROBADO' %}success{% elif e.estado == 'OBSERVADO' %}danger{% else %}warning{% endif %} px-3 py-2">
+                    <span
+                      class="badge badge-sm bg-gradient-{% if e.estado == 'APROBADO' %}success{% elif e.estado == 'OBSERVADO' %}danger{% else %}warning{% endif %} px-3 py-2">
                       {{ e.get_estado_display }}
                     </span>
                   </td>
                   <td class="align-middle text-center">
                     {% if es_coordinador %}
-                      <button type="button" class="btn btn-link text-dark px-3 mb-0 font-weight-bold text-xs" 
-                              onclick="abrirModalRevision('{{ e.id }}', '{{ e.titulo|escapejs }}', '{{ e.docente|escapejs }}', '{{ e.observaciones_coordinacion|default:""|escapejs }}')">
-                        <i class="material-symbols-rounded text-sm me-1">rate_review</i> Evaluar
-                      </button>
+                    <button type="button" class="btn btn-link text-dark px-3 mb-0 font-weight-bold text-xs"
+                      onclick="abrirModalRevision('{{ e.id }}', '{{ e.titulo|escapejs }}', '{{ e.docente|escapejs }}', '{{ e.observaciones_coordinacion|default:""|escapejs }}')">
+                      <i class="material-symbols-rounded text-sm me-1">rate_review</i> Evaluar
+                    </button>
                     {% else %}
-                      {% if e.observaciones_coordinacion %}
-                        <button type="button" class="btn btn-link text-danger px-3 mb-0 font-weight-bold text-xs" 
-                                onclick="Swal.fire('Observaciones de Coordinación', '{{ e.observaciones_coordinacion|escapejs }}', 'info')">
-                          <i class="material-symbols-rounded text-sm me-1">feedback</i> Ver Observación
-                        </button>
-                      {% else %}
-                        <span class="text-xs text-secondary font-weight-normal">Sin correcciones</span>
-                      {% endif %}
+                    {% if e.observaciones_coordinacion %}
+                    <button type="button" class="btn btn-link text-danger px-3 mb-0 font-weight-bold text-xs"
+                      onclick="Swal.fire('Observaciones de Coordinación', '{{ e.observaciones_coordinacion|escapejs }}', 'info')">
+                      <i class="material-symbols-rounded text-sm me-1">feedback</i> Ver Observación
+                    </button>
+                    {% else %}
+                    <span class="text-xs text-secondary font-weight-normal">Sin correcciones</span>
+                    {% endif %}
                     {% endif %}
                   </td>
                 </tr>
@@ -155,243 +171,283 @@
         </div>
       </div>
     </div>
-
+    {% if es_coordinador %}
     <div class="row mt-5">
-    <div class="col-12">
-      <div class="card shadow-lg border-radius-xl">
-        
-        <div class="card-header p-4 bg-gradient-info position-relative mt-n4 mx-3 z-index-2 border-radius-lg shadow-dark">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <h6 class="text-white text-capitalize mb-0">
-                <i class="material-symbols-rounded align-middle me-2">analytics</i>Matriz de Cumplimiento Académico
-              </h6>
-              <p class="text-sm text-white opacity-8 mb-0">Auditoría en tiempo real de materiales y evaluaciones por aula.</p>
+      <div class="col-12">
+        <div class="card shadow-lg border-radius-xl">
+
+          <div
+            class="card-header p-4 bg-gradient-info position-relative mt-n4 mx-3 z-index-2 border-radius-lg shadow-dark">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <h6 class="text-white text-capitalize mb-0">
+                  <i class="material-symbols-rounded align-middle me-2">analytics</i>Matriz de Cumplimiento Académico
+                </h6>
+                <p class="text-sm text-white opacity-8 mb-0">Auditoría en tiempo real de materiales y evaluaciones por
+                  aula.</p>
+              </div>
+            </div>
+
+            <div class="row bg-white border-radius-md p-2 mx-0 shadow-sm mt-3 d-flex align-items-center">
+              <div class="col-md-6">
+                <label class="text-xs font-weight-bold text-dark mb-0">Supervisión Específica:</label>
+                <select class="form-control border-0 border-2 px-2 py-1 text-dark font-weight-bold"
+                  id="filtroTemaDinamico" style="background-color: #f8f9fa;">
+                  <option value="GENERAL">Vista General (Total Envíos)</option>
+                  <option value="TEMA_1">Tema 1</option>
+                  <option value="TEMA_2">Tema 2</option>
+                  <option value="TEMA_3">Tema 3</option>
+                  <option value="TEMA_4">Tema 4</option>
+                  <option value="TEMA_5">Tema 5</option>
+                  <option value="TEMA_6">Tema 6</option>
+                  <option value="CALIDAD">Control de Calidad (Mensual)</option>
+                  <option value="ISO">Examen ISO (Bimestral)</option>
+                </select>
+              </div>
             </div>
           </div>
-          
-          <div class="row bg-white border-radius-md p-2 mx-0 shadow-sm mt-3 d-flex align-items-center">
-              <div class="col-md-6">
-                  <label class="text-xs font-weight-bold text-dark mb-0">Supervisión Específica:</label>
-                  <select class="form-control border-0 border-2 px-2 py-1 text-dark font-weight-bold" id="filtroTemaDinamico" style="background-color: #f8f9fa;">
-                      <option value="GENERAL">Vista General (Total Envíos)</option>
-                      <option value="TEMA_1">Tema 1</option>
-                      <option value="TEMA_2">Tema 2</option>
-                      <option value="TEMA_3">Tema 3</option>
-                      <option value="TEMA_4">Tema 4</option>
-                      <option value="TEMA_5">Tema 5</option>
-                      <option value="TEMA_6">Tema 6</option>
-                      <option value="CALIDAD">Control de Calidad (Mensual)</option>
-                      <option value="ISO">Examen ISO (Bimestral)</option>
-                  </select>
-              </div>
-          </div>
-        </div>
 
-        <div class="card-body px-0 pb-2">
-          <div class="table-responsive p-0">
-            <table class="table align-items-center mb-0 table-hover" id="tabla-matriz-cumplimiento">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso y Aula</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" id="th-dinamico">Progreso General</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Simulacro</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for m in matriz_cumplimiento %}
-                <tr>
-                  <td class="align-middle text-center">
-                    <i class="material-symbols-rounded text-{{ m.estado_color }} text-lg">{{ m.icono }}</i>
-                  </td>
-                  <td><p class="text-sm font-weight-bold mb-0 text-dark">{{ m.docente }}</p></td>
-                  <td>
-                    <p class="text-xs font-weight-bold text-info mb-0">{{ m.curso }}</p>
-                    <p class="text-xxs text-secondary mb-0">{{ m.aula_texto }}</p>
-                  </td>
-                  
-                  <td class="align-middle text-center celda-dinamica" data-temas='{{ m.temas_json|safe }}' data-total='{{ m.total_envios }}'>
-                    <span class="badge bg-gradient-secondary">{{ m.total_envios }} envíos realizados</span>
-                  </td>
-                  
-                  <td class="align-middle text-center">
-                    {% if m.tiene_simulacro %}
+          <div class="card-body px-0 pb-2">
+            <div class="table-responsive p-0">
+              <table class="table align-items-center mb-0 table-hover" id="tabla-matriz-cumplimiento">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado
+                    </th>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente</th>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso y Aula</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                      id="th-dinamico">Progreso General</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                      Simulacro</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in matriz_cumplimiento %}
+                  <tr>
+                    <td class="align-middle text-center">
+                      <i class="material-symbols-rounded text-{{ m.estado_color }} text-lg">{{ m.icono }}</i>
+                    </td>
+                    <td>
+                      <p class="text-sm font-weight-bold mb-0 text-dark">{{ m.docente }}</p>
+                    </td>
+                    <td>
+                      <p class="text-xs font-weight-bold text-info mb-0">{{ m.curso }}</p>
+                      <p class="text-xxs text-secondary mb-0">{{ m.aula_texto }}</p>
+                    </td>
+
+                    <td class="align-middle text-center celda-dinamica" data-temas='{{ m.temas_json|safe }}'
+                      data-total='{{ m.total_envios }}'>
+                      <span class="badge bg-gradient-secondary">{{ m.total_envios }} envíos realizados</span>
+                    </td>
+
+                    <td class="align-middle text-center">
+                      {% if m.tiene_simulacro %}
                       <i class="material-symbols-rounded text-success text-md">check_circle</i>
-                    {% else %}
+                      {% else %}
                       <i class="material-symbols-rounded text-danger text-md">cancel</i>
-                    {% endif %}
-                  </td>
-                  
-                  <td class="align-middle text-center">
-                    <button class="btn btn-outline-primary btn-sm mb-0 px-3" onclick="abrirHistorialMateriales({{ m.asignacion_id }})">
-                      <i class="material-symbols-rounded text-sm align-middle">list</i> Ver Detalle
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+                      {% endif %}
+                    </td>
+
+                    <td class="align-middle text-center">
+                      <button class="btn btn-outline-primary btn-sm mb-0 px-3"
+                        onclick="abrirHistorialMateriales({{ m.asignacion_id }})">
+                        <i class="material-symbols-rounded text-sm align-middle">list</i> Ver Detalle
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-
+    {% endif %}
   </div>
 </div>
 
 {% if es_coordinador %}
-  <div class="modal fade" id="modalMaterial" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-radius-xl">
-        <div class="modal-header bg-gradient-primary">
-          <h5 class="modal-title text-white">Subir Formato / Guía Oficial</h5>
-          <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-        </div>
-        <form id="formMaterial" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault();">
-          {% csrf_token %}
-          <div class="modal-body p-4">
-            <div class="input-group input-group-static mb-3">
-              <label>Título del Documento</label>
-              {{ form_material.titulo }}
-            </div>
-            <div class="input-group input-group-static mb-3">
-              <label>Categoría Institucional</label>
-              {{ form_material.categoria }}
-            </div>
-            <div class="input-group input-group-static mb-3">
-              <label>Descripción / Instrucciones Cortas</label>
-              {{ form_material.descripcion }}
-            </div>
-            
-            <div class="input-group input-group-static mb-3">
-              <label class="w-100">Seleccionar Archivo (Word, PDF, Excel, Imagen)</label>
-              <div id="dropzone-material" class="border-dashed border-2 border-primary border-radius-md p-4 text-center cursor-pointer position-relative w-100 mt-2" style="background-color: #f8f9fa; transition: 0.3s;">
-                  <i class="material-symbols-rounded text-primary" style="font-size: 48px;">cloud_upload</i>
-                  <h6 class="text-primary mb-1 mt-2">Arrastra tu archivo aquí o haz clic para buscar</h6>
-                  <p class="text-xs text-secondary mb-0">Formatos soportados: PNG, JPG, PDF, DOC, DOCX</p>
-                  {{ form_material.archivo }}
-                  <style>
-                      #id_archivo {
-                          position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;
-                      }
-                  </style>
-              </div>
-              
-              <div class="mt-3 text-center d-none position-relative bg-light border-radius-lg p-3 w-100" id="contenedor-preview-material">
-                  <img loading="lazy" id="img-preview-material" src="#" alt="Vista previa" class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
-                  <iframe id="pdf-preview-material" src="#" class="w-100 border-radius-md shadow-sm d-none" style="height: 350px; border: none;"></iframe>
-                  <div id="doc-preview-material" class="d-none py-3">
-                      <i class="material-symbols-rounded text-info" style="font-size: 48px;">description</i>
-                      <p class="text-sm font-weight-bold mt-2 mb-0 text-dark" id="doc-name-material">Archivo.docx</p>
-                  </div>
-                  <button type="button" class="btn btn-sm bg-gradient-danger mt-3 mb-0" id="btn-remover-material">
-                      <i class="material-symbols-rounded text-sm me-1">delete</i> Quitar Archivo
-                  </button>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" id="btnGuardarMaterial" class="btn bg-gradient-primary" onclick="guardarMaterial()">Publicar en Repositorio</button>
-          </div>
-        </form>
+<div class="modal fade" id="modalMaterial" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-primary">
+        <h5 class="modal-title text-white">Subir Formato / Guía Oficial</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
       </div>
-    </div>
-  </div>
+      <form id="formMaterial" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="input-group input-group-static mb-3">
+            <label>Título del Documento</label>
+            {{ form_material.titulo }}
+          </div>
+          <div class="input-group input-group-static mb-3">
+            <label>Categoría Institucional</label>
+            {{ form_material.categoria }}
+          </div>
+          <div class="input-group input-group-static mb-3">
+            <label>Descripción / Instrucciones Cortas</label>
+            {{ form_material.descripcion }}
+          </div>
 
-  <div class="modal fade" id="modalRevision" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-radius-xl">
-        <div class="modal-header bg-gradient-dark">
-          <h5 class="modal-title text-white">Auditoría de Evidencia</h5>
-          <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+          <div class="input-group input-group-static mb-3">
+            <label class="w-100">Seleccionar Archivo (Word, PDF, Excel, Imagen)</label>
+            <div id="dropzone-material"
+              class="border-dashed border-2 border-primary border-radius-md p-4 text-center cursor-pointer position-relative w-100 mt-2"
+              style="background-color: #f8f9fa; transition: 0.3s;">
+              <i class="material-symbols-rounded text-primary" style="font-size: 48px;">cloud_upload</i>
+              <h6 class="text-primary mb-1 mt-2">Arrastra tu archivo aquí o haz clic para buscar</h6>
+              <p class="text-xs text-secondary mb-0">Formatos soportados: PNG, JPG, PDF, DOC, DOCX</p>
+              {{ form_material.archivo }}
+              <style>
+                #id_archivo {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  opacity: 0;
+                  cursor: pointer;
+                  z-index: 10;
+                }
+              </style>
+            </div>
+
+            <div class="mt-3 text-center d-none position-relative bg-light border-radius-lg p-3 w-100"
+              id="contenedor-preview-material">
+              <img loading="lazy" id="img-preview-material" src="#" alt="Vista previa"
+                class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
+              <iframe id="pdf-preview-material" src="#" class="w-100 border-radius-md shadow-sm d-none"
+                style="height: 350px; border: none;"></iframe>
+              <div id="doc-preview-material" class="d-none py-3">
+                <i class="material-symbols-rounded text-info" style="font-size: 48px;">description</i>
+                <p class="text-sm font-weight-bold mt-2 mb-0 text-dark" id="doc-name-material">Archivo.docx</p>
+              </div>
+              <button type="button" class="btn btn-sm bg-gradient-danger mt-3 mb-0" id="btn-remover-material">
+                <i class="material-symbols-rounded text-sm me-1">delete</i> Quitar Archivo
+              </button>
+            </div>
+          </div>
         </div>
-        <form id="formRevision" method="POST" onsubmit="event.preventDefault();">
-          {% csrf_token %}
-          <input type="hidden" id="revision_id" name="id">
-          <div class="modal-body p-4">
-            <p class="text-sm text-secondary mb-3">Evaluando entrega: <strong id="revision_titulo" class="text-dark"></strong></p>
-            
-            <div class="input-group input-group-static mb-3">
-              <label>Dictamen de Supervisión</label>
-              <select class="form-control" id="revision_estado" name="estado" required>
-                <option value="APROBADO">✅ Aprobar Entrega</option>
-                <option value="OBSERVADO">⚠️ Observar / Solicitar Corrección</option>
-              </select>
-            </div>
-            <div class="input-group input-group-static mb-3">
-              <label>Observaciones o Recomendaciones Psicopedagógicas</label>
-              <textarea class="form-control" id="revision_feedback" name="observaciones_coordinacion" rows="3" placeholder="Escribe aquí los motivos o las correcciones que debe realizar el docente..."></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" id="btnGuardarRevision" class="btn bg-gradient-dark" onclick="guardarRevision()">Guardar Dictamen</button>
-          </div>
-        </form>
-      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btnGuardarMaterial" class="btn bg-gradient-primary"
+            onclick="guardarMaterial()">Publicar en Repositorio</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="modalRevision" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark">
+        <h5 class="modal-title text-white">Auditoría de Evidencia</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formRevision" method="POST" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <input type="hidden" id="revision_id" name="id">
+        <div class="modal-body p-4">
+          <p class="text-sm text-secondary mb-3">Evaluando entrega: <strong id="revision_titulo"
+              class="text-dark"></strong></p>
+
+          <div class="input-group input-group-static mb-3">
+            <label>Dictamen de Supervisión</label>
+            <select class="form-control" id="revision_estado" name="estado" required>
+              <option value="APROBADO">✅ Aprobar Entrega</option>
+              <option value="OBSERVADO">⚠️ Observar / Solicitar Corrección</option>
+            </select>
+          </div>
+          <div class="input-group input-group-static mb-3">
+            <label>Observaciones o Recomendaciones Psicopedagógicas</label>
+            <textarea class="form-control" id="revision_feedback" name="observaciones_coordinacion" rows="3"
+              placeholder="Escribe aquí los motivos o las correcciones que debe realizar el docente..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btnGuardarRevision" class="btn bg-gradient-dark" onclick="guardarRevision()">Guardar
+            Dictamen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% else %}
-  <div class="modal fade" id="modalEvidencia" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-radius-xl">
-        <div class="modal-header bg-gradient-primary">
-          <h5 class="modal-title text-white">Entregar Nueva Evidencia</h5>
-          <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-        </div>
-        <form id="formEvidencia" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault();">
-          {% csrf_token %}
-          <div class="modal-body p-4">
-            <div class="input-group input-group-static mb-3">
-              <label>Título de la Entrega</label>
-              {{ form_evidencia.titulo }}
-            </div>
-            <div class="input-group input-group-static mb-3">
-              <label>Notas aclaratorias para Coordinación</label>
-              {{ form_evidencia.descripcion }}
-            </div>
-            
-            <div class="input-group input-group-static mb-3">
-              <label class="w-100">Adjuntar Evidencia Sustentatoria</label>
-              <div id="dropzone-evidencia" class="border-dashed border-2 border-primary border-radius-md p-4 text-center cursor-pointer position-relative w-100 mt-2" style="background-color: #f8f9fa; transition: 0.3s;">
-                  <i class="material-symbols-rounded text-primary" style="font-size: 48px;">cloud_upload</i>
-                  <h6 class="text-primary mb-1 mt-2">Arrastra tu evidencia aquí o haz clic para buscar</h6>
-                  <p class="text-xs text-secondary mb-0">Formatos soportados: PNG, JPG, PDF, DOCX</p>
-                  {{ form_evidencia.archivo_evidencia }}
-                  <style>
-                      #id_archivo_evidencia {
-                          position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;
-                      }
-                  </style>
-              </div>
-              
-              <div class="mt-3 text-center d-none position-relative bg-light border-radius-lg p-3 w-100" id="contenedor-preview-evidencia">
-                  <img loading="lazy" id="img-preview-evidencia" src="#" alt="Vista previa" class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
-                  <iframe id="pdf-preview-evidencia" src="#" class="w-100 border-radius-md shadow-sm d-none" style="height: 350px; border: none;"></iframe>
-                  <div id="doc-preview-evidencia" class="d-none py-3">
-                      <i class="material-symbols-rounded text-info" style="font-size: 48px;">description</i>
-                      <p class="text-sm font-weight-bold mt-2 mb-0 text-dark" id="doc-name-evidencia">Archivo.docx</p>
-                  </div>
-                  <button type="button" class="btn btn-sm bg-gradient-danger mt-3 mb-0" id="btn-remover-evidencia">
-                      <i class="material-symbols-rounded text-sm me-1">delete</i> Quitar Evidencia
-                  </button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" id="btnGuardarEvidencia" class="btn bg-gradient-primary" onclick="guardarEvidencia()">Enviar a Coordinación</button>
-          </div>
-        </form>
+<div class="modal fade" id="modalEvidencia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-primary">
+        <h5 class="modal-title text-white">Entregar Nueva Evidencia</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
       </div>
+      <form id="formEvidencia" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="input-group input-group-static mb-3">
+            <label>Título de la Entrega</label>
+            {{ form_evidencia.titulo }}
+          </div>
+          <div class="input-group input-group-static mb-3">
+            <label>Notas aclaratorias para Coordinación</label>
+            {{ form_evidencia.descripcion }}
+          </div>
+
+          <div class="input-group input-group-static mb-3">
+            <label class="w-100">Adjuntar Evidencia Sustentatoria</label>
+            <div id="dropzone-evidencia"
+              class="border-dashed border-2 border-primary border-radius-md p-4 text-center cursor-pointer position-relative w-100 mt-2"
+              style="background-color: #f8f9fa; transition: 0.3s;">
+              <i class="material-symbols-rounded text-primary" style="font-size: 48px;">cloud_upload</i>
+              <h6 class="text-primary mb-1 mt-2">Arrastra tu evidencia aquí o haz clic para buscar</h6>
+              <p class="text-xs text-secondary mb-0">Formatos soportados: PNG, JPG, PDF, DOCX</p>
+              {{ form_evidencia.archivo_evidencia }}
+              <style>
+                #id_archivo_evidencia {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  opacity: 0;
+                  cursor: pointer;
+                  z-index: 10;
+                }
+              </style>
+            </div>
+
+            <div class="mt-3 text-center d-none position-relative bg-light border-radius-lg p-3 w-100"
+              id="contenedor-preview-evidencia">
+              <img loading="lazy" id="img-preview-evidencia" src="#" alt="Vista previa"
+                class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
+              <iframe id="pdf-preview-evidencia" src="#" class="w-100 border-radius-md shadow-sm d-none"
+                style="height: 350px; border: none;"></iframe>
+              <div id="doc-preview-evidencia" class="d-none py-3">
+                <i class="material-symbols-rounded text-info" style="font-size: 48px;">description</i>
+                <p class="text-sm font-weight-bold mt-2 mb-0 text-dark" id="doc-name-evidencia">Archivo.docx</p>
+              </div>
+              <button type="button" class="btn btn-sm bg-gradient-danger mt-3 mb-0" id="btn-remover-evidencia">
+                <i class="material-symbols-rounded text-sm me-1">delete</i> Quitar Evidencia
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btnGuardarEvidencia" class="btn bg-gradient-primary"
+            onclick="guardarEvidencia()">Enviar a Coordinación</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 {% endif %}
 
 <div class="modal fade" id="modalVerDocumento" tabindex="-1" aria-hidden="true">
@@ -402,19 +458,21 @@
         <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4 text-center">
-        <img loading="lazy" id="preview-img-global" src="#" alt="Vista previa" class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 70vh; object-fit: contain;">
-        <iframe id="preview-pdf-global" src="#" class="w-100 border-radius-md shadow-sm d-none" style="height: 70vh; border: none;"></iframe>
-        
+        <img loading="lazy" id="preview-img-global" src="#" alt="Vista previa"
+          class="img-fluid border-radius-md shadow-sm d-none" style="max-height: 70vh; object-fit: contain;">
+        <iframe id="preview-pdf-global" src="#" class="w-100 border-radius-md shadow-sm d-none"
+          style="height: 70vh; border: none;"></iframe>
+
         <div id="preview-other-global" class="d-none py-5">
-            <i class="material-symbols-rounded text-secondary" style="font-size: 64px;">draft</i>
-            <h5 class="mt-3 text-secondary">La previsualización no está disponible para este tipo de archivo.</h5>
-            <p class="text-sm text-muted">Por favor, utilice el botón de descarga para verlo en su dispositivo.</p>
+          <i class="material-symbols-rounded text-secondary" style="font-size: 64px;">draft</i>
+          <h5 class="mt-3 text-secondary">La previsualización no está disponible para este tipo de archivo.</h5>
+          <p class="text-sm text-muted">Por favor, utilice el botón de descarga para verlo en su dispositivo.</p>
         </div>
       </div>
       <div class="modal-footer d-flex justify-content-between">
         <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cerrar</button>
         <a href="#" id="btn-descargar-doc-global" class="btn bg-gradient-info mb-0" download>
-            <i class="material-symbols-rounded align-middle text-sm me-1">download</i> Descargar Archivo
+          <i class="material-symbols-rounded align-middle text-sm me-1">download</i> Descargar Archivo
         </a>
       </div>
     </div>
@@ -422,16 +480,16 @@
 </div>
 
 <div class="modal fade" id="modalHistorialMateriales" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-gradient-info">
-                <h5 class="modal-title text-white">Historial de Materiales</h5>
-                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4 bg-gray-100" id="contenidoHistorial" style="max-height: 60vh; overflow-y: auto;">
-                </div>
-        </div>
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-info">
+        <h5 class="modal-title text-white">Historial de Materiales</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-gray-100" id="contenidoHistorial" style="max-height: 60vh; overflow-y: auto;">
+      </div>
     </div>
+  </div>
 </div>
 
 <input type="hidden" id="csrfTokenGlobal" value="{{ csrf_token }}">

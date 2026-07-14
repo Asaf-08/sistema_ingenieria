@@ -566,7 +566,7 @@ def panel_supervision(request):
         return render(request, 'errores/sin_perfil.html', {'mensaje': 'Sin perfil activo.'})
 
     # Asumimos que tienes un campo 'rol' o similar (ej: 'COORDINADOR', 'DOCENTE')
-    es_coordinador = personal_actual.cargo in ['COO', 'DIR'] or request.user.is_superuser
+    es_coordinador = personal_actual.cargo in ['COO', 'DIR', 'ASI', 'COR'] or request.user.is_superuser
 
     materiales = MaterialInstitucional.objects.all()
     form_material = MaterialInstitucionalForm()
