@@ -25,8 +25,7 @@
         <div>
           <h5 class="text-white mb-0">Supervisión Académica y Repositorio</h5>
           <p class="text-xs text-white opacity-8 mb-0">
-            Sesión activa: <strong>{{ personal.apellidos }}, {{ personal.nombres }}</strong> | Rol: {{
-            personal.get_cargo_display }}
+            <strong>{{ personal.apellidos }}, {{ personal.nombres }}</strong> | {{personal.get_cargo_display }}
           </p>
         </div>
         <div>
@@ -60,8 +59,7 @@
                   class="icon icon-shape bg-gray-200 text-center border-radius-md me-3 align-items-center justify-content-center"
                   style="width: 40px; height: 40px;">
                   <i class="material-symbols-rounded text-dark text-lg">
-                    {% if m.categoria == 'AULA' %}image{% elif m.categoria == 'EVALUACION' %}assignment{% else
-                    %}description{% endif %}
+                    {% if m.categoria == 'AULA' %}image{% elif m.categoria == 'EVALUACION' %}assignment{% else %}description{% endif %}
                   </i>
                 </div>
                 <div>
@@ -127,8 +125,7 @@
                       <div class="d-flex flex-column justify-content-center">
                         <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ e.titulo }}</h6>
                         <p class="text-xxs text-secondary mb-0">
-                          {% if es_coordinador %}De: {{ e.docente.apellidos }}, {{ e.docente.nombres }}{% else
-                          %}Enviado: {{ e.fecha_envio|date:"d/m/Y h:i A" }}{% endif %}
+                          {% if es_coordinador %}De: {{ e.docente.apellidos }}, {{ e.docente.nombres }}{% else %}Enviado: {{ e.fecha_envio|date:"d/m/Y h:i A" }}{% endif %}
                         </p>
                       </div>
                     </div>

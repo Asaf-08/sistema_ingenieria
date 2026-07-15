@@ -74,19 +74,68 @@ def reporte_asistencia_personal(request):
 
 @login_required
 def reporte_asistencia_estudiantes(request):
-    # Usamos la función DRY
-    fecha_inicio, fecha_fin = obtener_rango_fechas(request)
+    # 1. Filtramos por una fecha específica (por defecto HOY)
+    fecha_query = request.GET.get('fecha')
+    if fecha_query:
+        try:
+            fecha_final = datetime.datetime.strptime(fecha_query, '%Y-%m-%d').date()
+        except ValueError:
+            fecha_final = localtime(now()).date()
+    else:
+        fecha_final = localtime(now()).date()
+
+    # 2. Traemos a todos los estudiantes activos y las asistencias de ESE DÍA
+    estudiantes = Estudiante.objects.filter(estado='Activo').order_by('apellidos', 'nombres')
+    asistencias_db = AsistenciaEstudiante.objects.filter(fecha=fecha_final)
     
-    asistencias_estudiantes = AsistenciaEstudiante.objects.filter(
-        fecha__range=[fecha_inicio, fecha_fin]
-    ).select_related('estudiante').order_by('-fecha', 'estudiante__apellidos')
-    
+    # Convertimos las asistencias a un diccionario súper rápido para cruzar datos
+    dict_asistencias = {a.estudiante_id: a for a in asistencias_db}
+
+    # 3. Armamos la Matriz Maestra
+    lista_completa = []
+    for e in estudiantes:
+        asis = dict_asistencias.get(e.id)
+        lista_completa.append({
+            'estudiante': e,
+            'asistencia': asis,
+        })
+
     return render(request, 'asistencia/reporte_estudiantes.html', {
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-        'estudiantes': asistencias_estudiantes,
-        'lista_estudiantes': Estudiante.objects.filter(estado='Activo')
+        'fecha_seleccionada': fecha_final,
+        'lista_completa': lista_completa
     })
+
+# 💥 NUEVA API: GUARDA LA ASISTENCIA MASIVA EN 1 SEGUNDO
+@require_POST
+def guardar_asistencia_masiva_api(request):
+    try:
+        data = json.loads(request.body)
+        fecha_str = data.get('fecha')
+        registros = data.get('registros', [])
+        
+        fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        hora_actual = localtime(now()).time()
+
+        for reg in registros:
+            est_id = reg.get('estudiante_id')
+            estado = reg.get('estado')
+            justificacion = reg.get('justificacion', '')
+
+            if estado: # Si hay un check marcado
+                asistencia, created = AsistenciaEstudiante.objects.get_or_create(
+                    estudiante_id=est_id,
+                    fecha=fecha_obj,
+                    defaults={'estado': estado, 'hora_registro': hora_actual, 'justificacion': justificacion}
+                )
+                if not created:
+                    asistencia.estado = estado
+                    if justificacion:
+                        asistencia.justificacion = justificacion
+                    asistencia.save()
+
+        return JsonResponse({'success': True, 'mensaje': 'Matriz de asistencia guardada con éxito.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': str(e)})
 
 # ==========================================================
 # ⚙️ APIs DE ASISTENCIA Y ESCÁNER
@@ -209,9 +258,58 @@ def editar_hora_personal_api(request):
     return JsonResponse({'success': True, 'mensaje': 'Horas actualizadas correctamente.'})
 
 @require_POST
+def editar_hora_estudiante_api(request):
+    try:
+        data = json.loads(request.body)
+        asistencia = get_object_or_404(AsistenciaEstudiante, id=data.get('id'))
+        
+        nueva_hora = data.get('hora_registro')
+        if nueva_hora: 
+            asistencia.hora_registro = nueva_hora
+            asistencia.save()
+            return JsonResponse({'success': True, 'mensaje': 'Hora de registro actualizada.'})
+            
+        return JsonResponse({'success': False, 'mensaje': 'Hora no válida.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': str(e)})
+
+@require_POST
 def eliminar_asistencia_personal_api(request, id_asistencia):
     get_object_or_404(AsistenciaPersonal, id=id_asistencia).delete()
     return JsonResponse({'success': True, 'mensaje': 'Registro eliminado correctamente.'})
+
+
+# 💥 NUEVA API: GUARDA LA ASISTENCIA MASIVA EN 1 SEGUNDO
+@require_POST
+def guardar_asistencia_masiva_api(request):
+    try:
+        data = json.loads(request.body)
+        fecha_str = data.get('fecha')
+        registros = data.get('registros', [])
+        
+        fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        hora_actual = localtime(now()).time()
+
+        for reg in registros:
+            est_id = reg.get('estudiante_id')
+            estado = reg.get('estado')
+            justificacion = reg.get('justificacion', '')
+
+            if estado: # Si hay un check marcado
+                asistencia, created = AsistenciaEstudiante.objects.get_or_create(
+                    estudiante_id=est_id,
+                    fecha=fecha_obj,
+                    defaults={'estado': estado, 'hora_registro': hora_actual, 'justificacion': justificacion}
+                )
+                if not created:
+                    asistencia.estado = estado
+                    if justificacion:
+                        asistencia.justificacion = justificacion
+                    asistencia.save()
+
+        return JsonResponse({'success': True, 'mensaje': 'Matriz de asistencia guardada con éxito.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': str(e)})
 
 @require_POST
 def guardar_asistencia_estudiante_api(request):

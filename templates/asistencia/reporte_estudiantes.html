@@ -1,79 +1,146 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+    /* 💥 CONTRASTE ALTO PARA LA TABLA */
+    #tabla-matriz-estudiantes tbody tr td {
+        font-weight: 600 !important;
+        border-bottom: 1px solid #e9ecef;
+    }
+    #tabla-matriz-estudiantes thead th {
+        font-weight: 800 !important;
+        opacity: 1 !important; /* Quitamos la opacidad tenue */
+    }
+
+    /* 💥 DISEÑO DE CHECKS CIRCULARES NATIVOS */
+    .radio-xl {
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        vertical-align: middle;
+        appearance: none;
+        -webkit-appearance: none;
+        border-radius: 50%;
+        border: 2px solid #adb5bd; /* Borde gris inicial */
+        transition: all 0.2s ease-in-out;
+        margin: 0 auto;
+        display: block;
+        background-color: white;
+    }
+    .radio-xl:disabled { cursor: not-allowed; opacity: 0.5; }
+    
+    /* Colores corporativos al rellenarse */
+    .radio-P:checked { background-color: #4CAF50; border-color: #4CAF50; }
+    .radio-T:checked { background-color: #FF9800; border-color: #FF9800; }
+    .radio-F:checked { background-color: #F44336; border-color: #F44336; }
+    .radio-J:checked { background-color: #333333; border-color: #333333; }
+
+    /* Dibuja la palomita (check) blanca adentro */
+    .radio-xl:checked {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 18px;
+    }
+
+    /* 💥 EFECTO HOVER PARA EDITAR HORA */
+    .hover-edit-time {
+        cursor: pointer;
+        padding: 4px 10px;
+        border-radius: 6px;
+        transition: 0.2s background-color;
+    }
+    .hover-edit-time:hover {
+        background-color: #f0f2f5;
+        color: #fb8c00 !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card my-4">
+            <div class="card my-4 shadow-sm">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3">
-                        <h6 class="text-white"><i class="material-symbols-rounded align-middle me-2">school</i> Asistencia de Estudiantes</h6>
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3 d-flex justify-content-between align-items-center">
+                        <h6 class="text-white mb-0"><i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias</h6>
                     </div>
                 </div>
 
                 <div class="card-body px-0 pb-2">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center px-4 mt-3 mb-3 gap-3">
-                        <button class="btn bg-gradient-dark btn-sm mb-0 w-100 w-md-auto" onclick="abrirModalCrearEstudiante()">
-                            <i class="material-symbols-rounded text-sm me-1">add</i> Registro Manual
-                        </button>
-                    </div>
-
-                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center px-4 gap-2 gap-md-3">
-                        <p class="text-sm mb-0 font-weight-bold text-dark">Rango de Búsqueda:</p>
-                        
-                        <form method="GET" action="." class="d-flex flex-column flex-sm-row align-items-center bg-white border-radius-md px-3 py-2 shadow-sm border mb-0 w-100 w-md-auto gap-2">
-                            <div class="d-flex align-items-center me-3">
-                                <label class="text-xs mb-0 me-2 text-secondary font-weight-bold">Desde:</label>
-                                <input type="date" name="fecha_inicio" class="form-control form-control-sm border-bottom border-2 py-0" value="{{ fecha_inicio|date:'Y-m-d' }}" required>
-                            </div>
-                            <div class="d-flex align-items-center me-3">
-                                <label class="text-xs mb-0 me-2 text-secondary font-weight-bold">Hasta:</label>
-                                <input type="date" name="fecha_fin" class="form-control form-control-sm border-bottom border-2 py-0" value="{{ fecha_fin|date:'Y-m-d' }}" required>
-                            </div>
-                            <button type="submit" class="btn btn-sm bg-gradient-primary mb-0 px-3 py-1 d-flex align-items-center" title="Filtrar">
-                                <i class="material-symbols-rounded text-white" style="font-size: 18px;">search</i>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center px-4 mt-3 mb-4 gap-3">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button id="btn-habilitar-edicion" class="btn btn-outline-dark mb-0 d-flex align-items-center" onclick="habilitarModoEdicion()">
+                                <i class="material-symbols-rounded text-sm me-1">edit_square</i> Tomar Asistencia Manual
                             </button>
+                            <button id="btn-guardar-matriz" class="btn bg-gradient-success mb-0 d-flex align-items-center d-none" onclick="guardarMatrizAsistencia()">
+                                <i class="material-symbols-rounded text-sm me-1">save</i> Guardar Asistencia
+                            </button>
+                            <button id="btn-cancelar-edicion" class="btn btn-light mb-0 d-none" onclick="location.reload()">
+                                Cancelar
+                            </button>
+                        </div>
+                        
+                        <form method="GET" action="." id="formFiltroFecha" class="d-flex align-items-center bg-gray-100 border-radius-md px-3 py-2 border mb-0">
+                            <label class="text-sm mb-0 me-2 text-dark font-weight-bold">Fecha de Reporte:</label>
+                            <input type="date" name="fecha" id="fecha_filtro_matriz" class="form-control form-control-md border-bottom border-2 py-0 bg-white px-2" 
+                                   value="{{ fecha_seleccionada|date:'Y-m-d' }}" 
+                                   onchange="document.getElementById('formFiltroFecha').submit();" required>
                         </form>
                     </div>
 
                     <div class="table-responsive px-4">
-                        <table id="tabla-asistencia-estudiantes" class="table align-items-center mb-0 w-100">
+                        <table id="tabla-matriz-estudiantes" class="table align-items-center mb-0 w-100 table-hover">
                             <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estudiante</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Estado</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Llegada</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Fecha</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Acciones</th>
+                                    <th class="text-uppercase text-xs text-dark ps-3">Estudiante</th>
+                                    <th class="text-uppercase text-xs text-dark text-center">Llegada</th>
+                                    <th class="text-uppercase text-success text-xs text-center" title="Presente">P</th>
+                                    <th class="text-uppercase text-warning text-xs text-center" title="Tardanza">T</th>
+                                    <th class="text-uppercase text-danger text-xs text-center" title="Falta">F</th>
+                                    <th class="text-uppercase text-dark text-xs text-center" title="Justificado">J</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for a in estudiantes %}
-                                <tr>
+                                {% for item in lista_completa %}
+                                <tr class="fila-estudiante" data-estudiante-id="{{ item.estudiante.id }}">
                                     <td>
-                                        <div class="d-flex flex-column justify-content-center px-2 py-1">
-                                            <h6 class="mb-0 text-sm">{{ a.estudiante.apellidos }}, {{ a.estudiante.nombres }}</h6>
+                                        <div class="d-flex flex-column justify-content-center px-2 py-2">
+                                            <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ item.estudiante.apellidos }}, {{ item.estudiante.nombres }}</h6>
+                                            {% if item.asistencia and item.asistencia.justificacion %}
+                                                <span class="text-xxs text-info"><i class="material-symbols-rounded align-middle" style="font-size: 12px;">info</i> {{ item.asistencia.justificacion }}</span>
+                                            {% endif %}
                                         </div>
                                     </td>
-                                    <td>
-                                        <span class="badge badge-sm bg-gradient-{% if a.estado == 'P' %}success{% elif a.estado == 'T' %}warning{% elif a.estado == 'J' %}info{% else %}danger{% endif %}">
-                                            {{ a.get_estado_display }}
-                                        </span>
+                                    
+                                    <td class="align-middle text-center text-sm font-weight-bold">
+                                        {% if item.asistencia %}
+                                            <span class="hover-edit-time text-secondary" 
+                                                  onclick="abrirModalEditarHora('{{ item.asistencia.id }}', '{{ item.asistencia.hora_registro|time:'H:i' }}')"
+                                                  title="Clic para modificar la hora">
+                                                <i class="material-symbols-rounded text-sm align-middle me-1">schedule</i>
+                                                {{ item.asistencia.hora_registro|time:"h:i A"|default:"--" }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted font-weight-normal">--</span>
+                                        {% endif %}
                                     </td>
-                                    <td class="align-middle text-center text-sm font-weight-bold">{{ a.hora_registro|time:"h:i A"|default:"--" }}</td>
-                                    <td class="align-middle text-center text-sm">
-                                        <span class="text-secondary font-weight-bold">{{ a.fecha|date:"d/m/Y" }}</span>
+                                    
+                                    <td class="align-middle text-center">
+                                        <input type="radio" name="estado_{{ item.estudiante.id }}" value="P" class="radio-xl radio-P radio-asistencia" disabled {% if item.asistencia.estado == 'P' %}checked{% endif %}>
                                     </td>
                                     <td class="align-middle text-center">
-                                        <button type="button" class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-2" style="width: 35px; height: 35px; padding: 0;"
-                                            onclick="abrirModalEditarEstudiante('{{ a.id }}', '{{ a.estudiante.id }}', '{{ a.hora_registro|time:'H:i' }}', '{{ a.estado }}')">
-                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">edit</i>
-                                        </button>
-                                        <button type="button" class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0" style="width: 35px; height: 35px; padding: 0;"
-                                            onclick="confirmarEliminacionEstudiante('{{ a.id }}')">
-                                            <i class="material-symbols-rounded text-white" style="font-size: 18px;">delete</i>
-                                        </button>
+                                        <input type="radio" name="estado_{{ item.estudiante.id }}" value="T" class="radio-xl radio-T radio-asistencia" disabled {% if item.asistencia.estado == 'T' %}checked{% endif %}>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <input type="radio" name="estado_{{ item.estudiante.id }}" value="F" class="radio-xl radio-F radio-asistencia" disabled {% if item.asistencia.estado == 'F' %}checked{% endif %}>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <input type="radio" name="estado_{{ item.estudiante.id }}" value="J" class="radio-xl radio-J radio-asistencia input-justificado" disabled {% if item.asistencia.estado == 'J' %}checked{% endif %}>
+                                        <input type="hidden" class="justificacion-text" value="{{ item.asistencia.justificacion|default:'' }}">
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -86,53 +153,23 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalAsistenciaEstudiante" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="modalEditarHora" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <div class="modal-header bg-gradient-primary">
-                <h5 class="modal-title text-white" id="modalTituloEstudiante">Asistencia Estudiante</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-gradient-dark">
+                <h6 class="modal-title text-white"><i class="material-symbols-rounded align-middle me-1">schedule</i> Editar Hora de Registro</h6>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="formAsistenciaEstudiante">
-                    {% csrf_token %}
-                    <input type="hidden" id="asistencia_est_id">
-                    <div class="input-group input-group-static mb-3">
-                        <label>Estudiante</label>
-                        <select class="form-control" id="id_estudiante">
-                            <option value="">Seleccione...</option>
-                            {% for e in lista_estudiantes %}
-                            <option value="{{ e.id }}">{{ e.apellidos }}, {{ e.nombres }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="input-group input-group-static mb-3">
-                        <label>Hora de Llegada</label>
-                        <input type="time" class="form-control" id="id_hora_registro" required>
-                    </div>
-                    <div class="input-group input-group-static mb-3">
-                        <label>Estado</label>
-                        <select class="form-control" id="id_estado_est">
-                            <option value="P">Presente</option>
-                            <option value="T">Tardanza</option>
-                            <option value="F">Falta</option>
-                            <option value="J">Falta Justificada</option>
-                        </select>
-                    </div>
-                    <div class="input-group input-group-static mb-3" id="div_justificacion_est" style="display: none;">
-                        <label>Justificación (Requerida)</label>
-                        <textarea class="form-control" id="id_justificacion_est" rows="2" placeholder="Motivo de la inasistencia..."></textarea>
-                    </div>
-
-                    <div class="input-group input-group-static mb-3">
-                        <label>Observaciones (Opcional)</label>
-                        <textarea class="form-control" id="id_observaciones_est" rows="2" placeholder="Detalles adicionales..."></textarea>
-                    </div>
-                </form>
+            <div class="modal-body p-4">
+                <input type="hidden" id="hora_asistencia_id">
+                <div class="input-group input-group-static mb-3">
+                    <label class="font-weight-bold text-dark">Hora Exacta</label>
+                    <input type="time" class="form-control px-2" id="hora_registro_nueva" required>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn bg-gradient-primary" onclick="guardarAsistenciaEstudiante()">Guardar</button>
+            <div class="modal-footer p-2 d-flex justify-content-between">
+                <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn bg-gradient-dark mb-0" onclick="guardarNuevaHora()">Actualizar</button>
             </div>
         </div>
     </div>

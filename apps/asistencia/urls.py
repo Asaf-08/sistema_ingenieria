@@ -29,4 +29,6 @@ urlpatterns = [
     path('api/registrar/', views.registrar_asistencia_api, name='api_registrar'),
     path('api/guardar-estudiante/', views.guardar_asistencia_estudiante_api, name='api_guardar_estudiante'),
     path('api/eliminar-estudiante/<int:id_asistencia>/', views.eliminar_asistencia_estudiante_api, name='api_eliminar_estudiante'),
+    path('api/guardar-masiva/', views.guardar_asistencia_masiva_api, name='api_guardar_masiva_estudiantes'),
+    path('api/editar-hora-estudiante/', views.editar_hora_estudiante_api, name='editar_hora_estudiante_api'),
 ]
