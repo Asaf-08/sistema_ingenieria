@@ -23,7 +23,21 @@ def consolidado_notas_admin(request):
     aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
     
     aula_id = request.GET.get('aula_id')
-    bimestre_actual = request.GET.get('bimestre', 'I')
+    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
+    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
+    bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
+    
+    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
+    bimestre_actual = request.GET.get('bimestre', bimestre_predeterminado)
+    
+    # 💥 NUEVO: Atrapamos de dónde viene el usuario
+    origen = request.GET.get('origen', '')
+    
+    # 💥 NUEVO: Atrapamos el curso que quiere inspeccionar
+    asignacion_id = request.GET.get('asignacion_id')
     
     asignaciones = []
     aula_seleccionada = None
@@ -32,6 +46,11 @@ def consolidado_notas_admin(request):
     total_alumnos = 0
     promedio_aula = 0.0
     top_estudiantes = []
+    
+    # NUEVAS VARIABLES PARA LA TABLA INFERIOR
+    asignacion_seleccionada = None
+    evals_cuaderno, evals_desafio, evals_examenes = [], [], []
+    datos_matriz = []
     
     if aula_id:
         aula_seleccionada = get_object_or_404(Aula, id=aula_id)
@@ -61,22 +80,85 @@ def consolidado_notas_admin(request):
             puntaje_total=Sum('notas__valor', filter=Q(notas__evaluacion__bimestre=bimestre_actual))
         ).exclude(puntaje_total__isnull=True).order_by('-puntaje_total')[:3]
         
+        # 💥 NUEVO BLOQUE: Lógica para la Matriz Detallada de la parte inferior
+        if asignaciones.exists():
+            # Si eligió un curso en el select, lo buscamos. Si no, mostramos el primer curso del salón por defecto.
+            if asignacion_id:
+                asignacion_seleccionada = asignaciones.filter(id=asignacion_id).first()
+            else:
+                asignacion_seleccionada = asignaciones.first()
+
+            if asignacion_seleccionada:
+                # Reutilizamos el motor matemático que armamos para el profesor
+                evaluaciones = asignacion_seleccionada.evaluaciones.filter(bimestre=bimestre_actual).order_by('fecha', 'id')
+
+                evals_cuaderno = evaluaciones.filter(tipo__in=['CUADERNO', 'LIBRO'])
+                evals_desafio = evaluaciones.filter(tipo='DESAFIO')
+                evals_examenes = evaluaciones.filter(tipo__in=['MENSUAL', 'BIMESTRAL', 'SIMULACRO'])
+
+                matriculas = Matricula.objects.filter(aula=aula_seleccionada, estudiante__estado='Activo').order_by('estudiante__apellidos')
+                notas_db = Nota.objects.filter(evaluacion__in=evaluaciones).select_related('matricula', 'evaluacion')
+
+                diccionario_notas = {}
+                for n in notas_db:
+                    if n.matricula_id not in diccionario_notas:
+                        diccionario_notas[n.matricula_id] = {}
+                    diccionario_notas[n.matricula_id][n.evaluacion_id] = n.valor
+
+                for mat in matriculas:
+                    notas_alumno = diccionario_notas.get(mat.id, {})
+
+                    def calcular_promedio(grupo_evaluaciones):
+                        valores = [notas_alumno[e.id] for e in grupo_evaluaciones if e.id in notas_alumno and notas_alumno[e.id] is not None]
+                        return round(sum(valores) / len(valores), 2) if valores else 0.0
+
+                    prom_cuaderno = calcular_promedio(evals_cuaderno)
+                    prom_desafio = calcular_promedio(evals_desafio)
+                    prom_examen = calcular_promedio(evals_examenes)
+
+                    sumatoria_promedios = [p for p in [prom_cuaderno, prom_desafio, prom_examen] if p > 0]
+                    prom_general = round(sum(sumatoria_promedios) / len(sumatoria_promedios), 2) if sumatoria_promedios else 0.0
+
+                    datos_matriz.append({
+                        'estudiante': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
+                        'notas': notas_alumno,
+                        'prom_cuaderno': prom_cuaderno,
+                        'prom_desafio': prom_desafio,
+                        'prom_examen': prom_examen,
+                        'prom_general': prom_general
+                    })
+        
     return render(request, 'personal/consolidado_notas.html', {
         'aulas': aulas,
         'asignaciones': asignaciones,
         'aula_seleccionada': aula_seleccionada,
         'bimestre': bimestre_actual,
-        
+        'origen': origen,
         # Enviamos las métricas reales
         'total_alumnos': total_alumnos,
         'promedio_aula': promedio_aula,
-        'top_estudiantes': top_estudiantes
+        'top_estudiantes': top_estudiantes,
+        
+        # Nuestras variables nuevas
+        'asignacion_seleccionada': asignacion_seleccionada,
+        'evals_cuaderno': evals_cuaderno,
+        'evals_desafio': evals_desafio,
+        'evals_examenes': evals_examenes,
+        'datos_matriz': datos_matriz,
     })
 
 @login_required
 def exportar_matriz_oficial_excel(request, asignacion_id):
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    bimestre_actual = request.GET.get('bimestre', 'I')
+    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
+    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
+    bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
+    
+    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
+    bimestre_actual = request.GET.get('bimestre', bimestre_predeterminado)
     en_blanco = request.GET.get('blanco', '0') == '1'
 
     # 1. Traer datos

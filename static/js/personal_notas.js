@@ -205,18 +205,25 @@ $(document).ready(function() {
       });
 
       $('.btn-nota-rapida').on('click', function() {
-          let valorSeleccionado = $(this).data('val');
           let notaId = $(this).data('id');
           let inputElement = $('#input-nota-' + notaId);
-          
-          inputElement.val(valorSeleccionado);
-          
-          let boton = $(this);
-          boton.removeClass('border-secondary text-secondary').addClass('bg-dark text-white');
-          setTimeout(() => {
-              boton.removeClass('bg-dark text-white').addClass('border-secondary text-secondary');
-          }, 400);
 
-          guardarNotaBD(notaId, valorSeleccionado, inputElement);
+          // 💥 SEGURIDAD FRONTEND: Si el candado está cerrado, bloqueamos el clic
+        if (inputElement.prop('disabled')) {
+            Swal.fire('Registro Cerrado', 'No puedes modificar notas porque el bimestre ya fue enviado a coordinación.', 'info');
+            return; // Corta la ejecución de la función aquí mismo
+        }
+
+        let valorSeleccionado = $(this).data('val');
+          
+        inputElement.val(valorSeleccionado);
+        
+        let boton = $(this);
+        boton.removeClass('border-secondary text-secondary').addClass('bg-dark text-white');
+        setTimeout(() => {
+            boton.removeClass('bg-dark text-white').addClass('border-secondary text-secondary');
+        }, 400);
+
+        guardarNotaBD(notaId, valorSeleccionado, inputElement);
       });
 });

@@ -64,12 +64,13 @@
             <div style="width: 30%; max-width: 80px;">
               <input type="number" 
                      id="input-nota-{{ nota.id }}"
-                     class="form-control text-center font-weight-bold text-lg input-nota border-bottom border-2 px-1" 
+                     class="form-control text-center font-weight-bold text-lg input-nota border-bottom border-2 px-1 {% if registro_cerrado %}bg-gray-200 text-muted{% endif %}" 
                      style="background-color: transparent;"
                      min="0" max="20" step="1"
                      value="{% if nota.valor != None %}{{ nota.valor|floatformat:0 }}{% endif %}"
                      data-nota-id="{{ nota.id }}"
-                     placeholder="--">
+                     placeholder="--"
+                     {% if registro_cerrado %}disabled title="El registro está cerrado"{% endif %}>
             </div>
 
           </li>

@@ -8,13 +8,28 @@
             <div class="card shadow-sm border-radius-lg">
                 <div class="card-header bg-gradient-info pb-3">
                     <div class="d-flex align-items-center">
-                        <i class="material-symbols-rounded text-white text-3xl me-3">analytics</i>
+                        
+                        {% if origen == 'mi_aula' %}
+                        <a href="{% url 'academico:mi_aula' %}?aula_id={{ aula_seleccionada.id }}" class="text-white me-3 d-flex align-items-center opacity-8" title="Volver a Mi Aula" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+                            <i class="material-symbols-rounded" style="font-size: 32px;">arrow_back</i>
+                        </a>
+                        {% endif %}
+
+                        <i class="material-symbols-rounded text-white text-3xl me-3">{% if origen == 'mi_aula' %}table_view{% else %}analytics{% endif %}</i>
+                        
                         <div>
-                            <h5 class="text-white mb-0 font-weight-bold">Centro de Control y Consolidado de Notas</h5>
-                            <p class="text-white text-sm mb-0 opacity-8">Monitoreo analítico de rendimientos, emisión de libretas y reportes oficiales.</p>
+                            {% if origen == 'mi_aula' %}
+                                <h5 class="text-white mb-0 font-weight-bold">Matriz de Notas | {{ aula_seleccionada.grado }} "{{ aula_seleccionada.seccion }}"</h5>
+                                <p class="text-white text-sm mb-0 opacity-8">Auditoría y vista detallada de calificaciones del aula.</p>
+                            {% else %}
+                                <h5 class="text-white mb-0 font-weight-bold">Centro de Control y Consolidado de Notas</h5>
+                                <p class="text-white text-sm mb-0 opacity-8">Monitoreo analítico de rendimientos, emisión de libretas y reportes oficiales.</p>
+                            {% endif %}
                         </div>
+                        
                     </div>
                 </div>
+                {% if origen != 'mi_aula' %}
                 <div class="card-body bg-gray-100 border-radius-bottom-end">
                     <form method="GET" class="row align-items-end">
                         <div class="col-md-5">
@@ -43,11 +58,13 @@
                         </div>
                     </form>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
     {% if aula_seleccionada %}
+    {% if origen != 'mi_aula' %}
     <div class="row mb-4">
         <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
             <div class="card shadow-sm border-radius-md">
@@ -221,5 +238,127 @@
         </div>
     </div>
     {% endif %}
+    <div class="row {% if origen != 'mi_aula' %}mt-5{% endif %} mb-4 vista-matriz" id="zona-matriz-detalle">
+        <div class="col-12">
+            <div class="card shadow-sm border-radius-lg">
+                <div class="card-header pb-3 bg-transparent border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    
+                    <div>
+                        <h6 class="font-weight-bolder text-dark mb-0 d-flex align-items-center">
+                            <i class="material-symbols-rounded text-info me-2">youtube_searched_for</i> Auditoría Detallada
+                        </h6>
+                        <p class="text-xs text-secondary mb-0">Inspeccionando la matriz interna de calificaciones.</p>
+                    </div>
+                    
+                    <form id="formFiltroCurso" class="d-flex align-items-center mb-0 gap-2">
+                        <input type="hidden" id="hidden_aula_id" value="{{ aula_seleccionada.id }}">
+                        
+                        {% if origen == 'mi_aula' %}
+                            <input type="hidden" id="hidden_origen" value="mi_aula">
+                            <label class="text-xs font-weight-bold text-dark mb-0 text-uppercase">Bimestre:</label>
+                            <select id="hidden_bimestre" class="form-control border-info border-2 px-3 py-1 bg-gray-100 me-3" style="min-width: 50px; cursor: pointer;">
+                                <option value="I" {% if bimestre == 'I' %}selected{% endif %}>I</option>
+                                <option value="II" {% if bimestre == 'II' %}selected{% endif %}>II</option>
+                                <option value="III" {% if bimestre == 'III' %}selected{% endif %}>III</option>
+                                <option value="IV" {% if bimestre == 'IV' %}selected{% endif %}>IV</option>
+                            </select>
+                        {% else %}
+                            <input type="hidden" id="hidden_bimestre" value="{{ bimestre }}">
+                        {% endif %}
+                        
+                        <label class="text-xs font-weight-bold text-dark mb-0 text-uppercase">Curso:</label>
+                        <select id="select-curso" class="form-control border-info border-2 px-3 py-1 bg-gray-100" style="min-width: 400px; cursor: pointer;">
+                            {% for asig in asignaciones %}
+                                <option value="{{ asig.id }}" {% if asignacion_seleccionada.id == asig.id %}selected{% endif %}>
+                                    {{ asig.curso.nombre }} (Prof. {{ asig.personal.apellidos }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                
+                <div class="card-body px-0 pb-2" id="contenedor-tabla-matriz">
+                    <div class="table-responsive p-0">
+                        <table id="tablaMatriz" class="table align-items-center mb-0 table-bordered text-center table-hover" style="width: 100%;">
+                          <thead class="bg-light">
+                            <tr>
+                              <th {% if evals_cuaderno or evals_desafio or evals_examenes %}rowspan="2"{% endif %} class="text-center text-uppercase text-secondary text-xxs font-weight-bolder col-sticky-1" style="width: 50px; vertical-align: middle;">N°</th>
+                              <th {% if evals_cuaderno or evals_desafio or evals_examenes %}rowspan="2"{% endif %} class="text-start text-uppercase text-secondary text-xxs font-weight-bolder px-4 col-sticky-2" style="vertical-align: middle;">Apellidos y Nombres</th>
+                              
+                              {% if evals_cuaderno %}
+                              <th colspan="{{ evals_cuaderno|length|add:1 }}" class="text-center text-uppercase text-info text-xxs font-weight-bolder" style="background-color: #e3f2fd; border-bottom: 1px solid #dee2e6;">REVISIÓN DE CUADERNOS</th>
+                              {% endif %}
+                              
+                              {% if evals_desafio %}
+                              <th colspan="{{ evals_desafio|length|add:1 }}" class="text-center text-uppercase text-warning text-xxs font-weight-bolder" style="background-color: #fff8e1; border-bottom: 1px solid #dee2e6;">DESAFÍOS DIARIOS</th>
+                              {% endif %}
+                              
+                              {% if evals_examenes %}
+                              <th colspan="{{ evals_examenes|length|add:1 }}" class="text-center text-uppercase text-danger text-xxs font-weight-bolder" style="background-color: #ffebee; border-bottom: 1px solid #dee2e6;">EXÁMENES Y SIMULACROS</th>
+                              {% endif %}
+                              
+                              <th {% if evals_cuaderno or evals_desafio or evals_examenes %}rowspan="2"{% endif %} class="text-center text-uppercase text-white text-xxs font-weight-bolder bg-dark" style="vertical-align: bottom;">
+                                <div class="th-vertical mx-auto text-white">CERTIFICACIÓN GENERAL</div>
+                              </th>
+                            </tr>
+            
+                            {% if evals_cuaderno or evals_desafio or evals_examenes %}
+                            <tr>
+                              {% for c in evals_cuaderno %}
+                                <th><div class="th-vertical mx-auto">{{ c.nombre }}</div></th>
+                              {% endfor %}
+                              {% if evals_cuaderno %}<th style="background-color: #f8fdff;"><div class="th-vertical mx-auto text-info font-weight-bold">PROM. CUADERNOS</div></th>{% endif %}
+            
+                              {% for d in evals_desafio %}
+                                <th><div class="th-vertical mx-auto">{{ d.nombre }}</div></th>
+                              {% endfor %}
+                              {% if evals_desafio %}<th style="background-color: #fffdf5;"><div class="th-vertical mx-auto text-warning font-weight-bold">PROM. DESAFÍOS</div></th>{% endif %}
+            
+                              {% for e in evals_examenes %}
+                                <th><div class="th-vertical mx-auto">{{ e.nombre }}</div></th>
+                              {% endfor %}
+                              {% if evals_examenes %}<th style="background-color: #fff5f6;"><div class="th-vertical mx-auto text-danger font-weight-bold">PROM. EXÁMENES</div></th>{% endif %}
+                            </tr>
+                            {% endif %}
+                          </thead>
+                          
+                          <tbody>
+                            {% for fila in datos_matriz %}
+                            <tr>
+                              <td class="td-sticky-1 text-sm text-secondary"></td> 
+                              <td class="td-sticky-2 text-start px-4 text-dark text-sm">{{ fila.estudiante }}</td>
+                              
+                              {% for c in evals_cuaderno %}<td class="text-sm">{% for k, v in fila.notas.items %}{% if k == c.id %}{{ v|default:"-" }}{% endif %}{% endfor %}</td>{% endfor %}
+                              {% if evals_cuaderno %}<td class="text-sm font-weight-bold text-info" style="background-color: #f8fdff;">{{ fila.prom_cuaderno }}</td>{% endif %}
+            
+                              {% for d in evals_desafio %}<td class="text-sm">{% for k, v in fila.notas.items %}{% if k == d.id %}{{ v|default:"-" }}{% endif %}{% endfor %}</td>{% endfor %}
+                              {% if evals_desafio %}<td class="text-sm font-weight-bold text-warning" style="background-color: #fffdf5;">{{ fila.prom_desafio }}</td>{% endif %}
+            
+                              {% for e in evals_examenes %}<td class="text-sm">{% for k, v in fila.notas.items %}{% if k == e.id %}{{ v|default:"-" }}{% endif %}{% endfor %}</td>{% endfor %}
+                              {% if evals_examenes %}<td class="text-sm font-weight-bold text-danger" style="background-color: #fff5f6;">{{ fila.prom_examen }}</td>{% endif %}
+            
+                              <td class="text-sm font-weight-black text-white {% if fila.prom_general >= 11 %}bg-success{% else %}bg-danger{% endif %}">
+                                  {{ fila.prom_general }}
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
+{% endblock content %}
+
+{% block scripts %}
+<script defer src="{% static 'plugins/datatables/js/dataTables.buttons.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/jszip.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/pdfmake.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/vfs_fonts.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/buttons.html5.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/buttons.print.min.js' %}"></script>
+<script defer src="{% static 'js/matriz_notas.js' %}"></script>
 {% endblock %}

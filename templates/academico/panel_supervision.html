@@ -168,102 +168,6 @@
         </div>
       </div>
     </div>
-    {% if es_coordinador %}
-    <div class="row mt-5">
-      <div class="col-12">
-        <div class="card shadow-lg border-radius-xl">
-
-          <div
-            class="card-header p-4 bg-gradient-info position-relative mt-n4 mx-3 z-index-2 border-radius-lg shadow-dark">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <div>
-                <h6 class="text-white text-capitalize mb-0">
-                  <i class="material-symbols-rounded align-middle me-2">analytics</i>Matriz de Cumplimiento Académico
-                </h6>
-                <p class="text-sm text-white opacity-8 mb-0">Auditoría en tiempo real de materiales y evaluaciones por
-                  aula.</p>
-              </div>
-            </div>
-
-            <div class="row bg-white border-radius-md p-2 mx-0 shadow-sm mt-3 d-flex align-items-center">
-              <div class="col-md-6">
-                <label class="text-xs font-weight-bold text-dark mb-0">Supervisión Específica:</label>
-                <select class="form-control border-0 border-2 px-2 py-1 text-dark font-weight-bold"
-                  id="filtroTemaDinamico" style="background-color: #f8f9fa;">
-                  <option value="GENERAL">Vista General (Total Envíos)</option>
-                  <option value="TEMA_1">Tema 1</option>
-                  <option value="TEMA_2">Tema 2</option>
-                  <option value="TEMA_3">Tema 3</option>
-                  <option value="TEMA_4">Tema 4</option>
-                  <option value="TEMA_5">Tema 5</option>
-                  <option value="TEMA_6">Tema 6</option>
-                  <option value="CALIDAD">Control de Calidad (Mensual)</option>
-                  <option value="ISO">Examen ISO (Bimestral)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-0">
-              <table class="table align-items-center mb-0 table-hover" id="tabla-matriz-cumplimiento">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado
-                    </th>
-                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente</th>
-                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso y Aula</th>
-                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
-                      id="th-dinamico">Progreso General</th>
-                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                      Simulacro</th>
-                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for m in matriz_cumplimiento %}
-                  <tr>
-                    <td class="align-middle text-center">
-                      <i class="material-symbols-rounded text-{{ m.estado_color }} text-lg">{{ m.icono }}</i>
-                    </td>
-                    <td>
-                      <p class="text-sm font-weight-bold mb-0 text-dark">{{ m.docente }}</p>
-                    </td>
-                    <td>
-                      <p class="text-xs font-weight-bold text-info mb-0">{{ m.curso }}</p>
-                      <p class="text-xxs text-secondary mb-0">{{ m.aula_texto }}</p>
-                    </td>
-
-                    <td class="align-middle text-center celda-dinamica" data-temas='{{ m.temas_json|safe }}'
-                      data-total='{{ m.total_envios }}'>
-                      <span class="badge bg-gradient-secondary">{{ m.total_envios }} envíos realizados</span>
-                    </td>
-
-                    <td class="align-middle text-center">
-                      {% if m.tiene_simulacro %}
-                      <i class="material-symbols-rounded text-success text-md">check_circle</i>
-                      {% else %}
-                      <i class="material-symbols-rounded text-danger text-md">cancel</i>
-                      {% endif %}
-                    </td>
-
-                    <td class="align-middle text-center">
-                      <button class="btn btn-outline-primary btn-sm mb-0 px-3"
-                        onclick="abrirHistorialMateriales({{ m.asignacion_id }})">
-                        <i class="material-symbols-rounded text-sm align-middle">list</i> Ver Detalle
-                      </button>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
   </div>
 </div>
 
@@ -471,19 +375,6 @@
         <a href="#" id="btn-descargar-doc-global" class="btn bg-gradient-info mb-0" download>
           <i class="material-symbols-rounded align-middle text-sm me-1">download</i> Descargar Archivo
         </a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="modalHistorialMateriales" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-gradient-info">
-        <h5 class="modal-title text-white">Historial de Materiales</h5>
-        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4 bg-gray-100" id="contenidoHistorial" style="max-height: 60vh; overflow-y: auto;">
       </div>
     </div>
   </div>

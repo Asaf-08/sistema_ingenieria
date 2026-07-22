@@ -4,7 +4,7 @@ from django import forms
 from django.shortcuts import redirect, render, get_object_or_404
 import gspread
 from google.oauth2.service_account import Credentials
-from apps.academico.models import ArchivoMaterial, AsignacionAcademica, Curso, Evaluacion, Matricula, Nota, PeriodoLectivo, SolicitudImpresion, Aula, EvaluacionActitudinal
+from apps.academico.models import ArchivoMaterial, AsignacionAcademica, EntregaSimulacro, Evaluacion, Matricula, Nota, PeriodoLectivo, SolicitudImpresion, Aula, EvaluacionActitudinal, CierreRegistroBimestral
 from apps.asistencia.models import AsistenciaEstudiante
 from .models import Personal
 from .forms import EditarPerfilForm, PersonalForm
@@ -159,9 +159,25 @@ def lista_evaluaciones(request, asignacion_id):
     # Traemos todas las evaluaciones creadas para este curso, ordenadas de las más recientes a las más antiguas
     evaluaciones = Evaluacion.objects.filter(asignacion=asignacion).order_by('-fecha', '-id')
     
+    # 💥 Obtenemos los candados de este curso para saber qué bimestres están cerrados
+    cierres_db = CierreRegistroBimestral.objects.filter(asignacion=asignacion)
+    # Convertimos a un diccionario { 'I': True, 'II': False } para que el HTML lo lea fácil
+    diccionario_cierres = {c.bimestre: c.cerrado for c in cierres_db}
+    
+    # 💥 LA MAGIA: Preparamos la data masticada para el HTML
+    bimestres_info = []
+    for b_key, b_name in asignacion.periodo.BIMESTRES:
+        bimestres_info.append({
+            'key': b_key,
+            'name': b_name,
+            'cerrado': diccionario_cierres.get(b_key, False)
+        })
+    
     return render(request, 'personal/lista_evaluaciones.html', {
         'asignacion': asignacion,
-        'evaluaciones': evaluaciones
+        'evaluaciones': evaluaciones,
+        'diccionario_cierres': diccionario_cierres, # Lo mandamos al frontend
+        'bimestres_info': bimestres_info # Lo mandamos al frontend
     })
 
 @require_POST
@@ -230,6 +246,10 @@ def registro_notas(request, evaluacion_id):
     # Traemos la evaluación específica
     evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id)
     
+    # Verificamos si este bimestre está cerrado para bloquear los inputs
+    cierre = CierreRegistroBimestral.objects.filter(asignacion=evaluacion.asignacion, bimestre=evaluacion.bimestre).first()
+    registro_cerrado = cierre.cerrado if cierre else False
+    
     # =========================================================
     # LÓGICA DE AUTO-REPARACIÓN (Self-Healing)
     # Evita el error de "alumnos nuevos" o "notas no generadas"
@@ -256,7 +276,8 @@ def registro_notas(request, evaluacion_id):
     
     return render(request, 'personal/registro_notas.html', {
         'evaluacion': evaluacion,
-        'notas': notas
+        'notas': notas,
+        'registro_cerrado': registro_cerrado
     })
     
 @require_POST
@@ -266,6 +287,11 @@ def guardar_nota_ajax(request):
     
     try:
         nota = get_object_or_404(Nota, id=nota_id)
+        
+        # 💥 SEGURIDAD ANTI-HACKERS: Verificamos si el candado está cerrado
+        cierre = CierreRegistroBimestral.objects.filter(asignacion=nota.evaluacion.asignacion, bimestre=nota.evaluacion.bimestre).first()
+        if cierre and cierre.cerrado:
+            return JsonResponse({'status': 'error', 'message': 'El registro está CERRADO. No puede modificar notas.'})
         
         # Si el profesor borra la nota (la deja vacía), guardamos NULL
         if valor == '':
@@ -279,6 +305,29 @@ def guardar_nota_ajax(request):
         
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+@require_POST
+def toggle_cierre_registro_ajax(request):
+    asignacion_id = request.POST.get('asignacion_id')
+    bimestre = request.POST.get('bimestre')
+    accion = request.POST.get('accion') # 'cerrar' o 'abrir'
+    
+    asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
+    
+    cierre, created = CierreRegistroBimestral.objects.get_or_create(
+        asignacion=asignacion, bimestre=bimestre
+    )
+    
+    if accion == 'cerrar':
+        cierre.cerrado = True
+        cierre.fecha_cierre = timezone.now()
+        mensaje = f"Registro del Bimestre {bimestre} cerrado y enviado a Coordinación."
+    else:
+        cierre.cerrado = False
+        mensaje = f"Registro del Bimestre {bimestre} reabierto. Ya puede editar notas."
+        
+    cierre.save()
+    return JsonResponse({'success': True, 'mensaje': mensaje})
 
 def material_upload(request, asignacion_id):
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
@@ -531,10 +580,18 @@ def guardar_actitudinal_ajax(request):
 def matriz_notas(request, asignacion_id):
     """ Genera la Sábana de Notas dinámica para el profesor """
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    bimestre_actual = request.GET.get('bimestre', 'I') # Por defecto trae el primer bimestre
+    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
+    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
+    bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
+    
+    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
+    bimestre = request.GET.get('bimestre', bimestre_predeterminado)
 
     # 1. Traemos las evaluaciones del profesor ordenadas cronológicamente
-    evaluaciones = asignacion.evaluaciones.filter(bimestre=bimestre_actual).order_by('fecha', 'id')
+    evaluaciones = asignacion.evaluaciones.filter(bimestre=bimestre).order_by('fecha', 'id')
     
     # Las agrupamos por tipo para las cabeceras HTML
     evals_cuaderno = evaluaciones.filter(tipo='CUADERNO')
@@ -584,7 +641,7 @@ def matriz_notas(request, asignacion_id):
 
     return render(request, 'personal/matriz_notas.html', {
         'asignacion': asignacion,
-        'bimestre': bimestre_actual,
+        'bimestre': bimestre,
         'evals_cuaderno': evals_cuaderno,
         'evals_desafio': evals_desafio,
         'evals_examenes': evals_examenes,
@@ -883,3 +940,123 @@ def mi_perfil(request):
         'segment': 'perfil', # Mantiene iluminada la opción en tu sidebar
     }
     return render(request, 'personal/mi_perfil.html', context)
+
+@login_required
+def auditoria_academica_admin(request):
+    """ Panel Panóptico para monitorear el cierre de notas de los docentes """
+    personal_actual = obtener_personal_logueado(request)
+    if personal_actual.cargo not in ['DIR', 'COO']:
+        return redirect('home') # Seguridad: Solo directivos
+
+    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
+    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
+    bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
+    
+    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
+    bimestre_seleccionado = request.GET.get('bimestre', bimestre_predeterminado)
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+
+    # 1. Traemos toda la carga académica del año
+    asignaciones = AsignacionAcademica.objects.filter(
+        periodo=periodo_actual
+    ).select_related('aula', 'curso', 'personal').order_by('aula__nivel', 'aula__grado', 'curso__nombre')
+
+    # 2. Traemos los candados (Cierres) de este bimestre
+    cierres = CierreRegistroBimestral.objects.filter(
+        bimestre=bimestre_seleccionado, 
+        asignacion__periodo=periodo_actual
+    )
+    dict_cierres = {c.asignacion_id: c for c in cierres}
+
+    # 3. Traemos las asignaciones que ya tienen al menos 1 evaluación creada en este bimestre (Para saber quién está trabajando)
+    asignaciones_con_evaluaciones = set(
+        Evaluacion.objects.filter(
+            bimestre=bimestre_seleccionado, 
+            asignacion__periodo=periodo_actual
+        ).values_list('asignacion_id', flat=True)
+    )
+
+    # 4. Construimos la Matriz Inteligente
+    lista_auditoria = []
+    for asig in asignaciones:
+        cierre = dict_cierres.get(asig.id)
+        
+        if cierre and cierre.cerrado:
+            estado = 'CERRADO / ENTREGADO'
+            color = 'success'
+            icono = 'check_circle'
+        elif asig.id in asignaciones_con_evaluaciones:
+            estado = 'EN PROGRESO'
+            color = 'warning'
+            icono = 'hourglass_bottom'
+        else:
+            estado = 'SIN INICIAR'
+            color = 'danger'
+            icono = 'cancel'
+
+        lista_auditoria.append({
+            'asignacion': asig,
+            'estado': estado,
+            'color': color,
+            'icono': icono,
+        })
+
+    # Extraemos la lista de bimestres desde el modelo PeriodoLectivo
+    opciones_bimestres = PeriodoLectivo.BIMESTRES
+    
+    # Lo que HAN cumplido
+    solicitudes = SolicitudImpresion.objects.filter(asignacion__periodo=periodo_actual).prefetch_related('archivos').order_by('-fecha_subida')
+    
+    # 💥 Obtenemos los simulacros completados de forma rápida
+    entregas_simulacro = set(EntregaSimulacro.objects.filter(finalizado=True).values_list('curso_id', 'docente_id'))
+    
+    matriz_cumplimiento = []
+    for asig in asignaciones:
+        sols_asig = [s for s in solicitudes if s.asignacion_id == asig.id]
+        
+        # Empaquetamos qué temas y qué exámenes ya subió este profesor
+        temas_dict = {}
+        for s in sols_asig:
+            temas_dict[s.tema] = True # Registramos el Tema (TEMA_1, TEMA_2, etc.)
+            
+            # Revisamos dentro de los archivos por si hay un examen
+            tipos_archivos = [a.tipo for a in s.archivos.all()]
+            if 'CALIDAD' in tipos_archivos:
+                temas_dict['CALIDAD'] = True
+            if 'ISO' in tipos_archivos:
+                temas_dict['ISO'] = True
+                
+        tiene_simulacro = (asig.curso_id, asig.personal_id) in entregas_simulacro
+        
+        # 💥 SEMÁFORO GLOBAL DE COLORES
+        if sols_asig and tiene_simulacro:
+            estado_color = 'success' # Verde (Todo al día)
+            icono = 'check_circle'
+        elif sols_asig:
+            estado_color = 'warning' # Naranja (En progreso)
+            icono = 'schedule'
+        else:
+            estado_color = 'danger'  # Rojo (Falta todo)
+            icono = 'cancel'
+            
+        matriz_cumplimiento.append({
+            'asignacion_id': asig.id,
+            'docente': f"{asig.personal.apellidos}, {asig.personal.nombres}",
+            'aula_texto': f"{asig.aula.nivel} - {asig.aula.grado} {asig.aula.seccion}",
+            'curso': asig.curso.nombre,
+            'estado_color': estado_color,
+            'icono': icono,
+            'total_envios': len(sols_asig),
+            'temas_json': json.dumps(temas_dict), # Magia pura para el Frontend
+            'tiene_simulacro': tiene_simulacro,
+        })
+
+    return render(request, 'personal/auditoria_academica.html', {
+        'lista_auditoria': lista_auditoria,
+        'bimestre_seleccionado': bimestre_seleccionado,
+        'opciones_bimestres': opciones_bimestres,
+        'matriz_cumplimiento': matriz_cumplimiento,
+    })

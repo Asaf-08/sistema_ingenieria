@@ -77,6 +77,62 @@ function registrarEventosDashboard() {
         let periodoId = $(this).data('periodo-id');
         ejecutarClusteringKMeans(aulaId, periodoId);
     });
+
+    // -------------------------------------------------------------
+    // EVENTO AJAX: CAMBIO DE CURSO DINÁMICO
+    // -------------------------------------------------------------
+    $(document).on('change', '#select-curso-aula', function() {
+        let cursoId = $(this).val();
+        // Atrapamos el ID de la asignación desde el data-attribute
+        let asignacionId = $(this).find(':selected').data('asignacion'); 
+        
+        let btnSabana = $('#btn-sabana-notas');
+        let baseUrl = btnSabana.data('base-url');
+
+        // 1. Actualización inteligente del botón Sábana de Notas
+        if (asignacionId) {
+            btnSabana.attr('href', baseUrl + '&asignacion_id=' + asignacionId);
+        } else {
+            btnSabana.attr('href', baseUrl);
+        }
+
+        // 2. Construimos la URL de la petición
+        let urlObj = new URL(window.location.href);
+        if (cursoId) {
+            urlObj.searchParams.set('curso_id', cursoId);
+        } else {
+            urlObj.searchParams.delete('curso_id');
+        }
+        let urlAjax = urlObj.toString();
+
+        // 3. Pantalla de carga fluida
+        Swal.fire({
+            title: 'Analizando rendimiento...',
+            text: 'Calculando tendencias y semáforos de la IA',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        // 4. Inyección del nuevo Dashboard (Tarjetas + Tabla)
+        $('#dashboard-dinamico-aula').load(urlAjax + ' #dashboard-dinamico-aula > *', function(response, status, xhr) {
+            if (status == "error") {
+                Swal.fire('Error', 'Hubo un problema al cargar los datos del curso.', 'error');
+            } else {
+                Swal.close();
+                // Actualizamos la URL del navegador en silencio por si recarga la página
+                window.history.replaceState(null, null, urlAjax);
+            }
+        });
+    });
+
+    // 💥 EJECUCIÓN INICIAL: Forzamos la asignación del botón al cargar la página por primera vez
+    if ($('#select-curso-aula').val()) {
+        let asignacionInicial = $('#select-curso-aula').find(':selected').data('asignacion');
+        if (asignacionInicial) {
+            let btn = $('#btn-sabana-notas');
+            btn.attr('href', btn.data('base-url') + '&asignacion_id=' + asignacionInicial);
+        }
+    }
 }
 
 // =========================================================================

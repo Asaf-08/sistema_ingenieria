@@ -8,9 +8,10 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
-from apps.academico.models import Estudiante
+from apps.academico.models import Aula, Estudiante
 from apps.personal.models import Personal
 from apps.asistencia.models import AsistenciaPersonal, AsistenciaEstudiante
+from apps.personal.views import obtener_personal_logueado
 
 # ==========================================================
 # 🛠️ FUNCIONES AUXILIARES (PRINCIPIO DRY)
@@ -74,6 +75,11 @@ def reporte_asistencia_personal(request):
 
 @login_required
 def reporte_asistencia_estudiantes(request):
+    personal_actual = obtener_personal_logueado(request)
+    
+    # 💥 MAGIA RBAC: Definimos quién tiene acceso a los filtros globales
+    es_admin = personal_actual.cargo in ['DIR', 'COO', 'SEC', 'ASI']
+
     # 1. Filtramos por una fecha específica (por defecto HOY)
     fecha_query = request.GET.get('fecha')
     if fecha_query:
@@ -84,14 +90,48 @@ def reporte_asistencia_estudiantes(request):
     else:
         fecha_final = localtime(now()).date()
 
-    # 2. Traemos a todos los estudiantes activos y las asistencias de ESE DÍA
-    estudiantes = Estudiante.objects.filter(estado='Activo').order_by('apellidos', 'nombres')
-    asistencias_db = AsistenciaEstudiante.objects.filter(fecha=fecha_final)
+    # 2. Capturamos el filtro de Aula desde la URL
+    aula_id = request.GET.get('aula_id', '')
+    origen = request.GET.get('origen', '')
     
-    # Convertimos las asistencias a un diccionario súper rápido para cruzar datos
+    # Traemos todas las aulas para armar el Select (solo útil para Admins)
+    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+
+    # 3. Traemos a los estudiantes activos
+    estudiantes = Estudiante.objects.filter(estado='Activo').order_by('apellidos', 'nombres')
+    
+    # 💥 EL ESCUDO DE SEGURIDAD
+    if not es_admin:
+        # Si es un Tutor, lo obligamos a ver SOLO sus propias aulas
+        mis_aulas = Aula.objects.filter(tutor=personal_actual)
+        
+        # Validamos que el aula de la URL le pertenezca. Si no, le damos su 1ra aula.
+        if aula_id and mis_aulas.filter(id=aula_id).exists():
+            aula_id = int(aula_id)
+        else:
+            aula_id = mis_aulas.first().id if mis_aulas.exists() else None
+
+    aula_obj = None
+    # 4. Recortamos la lista a través de la tabla Matrícula
+    if aula_id:
+        aula_obj = Aula.objects.filter(id=aula_id).first()
+        estudiantes = estudiantes.filter(
+            matricula__aula_id=aula_id, 
+            matricula__periodo__activo=True
+        ).distinct()
+    else:
+        if not es_admin:
+            estudiantes = Estudiante.objects.none() # Si es tutor sin aula, no ve a nadie
+
+    # 5. Traemos las asistencias de ESE DÍA solo de los alumnos filtrados
+    asistencias_db = AsistenciaEstudiante.objects.filter(
+        fecha=fecha_final,
+        estudiante__in=estudiantes
+    ).select_related('estudiante')
+    
     dict_asistencias = {a.estudiante_id: a for a in asistencias_db}
 
-    # 3. Armamos la Matriz Maestra
+    # 6. Armamos la Matriz Maestra
     lista_completa = []
     for e in estudiantes:
         asis = dict_asistencias.get(e.id)
@@ -102,7 +142,12 @@ def reporte_asistencia_estudiantes(request):
 
     return render(request, 'asistencia/reporte_estudiantes.html', {
         'fecha_seleccionada': fecha_final,
-        'lista_completa': lista_completa
+        'lista_completa': lista_completa,
+        'aulas': aulas,
+        'aula_seleccionada': int(aula_id) if aula_id else '',
+        'es_admin': es_admin, # 💥 Pasamos el permiso al HTML
+        'aula_obj': aula_obj,  # 💥 Enviamos el objeto del aula
+        'origen': origen,      # 💥 Enviamos la bandera de origen
     })
 
 # 💥 NUEVA API: GUARDA LA ASISTENCIA MASIVA EN 1 SEGUNDO

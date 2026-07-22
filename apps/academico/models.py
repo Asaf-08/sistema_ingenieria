@@ -104,9 +104,6 @@ class Estudiante(models.Model):
     # Datos de contacto rápidos
     telefono_apoderado = models.CharField(max_length=15, blank=True, null=True, verbose_name="Teléfono del Apoderado")
     direccion = models.CharField(max_length=200, blank=True, null=True)
-
-    # Relación: Un alumno pertenece a UN aula (La tabla que creamos arriba)
-    aula = models.ForeignKey(Aula, on_delete=models.SET_NULL, null=True, related_name='estudiantes', verbose_name="Aula Actual")
     
     # Auditoría (Lo que tenías como estado y fecha_registro en tu SQL)
     estado = models.CharField(max_length=15, choices=ESTADOS, default='Activo', db_index=True) # 💥 Optimizado para filtros
@@ -711,3 +708,21 @@ class Institucion(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - {self.sede}"
+
+class CierreRegistroBimestral(models.Model):
+    """ Actúa como un candado de seguridad por cada curso y bimestre """
+    asignacion = models.ForeignKey(AsignacionAcademica, on_delete=models.CASCADE, related_name='cierres')
+    bimestre = models.CharField(max_length=5, choices=PeriodoLectivo.BIMESTRES)
+    
+    cerrado = models.BooleanField(default=False, verbose_name="¿Registro Cerrado?")
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Cierre de Registro"
+        verbose_name_plural = "Cierres de Registros"
+        # Un profesor solo puede cerrar un bimestre de un curso una sola vez
+        unique_together = ['asignacion', 'bimestre']
+
+    def __str__(self):
+        estado = "CERRADO" if self.cerrado else "ABIERTO"
+        return f"{self.asignacion.curso.nombre} - Bimestre {self.bimestre} ({estado})"

@@ -34,113 +34,143 @@
 
   <div class="nav-wrapper position-relative end-0 mb-4 border-radius-lg">
     <ul class="nav nav-pills nav-fill p-0" role="tablist" style="list-style: none !important;">
-      {% for b_key, b_name in asignacion.periodo.BIMESTRES %}
-      <li class="nav-item">
-        <a class="nav-link mb-0 px-0 py-1 {% if asignacion.periodo.bimestre_actual == b_key %}active{% endif %} font-weight-bold tab-custom-text"
-          data-bs-toggle="tab" href="#bim{{ forloop.counter }}" role="tab">{{ b_name }}</a>
-      </li>
+      {% for b in bimestres_info %}
+        {% if request.user.perfil_personal == asignacion.aula.tutor or asignacion.periodo.bimestre_actual == b.key %}
+        <li class="nav-item">
+          <a class="nav-link mb-0 px-0 py-1 {% if asignacion.periodo.bimestre_actual == b.key %}active{% endif %} font-weight-bold tab-custom-text"
+            data-bs-toggle="tab" href="#bim-{{ b.key }}" role="tab">{{ b.name }}</a>
+        </li>
+        {% endif %}
       {% endfor %}
     </ul>
   </div>
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <button class="btn bg-gradient-dark w-100 mb-0 py-3 d-flex align-items-center justify-content-center"
-        onclick="abrirModalNuevaEvaluacion()">
-        <i class="material-symbols-rounded me-2">add_circle</i> Nueva Calificación
-      </button>
-    </div>
-  </div>
-
   <div class="tab-content mt-4">
-    {% for b_key, b_name in asignacion.periodo.BIMESTRES %}
-    <div class="tab-pane fade {% if asignacion.periodo.bimestre_actual == b_key %}show active{% endif %}" id="bim{{ forloop.counter }}" role="tabpanel">
+    {% for b in bimestres_info %}
+      {% if request.user.perfil_personal == asignacion.aula.tutor or asignacion.periodo.bimestre_actual == b.key %}
+      
+      <div class="tab-pane fade {% if asignacion.periodo.bimestre_actual == b.key %}show active{% endif %}" id="bim-{{ b.key }}" role="tabpanel">
 
-      <div class="row">
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-gray-100 p-3 border-radius-md">
+           <div>
+              <h6 class="mb-0 text-dark">Estado del {{ b.name }}</h6>
+           </div>
+           <div>
+              {% if b.cerrado %}
+                  <button class="btn btn-sm bg-gradient-warning mb-0 btn-toggle-cierre" data-bimestre="{{ b.key }}" data-accion="abrir">
+                     <i class="material-symbols-rounded text-sm align-middle me-1">lock_open</i> Reabrir Registro
+                  </button>
+              {% else %}
+                  <button class="btn btn-sm bg-gradient-success mb-0 btn-toggle-cierre" data-bimestre="{{ b.key }}" data-accion="cerrar">
+                     <i class="material-symbols-rounded text-sm align-middle me-1">lock</i> Finalizar y Enviar a Coordinación
+                  </button>
+              {% endif %}
+           </div>
+        </div>
 
-        <div class="col-12 col-lg-4 mb-4">
-          <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Desafíos Diarios</h6>
-          <div class="card mb-4 shadow-sm border-0">
-            <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
-              {% for ev in evaluaciones %}
-                {% if ev.bimestre == b_key and ev.tipo == 'DESAFIO' %}
-                <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
-                  <div class="d-flex align-items-center">
-                    <div class="icon icon-shape icon-sm bg-gradient-primary shadow text-center border-radius-md me-3">
-                      <i class="material-symbols-rounded text-white" style="font-size: 16px;">assignment</i>
+        {% if not b.cerrado %}
+        <div class="row mb-4 btn-nueva-evaluacion-container" data-bimestre="{{ b.key }}">
+          <div class="col-12">
+            <button class="btn bg-gradient-dark w-100 mb-0 py-3 d-flex align-items-center justify-content-center"
+              onclick="abrirModalNuevaEvaluacion()">
+              <i class="material-symbols-rounded me-2">add_circle</i> Nueva Calificación
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-white text-sm" role="alert">
+          <i class="material-symbols-rounded align-middle me-1 text-sm">lock</i> Este bimestre ha sido cerrado y enviado a coordinación. Para realizar cambios, debes reabrir el registro.
+        </div>
+        {% endif %}
+
+        <div class="row">
+          
+          <div class="col-12 col-lg-4 mb-4">
+            <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Desafíos Diarios</h6>
+            <div class="card mb-4 shadow-sm border-0">
+              <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
+                {% for ev in evaluaciones %}
+                  {% if ev.bimestre == b.key and ev.tipo == 'DESAFIO' %}
+                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    <div class="d-flex align-items-center">
+                      <div class="icon icon-shape icon-sm bg-gradient-primary shadow text-center border-radius-md me-3">
+                        <i class="material-symbols-rounded text-white" style="font-size: 16px;">assignment</i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
+                        <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                      <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
-                    </div>
-                  </div>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
+                  No hay desafíos registrados en este bimestre.
                 </li>
-                {% endif %}
-              {% endfor %}
-              <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                No hay desafíos registrados en este bimestre.
-              </li>
-            </ul>
+              </ul>
+            </div>
           </div>
-        </div>
 
-        <div class="col-12 col-lg-4 mb-4">
-          <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Revisión de Cuaderno/Libro</h6>
-          <div class="card mb-4 shadow-sm border-0">
-            <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
-              {% for ev in evaluaciones %}
-                {% if ev.bimestre == b_key %}
-                  {% if ev.tipo == 'CUADERNO' or ev.tipo == 'LIBRO' %}
-                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
-                    <div class="d-flex align-items-center">
-                      <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3">
-                        <i class="material-symbols-rounded text-white" style="font-size: 16px;">menu_book</i>
+          <div class="col-12 col-lg-4 mb-4">
+            <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Revisión de Cuaderno/Libro</h6>
+            <div class="card mb-4 shadow-sm border-0">
+              <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
+                {% for ev in evaluaciones %}
+                  {% if ev.bimestre == b.key %}
+                    {% if ev.tipo == 'CUADERNO' or ev.tipo == 'LIBRO' %}
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                      <div class="d-flex align-items-center">
+                        <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3">
+                          <i class="material-symbols-rounded text-white" style="font-size: 16px;">menu_book</i>
+                        </div>
+                        <div>
+                          <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
+                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                        <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
-                      </div>
-                    </div>
-                  </li>
+                    </li>
+                    {% endif %}
                   {% endif %}
-                {% endif %}
-              {% endfor %}
-              <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                No hay revisiones registradas en este bimestre.
-              </li>
-            </ul>
+                {% endfor %}
+                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
+                  No hay revisiones registradas en este bimestre.
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
 
-        <div class="col-12 col-lg-4 mb-4">
-          <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Exámenes y Simulacros</h6>
-          <div class="card mb-4 shadow-sm border-0">
-            <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
-              {% for ev in evaluaciones %}
-                {% if ev.bimestre == b_key %}
-                  {% if ev.tipo == 'MENSUAL' or ev.tipo == 'BIMESTRAL' or ev.tipo == 'SIMULACRO' %}
-                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
-                    <div class="d-flex align-items-center">
-                      <div class="icon icon-shape icon-sm bg-gradient-danger shadow text-center border-radius-md me-3">
-                        <i class="material-symbols-rounded text-white" style="font-size: 16px;">grade</i>
+          <div class="col-12 col-lg-4 mb-4">
+            <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Exámenes y Simulacros</h6>
+            <div class="card mb-4 shadow-sm border-0">
+              <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
+                {% for ev in evaluaciones %}
+                  {% if ev.bimestre == b.key %}
+                    {% if ev.tipo == 'MENSUAL' or ev.tipo == 'BIMESTRAL' or ev.tipo == 'SIMULACRO' %}
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                      <div class="d-flex align-items-center">
+                        <div class="icon icon-shape icon-sm bg-gradient-danger shadow text-center border-radius-md me-3">
+                          <i class="material-symbols-rounded text-white" style="font-size: 16px;">grade</i>
+                        </div>
+                        <div>
+                          <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
+                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                        <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
-                      </div>
-                    </div>
-                  </li>
+                    </li>
+                    {% endif %}
                   {% endif %}
-                {% endif %}
-              {% endfor %}
-              <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                No hay exámenes registrados en este bimestre.
-              </li>
-            </ul>
+                {% endfor %}
+                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
+                  No hay exámenes registrados en este bimestre.
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
 
-      </div> </div>
+        </div>
+      </div>
+      
+      {% endif %}
     {% endfor %}
   </div>
 </div>

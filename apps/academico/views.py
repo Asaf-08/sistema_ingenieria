@@ -436,13 +436,33 @@ def mi_aula(request):
     if not personal_actual:
         return render(request, 'errores/sin_perfil.html', {'mensaje': 'Sin perfil activo.'})
     
-    aula_tutor = Aula.objects.filter(tutor=personal_actual).first() or Aula.objects.first()
+    # 💥 NUEVA LÓGICA: Buscamos TODAS las aulas donde es tutor
+    aulas_tutoradas = Aula.objects.filter(tutor=personal_actual).order_by('nivel', 'grado', 'seccion')
+    
+    if not aulas_tutoradas.exists():
+        return render(request, 'errores/sin_perfil.html', {
+            'mensaje': 'No tiene ninguna tutoría asignada en este periodo.'
+        })
+
+    # Atrapamos el ID del aula si el profesor usa el desplegable para cambiar de salón
+    aula_id = request.GET.get('aula_id')
+    
+    if aula_id:
+        aula_tutor = aulas_tutoradas.filter(id=aula_id).first()
+        # Si por alguna razón mandan un ID inválido, cargamos la primera por defecto
+        if not aula_tutor:
+            aula_tutor = aulas_tutoradas.first()
+    else:
+        aula_tutor = aulas_tutoradas.first() # Por defecto carga el primer salón
+        
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    cursos = Curso.objects.filter(
-        asignaciones__aula=aula_tutor,
-        asignaciones__periodo=periodo_actual,
-        activo=True
-    ).distinct()
+    
+    # 💥 REEMPLAZA tu antigua variable 'cursos' por esta:
+    asignaciones_aula = AsignacionAcademica.objects.filter(
+        aula=aula_tutor,
+        periodo=periodo_actual,
+        curso__activo=True
+    ).select_related('curso')
     
     curso_id_param = request.GET.get('curso_id', '')
     curso_seleccionado = int(curso_id_param) if curso_id_param.isdigit() else None
@@ -488,11 +508,12 @@ def mi_aula(request):
         })
         
     return render(request, 'academico/mi_aula.html', {
-        'aula': aula_tutor,
+        'aula': aula_tutor,                 # El aula que estamos viendo ahorita
+        'aulas_tutoradas': aulas_tutoradas, # 💥 La lista completa para pintar el combobox
         'alumnos': alumnos_procesados,
         'totales': conteo_estados,
-        'total_alumnos': matriculas.count(),
-        'cursos': cursos,
+        'total_alumnos': len(matriculas),   # 💥 Cambiamos .count() por len() para ahorrar un query extra
+        'asignaciones_aula': asignaciones_aula,
         'curso_seleccionado': curso_seleccionado,
         'periodo': periodo_actual,
         'segment': 'mi_aula'
@@ -581,56 +602,6 @@ def panel_supervision(request):
     
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
 
-    # Lo que DEBEN cumplir
-    asignaciones = AsignacionAcademica.objects.filter(periodo=periodo_actual).select_related('personal', 'curso', 'aula')
-    
-    # Lo que HAN cumplido
-    solicitudes = SolicitudImpresion.objects.filter(asignacion__periodo=periodo_actual).prefetch_related('archivos').order_by('-fecha_subida')
-    
-    # 💥 Obtenemos los simulacros completados de forma rápida
-    entregas_simulacro = set(EntregaSimulacro.objects.filter(finalizado=True).values_list('curso_id', 'docente_id'))
-    
-    matriz_cumplimiento = []
-    for asig in asignaciones:
-        sols_asig = [s for s in solicitudes if s.asignacion_id == asig.id]
-        
-        # Empaquetamos qué temas y qué exámenes ya subió este profesor
-        temas_dict = {}
-        for s in sols_asig:
-            temas_dict[s.tema] = True # Registramos el Tema (TEMA_1, TEMA_2, etc.)
-            
-            # Revisamos dentro de los archivos por si hay un examen
-            tipos_archivos = [a.tipo for a in s.archivos.all()]
-            if 'CALIDAD' in tipos_archivos:
-                temas_dict['CALIDAD'] = True
-            if 'ISO' in tipos_archivos:
-                temas_dict['ISO'] = True
-                
-        tiene_simulacro = (asig.curso_id, asig.personal_id) in entregas_simulacro
-        
-        # 💥 SEMÁFORO GLOBAL DE COLORES
-        if sols_asig and tiene_simulacro:
-            estado_color = 'success' # Verde (Todo al día)
-            icono = 'check_circle'
-        elif sols_asig:
-            estado_color = 'warning' # Naranja (En progreso)
-            icono = 'schedule'
-        else:
-            estado_color = 'danger'  # Rojo (Falta todo)
-            icono = 'cancel'
-            
-        matriz_cumplimiento.append({
-            'asignacion_id': asig.id,
-            'docente': f"{asig.personal.apellidos}, {asig.personal.nombres}",
-            'aula_texto': f"{asig.aula.nivel} - {asig.aula.grado} {asig.aula.seccion}",
-            'curso': asig.curso.nombre,
-            'estado_color': estado_color,
-            'icono': icono,
-            'total_envios': len(sols_asig),
-            'temas_json': json.dumps(temas_dict), # Magia pura para el Frontend
-            'tiene_simulacro': tiene_simulacro,
-        })
-
     return render(request, 'academico/panel_supervision.html', {
         'es_coordinador': es_coordinador,
         'materiales': materiales,
@@ -638,7 +609,6 @@ def panel_supervision(request):
         'form_material': form_material,
         'form_evidencia': form_evidencia,
         'personal': personal_actual,
-        'matriz_cumplimiento': matriz_cumplimiento,  # 💥 Enviamos la nueva variable al HTML
         'segment': 'supervision'
     })
 

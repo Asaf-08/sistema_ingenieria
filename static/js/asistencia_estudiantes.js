@@ -1,4 +1,51 @@
 $(document).ready(function () {
+    // ==========================================================
+    // 💥 LÓGICA DE FILTROS EN CASCADA (NIVEL -> AULA)
+    // ==========================================================
+    const selectNivel = $('#filtro-nivel');
+    const selectAula = $('#filtro-aula');
+    
+    // 1. Guardamos una copia exacta de todas las opciones de Aulas al cargar
+    const opcionesAulasOriginales = selectAula.html();
+
+    // 2. Detectamos si ya hay un aula seleccionada (porque la página se recargó)
+    // y ajustamos automáticamente el select de "Nivel" para que coincida.
+    let nivelPreseleccionado = selectAula.find('option:selected').data('nivel');
+    if (nivelPreseleccionado && nivelPreseleccionado !== 'TODOS') {
+        selectNivel.val(nivelPreseleccionado);
+    }
+
+    // 3. Cuando la secretaria cambie el "Nivel"...
+    selectNivel.on('change', function() {
+        let nivelElegido = $(this).val();
+
+        // A. Restauramos todas las aulas de la memoria
+        selectAula.html(opcionesAulasOriginales);
+
+        // B. Si eligió un nivel específico, ocultamos las aulas que NO son de ese nivel
+        if (nivelElegido !== 'TODOS') {
+            selectAula.find('option').each(function() {
+                // Si el data-nivel de la opción no coincide y no es la opción vacía "-- Seleccione Aula --"
+                if ($(this).data('nivel') !== nivelElegido && $(this).val() !== "") {
+                    $(this).remove(); // La quitamos del select
+                }
+            });
+        }
+        
+        // C. Reseteamos la selección del aula al primer valor vacío
+        // IMPORTANTE: Al cambiarle el .val(""), NO dispara el "onchange" de HTML, 
+        // por lo que NO recarga la página, solo limpia la casilla.
+        selectAula.val(''); 
+    });
+
+    // Simulamos un click inicial oculto para que, si el sistema cargó con "Primaria" 
+    // preseleccionado, el select de aulas se limpie automáticamente al arrancar.
+    if (selectNivel.val() !== 'TODOS') {
+        let aulaIdActual = selectAula.val(); // Guardamos el aula actual
+        selectNivel.trigger('change');       // Filtramos
+        selectAula.val(aulaIdActual);        // Le devolvemos su valor
+    }
+    
     // 💥 INICIALIZACIÓN AISLADA: Solo afecta a la matriz de asistencia
     if ($.fn.DataTable.isDataTable('#tabla-matriz-estudiantes')) {
         $('#tabla-matriz-estudiantes').DataTable().destroy();
@@ -47,6 +94,15 @@ $(document).ready(function () {
     });
 
     $('[data-bs-toggle="tooltip"]').tooltip();
+
+/*     // 1. Llamamos a tu función global para que le dé el idioma y el diseño
+    inicializarTablaGlobal('#tabla-matriz-estudiantes', 'Buscar estudiante...');
+
+    // 2. 💥 TRUCO MÁGICO: Le decimos a la tabla que cambie a 50 registros y se redibuje sola
+    $('#tabla-matriz-estudiantes').DataTable().page.len(50).draw();
+
+    // 3. Inicializamos los tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip(); */
 });
 
 // 1. DESBLOQUEAR LA TABLA (Modo Edición)

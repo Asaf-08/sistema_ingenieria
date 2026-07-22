@@ -67,6 +67,7 @@ urlpatterns = [
     path('supervision/material/eliminar/<int:pk>/', views.eliminar_material_ajax, name='eliminar_material_ajax'),
     path('supervision/evidencia/guardar/', views.guardar_evidencia_ajax, name='guardar_evidencia_ajax'),
     path('supervision/evidencia/revisar/', views.revisar_evidencia_ajax, name='revisar_evidencia_ajax'),
+    
     path('supervision/auditoria-materiales/<int:asignacion_id>/', views.auditoria_materiales_ajax, name='auditoria_materiales_ajax'),
     
     # ==========================================

@@ -64,19 +64,36 @@
         <div class="col-12">
             <div class="card my-4 shadow-sm">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3 d-flex justify-content-between align-items-center">
-                        <h6 class="text-white mb-0"><i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias</h6>
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3 d-flex align-items-center">
+                        
+                        <h6 class="text-white mb-0 d-flex align-items-center">
+                            
+                            {% if not es_admin or origen == 'mi_aula' %}
+                            <a href="{% url 'academico:mi_aula' %}?aula_id={{ aula_seleccionada }}" class="text-white me-3 d-flex align-items-center opacity-8" title="Volver a Mi Aula" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+                                <i class="material-symbols-rounded" style="font-size: 26px;">arrow_back</i>
+                            </a>
+                            {% endif %}
+
+                            <i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias
+                            
+                            {% if aula_obj and not es_admin %}
+                                <span class="ms-2 fw-normal opacity-8 text-sm"> | {{ aula_obj.grado }} "{{ aula_obj.seccion }}" - {{ aula_obj.get_nivel_display }}</span>
+                            {% elif aula_obj and origen == 'mi_aula' %}
+                                <span class="ms-2 fw-normal opacity-8 text-sm"> | {{ aula_obj.grado }} "{{ aula_obj.seccion }}" - {{ aula_obj.get_nivel_display }}</span>
+                            {% endif %}
+                        </h6>
+
                     </div>
                 </div>
 
                 <div class="card-body px-0 pb-2">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center px-4 mt-3 mb-4 gap-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center px-4 mt-3 mb-4 gap-3">
                         {% csrf_token %}
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2">
                             <button id="btn-habilitar-edicion" class="btn btn-outline-dark mb-0 d-flex align-items-center" onclick="habilitarModoEdicion()">
                                 <i class="material-symbols-rounded text-sm me-1">edit_square</i> Tomar Asistencia Manual
                             </button>
-                            <button id="btn-guardar-matriz" class="btn bg-gradient-success mb-0 d-flex align-items-center d-none" onclick="guardarMatrizAsistencia()">
+                            <button id="btn-guardar-matriz" class="btn bg-gradient-info mb-0 d-flex align-items-center d-none" onclick="guardarMatrizAsistencia()">
                                 <i class="material-symbols-rounded text-sm me-1">save</i> Guardar Asistencia
                             </button>
                             <button id="btn-cancelar-edicion" class="btn btn-light mb-0 d-none" onclick="location.reload()">
@@ -84,11 +101,44 @@
                             </button>
                         </div>
                         
-                        <form method="GET" action="." id="formFiltroFecha" class="d-flex align-items-center bg-gray-100 border-radius-md px-3 py-2 border mb-0">
-                            <label class="text-sm mb-0 me-2 text-dark font-weight-bold">Fecha de Reporte:</label>
-                            <input type="date" name="fecha" id="fecha_filtro_matriz" class="form-control form-control-md border-bottom border-2 py-0 bg-white px-2" 
-                                   value="{{ fecha_seleccionada|date:'Y-m-d' }}" 
-                                   onchange="document.getElementById('formFiltroFecha').submit();" required>
+                        <form method="GET" action="." id="formFiltrosAsistencia" class="d-flex flex-column flex-sm-row align-items-sm-center bg-gray-100 border-radius-md px-3 py-2 border mb-0 gap-3">
+                            {% if origen == 'mi_aula' %}
+                                <input type="hidden" name="origen" value="mi_aula">
+                            {% endif %}
+
+                            {% if es_admin %}
+                            <div class="d-flex align-items-center">
+                                <label class="text-sm mb-0 me-2 text-dark font-weight-bold">Nivel:</label>
+                                <select id="filtro-nivel" class="form-select form-control-md border-2 py-0 bg-white px-3" style="min-width: 140px; cursor: pointer;">
+                                    <option value="TODOS">-- Todos --</option>
+                                    <option value="Inicial">Inicial</option>
+                                    <option value="Primaria">Primaria</option>
+                                    <option value="Secundaria">Secundaria</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex align-items-center">
+                                <label class="text-sm mb-0 me-2 text-dark font-weight-bold">Aula:</label>
+                                
+                                <select name="aula_id" id="filtro-aula" class="form-control form-control-md border-2 py-0 bg-white px-3 text-primary" onchange="document.getElementById('formFiltrosAsistencia').submit();" style="min-width: 220px; cursor: pointer;">
+                                    <option value="" data-nivel="TODOS">-- Seleccione Aula --</option>
+                                    {% for a in aulas %}
+                                        <option value="{{ a.id }}" data-nivel="{{ a.nivel }}" {% if aula_seleccionada == a.id %}selected{% endif %}>
+                                            {{ a.grado }} "{{ a.seccion }}"
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% else %}
+                                <input type="hidden" name="aula_id" value="{{ aula_seleccionada }}">
+                            {% endif %}
+
+                            <div class="d-flex align-items-center">
+                                <label class="text-sm mb-0 me-2 text-dark font-weight-bold">Fecha:</label>
+                                <input type="date" name="fecha" id="fecha_filtro_matriz" class="form-control form-control-md border-2 py-0 bg-white px-2" 
+                                       value="{{ fecha_seleccionada|date:'Y-m-d' }}" 
+                                       onchange="document.getElementById('formFiltrosAsistencia').submit();" required>
+                            </div>
                         </form>
                     </div>
 

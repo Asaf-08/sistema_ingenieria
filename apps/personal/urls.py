@@ -37,6 +37,10 @@ urlpatterns = [
     path('notas/guardar/', views.guardar_nota_ajax, name='guardar_nota_ajax'),
     path('curso/<int:asignacion_id>/matriz/', views.matriz_notas, name='matriz_notas'),
     
+    path('notas/toggle-cierre/', views.toggle_cierre_registro_ajax, name='toggle_cierre_registro'),
+    
+    path('auditoria-notas/', views.auditoria_academica_admin, name='auditoria_academica'),
+    
     # ==========================================
     # 🧠 TUTORÍA Y EVALUACIÓN ACTITUDINAL
     # ==========================================

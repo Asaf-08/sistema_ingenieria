@@ -215,6 +215,13 @@
 
       {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' %}
       <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'auditoria_academica' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:auditoria_academica' %}">
+          <i class="material-symbols-rounded opacity-5">fact_check</i>
+          <span class="nav-link-text ms-1">Auditoría Académica</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'lista_simulacros' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:lista_simulacros' %}">
           <i class="material-symbols-rounded opacity-5">assignment</i>
           <span class="nav-link-text ms-1">Simulacros Mensuales</span>
