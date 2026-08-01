@@ -123,7 +123,13 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
-                                <label>DNI</label>
+                                <label>Tipo de Documento</label>
+                                {{ form.tipo_documento }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-static mb-4">
+                                <label>Número de Documento</label>
                                 {{ form.dni }}
                             </div>
                         </div>
@@ -133,15 +139,15 @@
                                 {{ form.nombres }}
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
                                 <label>Apellidos</label>
                                 {{ form.apellidos }}
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
                                 <label>Cargo</label>
@@ -154,20 +160,21 @@
                                 {{ form.tipo_contrato }}
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
-                                <label>Teléfono</label>
+                                <label>Teléfono (Opcional)</label>
                                 {{ form.telefono }}
                             </div>
                         </div>
-
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
                                 <label>Correo (Opcional)</label>
                                 {{ form.correo }}
                             </div>
                         </div>
-
                         <div class="col-md-4">
                             <div class="input-group input-group-static mb-4">
                                 <label>Fecha de Ingreso (Opcional)</label>
