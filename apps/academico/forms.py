@@ -11,7 +11,7 @@ class EstudianteForm(forms.ModelForm):
             'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Juan José'}),
             'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Pérez Gómez'}),
             'tipo_documento': forms.Select(attrs={'class': 'form-control'}),
-            'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '8 dígitos', 'maxlength': '8'}),
+            'dni': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '15'}),
             'telefono_apoderado': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
