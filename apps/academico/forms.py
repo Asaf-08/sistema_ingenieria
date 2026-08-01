@@ -5,11 +5,12 @@ from apps.personal.models import Personal
 class EstudianteForm(forms.ModelForm):
     class Meta:
         model = Estudiante
-        fields = ['nombres', 'apellidos', 'dni', 'telefono_apoderado', 'direccion', 'estado']
+        fields = ['nombres', 'apellidos', 'tipo_documento', 'dni', 'telefono_apoderado', 'direccion', 'estado']
         # Aquí le agregamos las clases de Bootstrap/Material Dashboard a los inputs
         widgets = {
             'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Juan José'}),
             'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Pérez Gómez'}),
+            'tipo_documento': forms.Select(attrs={'class': 'form-control'}),
             'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '8 dígitos', 'maxlength': '8'}),
             'telefono_apoderado': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control'}),

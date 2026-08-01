@@ -22,6 +22,15 @@ class Personal(models.Model):
         ('Por Horas', 'Por Horas (Secundaria/Talleres)'),
     ]
     
+    # 💥 LOS MISMOS TIPOS DE DOCUMENTO
+    TIPOS_DOCUMENTO = [
+        ('DNI', 'DNI'),
+        ('CE', 'Carnet de Extranjería'),
+        ('PTP', 'PTP / CPP'),
+        ('PAS', 'Pasaporte'),
+        ('INT', 'Código Interno (Sin Documento)'),
+    ]
+    
     user = models.OneToOneField(
         User, 
         on_delete=models.SET_NULL, 
@@ -30,9 +39,13 @@ class Personal(models.Model):
         related_name='perfil_personal',
         verbose_name="Cuenta de Usuario"
     )
+    
+    # 💥 NUEVOS CAMPOS ADAPTADOS
+    tipo_documento = models.CharField(max_length=3, choices=TIPOS_DOCUMENTO, default='DNI', verbose_name="Tipo de Documento")
+    # Ampliamos a 15 caracteres
+    dni = models.CharField(max_length=15, unique=True, verbose_name="Número de Documento")
 
     # Datos Personales
-    dni = models.CharField(max_length=8, unique=True, verbose_name="DNI")
     nombres = models.CharField(max_length=100)
     # 💥 Optimizado: Porque ordenas las listas usando este campo (ordering = ['cargo', 'apellidos',...])
     apellidos = models.CharField(max_length=100, db_index=True)

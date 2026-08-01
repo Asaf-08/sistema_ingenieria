@@ -96,17 +96,30 @@ class Estudiante(models.Model):
         ('Retirado', 'Retirado'),
         ('Suspendido', 'Suspendido'),
     ]
+    
+    # 💥 NUEVO: Tipos de documento reales en Perú
+    TIPOS_DOCUMENTO = [
+        ('DNI', 'DNI'),
+        ('CE', 'Carnet de Extranjería'),
+        ('PTP', 'PTP / CPP'),
+        ('PAS', 'Pasaporte'),
+        ('INT', 'Código Interno (Sin Documento)'),
+    ]
 
     nombres = models.CharField(max_length=100)
-    apellidos = models.CharField(max_length=100, db_index=True) # 💥 Optimizado para ordenamiento
-    dni = models.CharField(max_length=8, unique=True, verbose_name="DNI")
+    apellidos = models.CharField(max_length=100, db_index=True)
+    
+    # 💥 NUEVOS CAMPOS ADAPTADOS
+    tipo_documento = models.CharField(max_length=3, choices=TIPOS_DOCUMENTO, default='DNI', verbose_name="Tipo de Documento")
+    # Ampliamos a 15 caracteres y le cambiamos el nombre visual a "Número de Documento"
+    dni = models.CharField(max_length=15, unique=True, verbose_name="Número de Documento") 
     
     # Datos de contacto rápidos
     telefono_apoderado = models.CharField(max_length=15, blank=True, null=True, verbose_name="Teléfono del Apoderado")
     direccion = models.CharField(max_length=200, blank=True, null=True)
     
-    # Auditoría (Lo que tenías como estado y fecha_registro en tu SQL)
-    estado = models.CharField(max_length=15, choices=ESTADOS, default='Activo', db_index=True) # 💥 Optimizado para filtros
+    # Auditoría 
+    estado = models.CharField(max_length=15, choices=ESTADOS, default='Activo', db_index=True) 
     fecha_registro = models.DateTimeField(default=timezone.now)
 
     class Meta:

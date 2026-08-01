@@ -5,8 +5,9 @@ from apps.personal.models import Personal
 class PersonalForm(forms.ModelForm):
     class Meta:
         model = Personal
-        fields = ['dni', 'nombres', 'apellidos', 'cargo', 'tipo_contrato', 'fecha_ingreso', 'telefono', 'correo']
+        fields = ['tipo_documento', 'dni', 'nombres', 'apellidos', 'cargo', 'tipo_contrato', 'fecha_ingreso', 'telefono', 'correo']
         widgets = {
+            'tipo_documento': forms.Select(attrs={'class': 'form-control'}),
             'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'nombres': forms.TextInput(attrs={'class': 'form-control'}),
             'apellidos': forms.TextInput(attrs={'class': 'form-control'}),
