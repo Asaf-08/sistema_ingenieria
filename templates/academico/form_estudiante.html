@@ -83,3 +83,40 @@
   </div>
 </div>
 {% endblock content %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        
+        // 1. Detectar cuando cambia el select de Tipo de Documento
+        $('#id_tipo_documento').on('change', function() {
+            let tipo = $(this).val();
+            let inputDni = $('#id_dni');
+            
+            if (tipo === 'INT') {
+                // Generamos un código automático de 7 dígitos (Ej: INT-8492015)
+                let codigoAleatorio = 'INT-' + Math.floor(Math.random() * 9000000 + 1000000);
+                
+                // Lo pegamos en el input, lo bloqueamos y lo pintamos de gris
+                inputDni.val(codigoAleatorio);
+                inputDni.prop('readonly', true);
+                inputDni.css('background-color', '#f8f9fa'); 
+            } else {
+                // Si elige DNI, Pasaporte, etc., desbloqueamos el campo
+                // y lo limpiamos SOLO si antes tenía un código INT
+                if (inputDni.val().startsWith('INT-')) {
+                    inputDni.val('');
+                }
+                inputDni.prop('readonly', false);
+                inputDni.css('background-color', 'transparent');
+            }
+        });
+
+        // 2. Por si entramos en modo "Editar" y ya era un Código Interno
+        if ($('#id_tipo_documento').val() === 'INT') {
+            $('#id_dni').prop('readonly', true).css('background-color', '#f8f9fa');
+        }
+        
+    });
+</script>
+{% endblock scripts %}
