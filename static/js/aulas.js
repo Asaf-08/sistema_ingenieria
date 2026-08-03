@@ -30,7 +30,7 @@ function inicializarTablaAulas() {
         },
         pageLength: 10,
         lengthChange: true,
-        order: [[1, "desc"]],
+        order: [[1, "asc"]],
         info: true,
         autoWidth: false,
         responsive: true,
