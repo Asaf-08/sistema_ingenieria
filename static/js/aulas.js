@@ -1,11 +1,59 @@
 // Inicializar DataTable
 $(document).ready(function () {
-    inicializarTablaGlobal('#tabla-aulas', 'Buscar aula...');
+    inicializarTablaAulas();
 });
 
 $(document).on('change', '#id_nivel', function() {
     filtrarGrados($(this).val());
 });
+
+function inicializarTablaAulas() {
+    if ($.fn.DataTable.isDataTable('#tabla-aulas')) {
+        $('#tabla-aulas').DataTable().destroy();
+    }
+
+    tablaAulas = $('#tabla-aulas').DataTable({
+        language: {
+            url: "/static/plugins/datatables/js/es-ES.json",
+            search: "_INPUT_",
+            searchPlaceholder: "Buscar aula...",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            infoEmpty: "Mostrando 0 a 0 de 0 registros",
+            zeroRecords: "No se encontraron resultados",
+            paginate: {
+                first: "Primero",
+                last: "Último",
+                next: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_right</i>',
+                previous: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_left</i>'
+            }
+        },
+        pageLength: 10,
+        lengthChange: true,
+        order: [[1, "desc"]],
+        info: true,
+        autoWidth: false,
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center px-4 pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
+        initComplete: function () {
+            $('.dataTables_filter input')
+                .addClass('form-control border-bottom border-2 px-3 py-1')
+                .attr('placeholder', 'Buscar aula...');
+                
+            $('.dataTables_filter label').contents().filter(function () {
+                return this.nodeType === 3;
+            }).remove();
+
+            $('.dataTables_length select')
+                .addClass('form-control border-bottom border-2 px-2 py-1 mx-2')
+                .css({
+                    'display': 'inline-block',
+                    'width': 'auto',
+                    'background-color': 'transparent'
+                });
+        }
+    });
+}
 
 const gradosPorNivel = {
     'Inicial': ['3 Años', '4 Años', '5 Años'],
@@ -73,7 +121,7 @@ function guardarAula() {
 
                 // Recargamos SOLO la tabla trayendo el HTML actualizado del servidor
                 $('.table-responsive').load(window.location.href + ' #tabla-aulas', function () {
-                    inicializarTablaGlobal('#tabla-aulas', 'Buscar aula...'); // Volvemos a activar el buscador y paginación
+                    inicializarTablaAulas(); // Volvemos a activar el buscador y paginación
                 });
 
             } else {
@@ -123,7 +171,7 @@ function eliminarAula(id) {
                 // Actualizamos la tabla sin recargar
                 $('#tabla-aulas').DataTable().destroy();
                 $('.table-responsive').load(window.location.href + ' #tabla-aulas', function() {
-                    inicializarTablaGlobal('#tabla-aulas', 'Buscar aula...');
+                    inicializarTablaAulas();
                 });
             } else {
                 Swal.fire('Error', response.message, 'error');
