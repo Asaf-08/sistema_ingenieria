@@ -72,7 +72,6 @@ DATABASES = {
     }
 }
 
-
 # 💥 NUEVO: Intercepta la base de datos si estamos en Railway
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
@@ -179,7 +178,7 @@ CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 # CONFIGURACIÓN DEL MICROSERVICIO DE WHATSAPP
 # ==========================================
 # Reemplaza esto con la URL real que te dio Railway
-WHATSAPP_BOT_URL = 'https://botcomunicacion-ws.up.railway.app'
+WHATSAPP_BOT_URL = 'https://colegio-whatsapp-bot-production.up.railway.app'
 
 # ==========================================
 # 🔐 SEGURIDAD DE SESIONES Y COOKIES
