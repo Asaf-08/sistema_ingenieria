@@ -20,3 +20,5 @@ whatsapp_bot/.wwebjs_auth/
 .env
 
 credenciales_google.json
+alumnos.xlsx
+migrar_datos.py
