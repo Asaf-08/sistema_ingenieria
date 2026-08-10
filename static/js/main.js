@@ -63,8 +63,6 @@ function inicializarTablaGlobal(idTabla, textoBuscador = "Buscar...") {
             }
         },
         pageLength: 10,
-        // 💥 EL TRUCO MAGICO:
-        deferRender: true,
         lengthChange: true,
         ordering: true,
         info: true,
