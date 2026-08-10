@@ -72,6 +72,7 @@ DATABASES = {
     }
 }
 
+
 # 💥 NUEVO: Intercepta la base de datos si estamos en Railway
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
