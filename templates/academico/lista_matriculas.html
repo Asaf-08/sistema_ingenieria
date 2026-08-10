@@ -23,7 +23,7 @@
                         <form method="GET" id="form-filtros" class="row align-items-end">
                             <div class="col-md-2">
                                 <div class="input-group input-group-static">
-                                    <select name="nivel" class="form-control" onchange="document.getElementById('form-filtros').submit();">
+                                    <select name="nivel" class="form-control" onchange="this.form.aula.value=''; this.form.submit();">
                                         <option value="">Todos los niveles</option>
                                         {% for cod, nom in niveles %}
                                             <option value="{{ cod }}" {% if nivel_seleccionado == cod %}selected{% endif %}>{{ nom }}</option>
