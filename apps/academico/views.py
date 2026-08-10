@@ -52,7 +52,7 @@ def pausar_alertas_ajax(request):
 
 def lista_estudiantes(request):
     # Traemos todos los estudiantes de la base de datos
-    estudiantes = Estudiante.objects.select_related('aula').all()
+    estudiantes = Estudiante.objects.all()
     
     # Los enviamos al template (HTML)
     context = {
