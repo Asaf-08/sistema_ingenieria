@@ -51,10 +51,9 @@ def pausar_alertas_ajax(request):
     return JsonResponse({'success': False})
 
 def lista_estudiantes(request):
-    # Traemos todos los estudiantes de la base de datos
-    estudiantes = Estudiante.objects.all()
+    # 💥 MAGIA: prefetch_related trae todas las matrículas y aulas de golpe a la memoria RAM
+    estudiantes = Estudiante.objects.prefetch_related('matricula_set__aula').all()
     
-    # Los enviamos al template (HTML)
     context = {
         'estudiantes': estudiantes
     }

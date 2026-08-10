@@ -52,7 +52,7 @@
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <p class="text-xs font-weight-bold mb-0">
-                                            {% with matricula=estudiante.matricula_set.first %}
+                                            {% with matricula=estudiante.matricula_set.all|first %}
                                                 {% if matricula %}
                                                     {{ matricula.aula.grado }} "{{ matricula.aula.seccion }}"
                                                 {% else %}
