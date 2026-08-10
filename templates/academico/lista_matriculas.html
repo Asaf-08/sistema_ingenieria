@@ -18,7 +18,46 @@
                             <i class="material-symbols-rounded text-sm">person_add</i> Ir a Matricular Alumnos
                         </a>
                     </div>
+                    
+                    <div class="px-5">
+                        <form method="GET" id="form-filtros" class="row align-items-end">
+                            <div class="col-md-2">
+                                <div class="input-group input-group-static">
+                                    <select name="nivel" class="form-control" onchange="document.getElementById('form-filtros').submit();">
+                                        <option value="">Todos los niveles</option>
+                                        {% for cod, nom in niveles %}
+                                            <option value="{{ cod }}" {% if nivel_seleccionado == cod %}selected{% endif %}>{{ nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
 
+                            <div class="col-md-3">
+                                <div class="input-group input-group-static">
+                                    <select name="aula" class="form-control" onchange="document.getElementById('form-filtros').submit();">
+                                        <option value="">Todas las aulas</option>
+                                        {% for aula in aulas %}
+                                            <option value="{{ aula.id }}" {% if aula_seleccionada == aula.id %}selected{% endif %}>
+                                                {{ aula.grado }} "{{ aula.seccion }}"
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                {% if nivel_seleccionado or aula_seleccionada %}
+                                    <a href="{% url 'academico:lista_matriculas' %}"
+                                        class="btn btn-primary mb-0"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="Limpiar filtros">
+                                        X
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
                     <div class="table-responsive p-0 px-4">
                         <table class="table align-items-center mb-0" id="tabla-lista-matriculas">
                             <thead>

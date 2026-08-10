@@ -348,10 +348,39 @@ def procesar_matricula_masiva(request):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 def lista_matriculas(request):
-    # Traemos las matrículas del periodo activo para ver quién está en cada salón
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    matriculas = Matricula.objects.filter(periodo=periodo_actual).select_related('estudiante', 'aula')
-    return render(request, 'academico/lista_matriculas.html', {'matriculas': matriculas})
+    
+    # 1. Capturamos los filtros de la URL (si existen)
+    nivel_seleccionado = request.GET.get('nivel', '')
+    aula_seleccionada = request.GET.get('aula', '')
+    
+    # 2. Preparamos las opciones para los Selectores HTML
+    niveles_choices = Aula.NIVELES
+    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+    
+    # Si seleccionó un nivel, la lista de aulas del 2do select solo mostrará las de ese nivel
+    if nivel_seleccionado:
+        aulas = aulas.filter(nivel=nivel_seleccionado)
+        
+    # 3. Traemos las matrículas y aplicamos los filtros a la tabla
+    if periodo_actual:
+        matriculas = Matricula.objects.filter(periodo=periodo_actual).select_related('estudiante', 'aula')
+        
+        if nivel_seleccionado:
+            matriculas = matriculas.filter(aula__nivel=nivel_seleccionado)
+            
+        if aula_seleccionada:
+            matriculas = matriculas.filter(aula__id=aula_seleccionada)
+    else:
+        matriculas = []
+
+    return render(request, 'academico/lista_matriculas.html', {
+        'matriculas': matriculas,
+        'niveles': niveles_choices,
+        'aulas': aulas,
+        'nivel_seleccionado': nivel_seleccionado,
+        'aula_seleccionada': int(aula_seleccionada) if aula_seleccionada.isdigit() else '',
+    })
 
 @require_POST
 def eliminar_matricula_ajax(request, pk):
