@@ -9,7 +9,7 @@ class Personal(models.Model):
         ('SEC', 'Secretaria(o)'),
         ('ASI', 'Asistente'),
         ('AUX', 'Auxiliar'),
-        ('LIM', 'Personal de Limpieza'),
+        ('MAN', 'Mantenimiento'),
     ]
 
     ESTADOS = [

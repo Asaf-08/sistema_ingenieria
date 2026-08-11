@@ -96,6 +96,7 @@ def obtener_personal_data(request, pk):
     personal = Personal.objects.get(pk=pk)
     data = {
         'id': personal.id,
+        'tipo_documento': personal.tipo_documento,
         'dni': personal.dni,
         'nombres': personal.nombres,
         'apellidos': personal.apellidos,
