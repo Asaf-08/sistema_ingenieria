@@ -1,0 +1,141 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Encabezado de Página Principal -->
+    <div class="d-flex align-items-center mb-4 px-2">
+        <a href="{% url 'academico:lista_asignaciones' %}" class="text-secondary me-3 transition-hover" >
+            <i class="material-symbols-rounded text-3xl">arrow_back</i>
+        </a>
+        <div>
+            <h4 class="mb-0 text-dark font-weight-bolder">Asignación Académica</h4>
+            <p class="text-sm text-secondary mb-0">Distribuye la carga académica correspondiente a los docentes.</p>
+        </div>
+    </div>
+
+    <form id="formAsignacionMasiva" onsubmit="event.preventDefault();">
+        {% csrf_token %}
+        <input type="hidden" name="periodo" value="{{ periodo_actual.id }}">
+
+        <div class="row">
+            <!-- ==========================================
+                 COLUMNA IZQUIERDA: FORMULARIO PRINCIPAL
+                 ========================================== -->
+            <div class="col-lg-4 col-md-5 mb-4">
+                <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+
+                    <div class="card-header d-flex bg-gradient-dark align-items-center mb-4">
+                        <div class="icon icon-shape bg-gradient-info shadow-info text-center rounded-circle">
+                            <i class="material-symbols-rounded text-white opacity-10">tune</i>
+                        </div>
+                        <h6 class="mb-0 text-white ms-3">Configuración Base</h6>
+                    </div>
+
+                    <div class="card-body p-4">
+                        
+                        
+
+                        <div class="p-3 bg-dark rounded-3 mb-4 border border-gray-200">
+                            <span class="text-xs text-uppercase font-weight-bolder text-white">Periodo Activo {{ periodo_actual.anio }}</span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="text-sm font-weight-bolder text-dark">1. Seleccionar Docente</label>
+                            <select name="personal" id="select_docente" class="form-control modern-select w-100" required>
+                                <option value="" disabled selected>-- Elige un profesor --</option>
+                                {% for docente in docentes %}
+                                    <option value="{{ docente.id }}">{{ docente.apellidos }}, {{ docente.nombres }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="text-sm font-weight-bolder text-dark">2. Seleccionar Curso</label>
+                            <select name="curso" id="select_curso" class="form-control modern-select w-100" required>
+                                <option value="" disabled selected>-- Elige la materia --</option>
+                                {% for curso in cursos %}
+                                    <option value="{{ curso.id }}">{{ curso.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn bg-gradient-info w-100 py-3 rounded-pill shadow-sm" onclick="guardarAsignacionMasiva()" style="font-size: 15px;">
+                            <i class="material-symbols-rounded align-middle me-2">check_circle</i> Confirmar y Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 COLUMNA DERECHA: INTERRUPTORES DE AULAS
+                 ========================================== -->
+            <div class="col-lg-8 col-md-7 mb-4">
+                <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                    <div class="card-body p-4">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                            <div>
+                                <h6 class="mb-0 text-dark">3. Enciende las aulas asignadas</h6>
+                                <p class="text-xs text-secondary mb-0">Selecciona en qué salones dictará este curso.</p>
+                            </div>
+                            <div class="d-flex align-items-center bg-light px-3 py-2 rounded-pill border">
+                                <span class="text-sm font-weight-bold text-dark me-3" id="textMarcar" style="transition: color 0.3s;">Marcar Todas</span>
+                                <label class="mb-0 cursor-pointer d-flex align-items-center">
+                                    <input type="checkbox" id="checkMarcarTodas" class="d-none" onchange="seleccionarTodas(this.checked)">
+                                    <div class="master-switch shadow-sm"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {% regroup aulas by nivel as aulas_por_nivel %}
+                        
+                        <div class="aulas-container" style="max-height: 600px; overflow-y: auto; overflow-x: hidden; padding-right: 10px;">
+                            {% for nivel in aulas_por_nivel %}
+                            <div class="mb-4">
+                                <!-- Cabecera del Nivel (Ej. PRIMARIA) -->
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="material-symbols-rounded text-secondary me-2 text-md">school</i>
+                                    <h6 class="text-uppercase text-secondary text-sm font-weight-bolder mb-0 tracking-wide">{{ nivel.grouper }}</h6>
+                                </div>
+                                
+                                <div class="row g-3"> <!-- g-3 es el gap de bootstrap para separar bien las tarjetas -->
+                                    {% for aula in nivel.list %}
+                                    <div class="col-xl-4 col-lg-6 col-sm-6">
+                                        <label class="w-100 mb-0 user-select-none">
+                                            <input type="checkbox" name="aula" value="{{ aula.id }}" class="d-none aula-checkbox">
+                                            <div class="aula-card p-3 d-flex align-items-center justify-content-between">
+                                                
+                                                <!-- Info del Aula -->
+                                                <div class="d-flex align-items-center">
+                                                    <i class="material-symbols-rounded icon-level text-secondary opacity-5 me-3" style="font-size: 32px;">meeting_room</i>
+                                                    <div>
+                                                        <h6 class="mb-0 text-dark font-weight-bold grado-text">{{ aula.grado }}</h6>
+                                                        <span class="text-xs text-secondary font-weight-bold seccion-text">Sección "{{ aula.seccion }}"</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- El Toggle Animado (Switch) -->
+                                                <div class="premium-switch"></div>
+
+                                            </div>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/asignaciones.js' %}"></script>
+{% endblock scripts %}

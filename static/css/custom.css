@@ -476,3 +476,135 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 .dataTables_length select.form-select {
     transition: none !important;
 }
+
+
+
+
+/* ==========================================
+    UX PREMIUM: CARGA ACADEMICA DE DOCENTES
+    ========================================== */
+.aula-card {
+    background-color: #f8fafc; /* Gris muy claro y limpio */
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    height: 100%;
+}
+
+.aula-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+}
+
+/* El diseño del Interruptor (Switch) personalizado */
+.premium-switch {
+    width: 44px;
+    height: 24px;
+    background-color: #cbd5e1;
+    border-radius: 30px;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.premium-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ESTADO ACTIVADO (CHECKED) */
+.aula-checkbox:checked + .aula-card {
+    background-color: #fff9f5;
+    border-color: #f57c00; /* Naranja primario moderno */
+    box-shadow: 0 4px 14px rgba(224, 127, 0, 0.15);
+}
+
+/* Animación del switch al encender */
+.aula-checkbox:checked + .aula-card .premium-switch {
+    background-color: #f57c00; 
+}
+.aula-checkbox:checked + .aula-card .premium-switch::after {
+    transform: translateX(20px);
+}
+
+/* Cambio de colores en el texto al encender */
+.aula-checkbox:checked + .aula-card .grado-text {
+    color: #f57c00 !important; /* Naranja más oscuro para legibilidad */
+}
+.aula-checkbox:checked + .aula-card .seccion-text {
+    color: #f57c00 !important;
+}
+.aula-checkbox:checked + .aula-card .icon-level {
+    color: #f57c00 !important;
+}
+
+/* Mejorando los selects genéricos */
+.modern-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 15px;
+    background-color: #ffffff;
+    font-weight: 500;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+.modern-select:focus {
+    border-color: #f57c00;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(224, 127, 0, 0.1);
+}
+
+/* Estilo del Modal SweetAlert Premium */
+.swal-premium-popup {
+    border-radius: 16px !important;
+    padding: 2rem !important;
+}
+.swal-premium-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #3a4149 !important;
+}
+
+/* ==========================================
+    UX PREMIUM: INTERRUPTOR MAESTRO (MARCAR TODAS)
+    ========================================== */
+.master-switch {
+    width: 44px;
+    height: 24px;
+    background-color: #cbd5e1;
+    border-radius: 30px;
+    position: relative;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.master-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ESTADO ACTIVADO DEL SWITCH MAESTRO (#f57c00) */
+#checkMarcarTodas:checked + .master-switch {
+    background-color: #f57c00; 
+}
+#checkMarcarTodas:checked + .master-switch::after {
+    transform: translateX(20px);
+}

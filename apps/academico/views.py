@@ -249,7 +249,7 @@ def eliminar_curso_ajax(request, pk):
     return JsonResponse({'status': 'ok', 'message': 'Curso eliminado.'})
 
 def lista_asignaciones(request):
-    asignaciones = AsignacionAcademica.objects.select_related('personal', 'curso', 'aula', 'periodo').all()
+    asignaciones = AsignacionAcademica.objects.select_related('personal', 'curso', 'aula', 'periodo').order_by('personal__apellidos', 'personal__nombres', 'curso__nombre')
     form = AsignacionAcademicaForm()
     return render(request, 'academico/lista_asignaciones.html', {
         'asignaciones': asignaciones, 
@@ -257,17 +257,63 @@ def lista_asignaciones(request):
     })
 
 def guardar_asignacion_ajax(request):
-    pk = request.POST.get('asignacion_id')
-    if pk:
-        asignacion = get_object_or_404(AsignacionAcademica, pk=pk)
-        form = AsignacionAcademicaForm(request.POST, instance=asignacion)
-    else:
-        form = AsignacionAcademicaForm(request.POST)
+    if request.method == 'POST':
+        pk = request.POST.get('asignacion_id')
+        
+        # Extraemos los datos manualmente del POST
+        personal_id = request.POST.get('personal')
+        curso_id = request.POST.get('curso')
+        periodo_id = request.POST.get('periodo')
+        
+        # getlist() atrapa TODAS las aulas seleccionadas en un array [1, 4, 5...]
+        aulas_ids = request.POST.getlist('aula') 
+        
+        if not all([personal_id, curso_id, periodo_id, aulas_ids]):
+            return JsonResponse({'status': 'error', 'errors': 'Todos los campos son obligatorios.'})
 
-    if form.is_valid():
-        form.save()
-        return JsonResponse({'status': 'ok', 'message': 'Asignación guardada con éxito.'})
-    return JsonResponse({'status': 'error', 'errors': form.errors})
+        # --- MODO EDICIÓN (1 solo registro) ---
+        if pk:
+            asignacion = get_object_or_404(AsignacionAcademica, pk=pk)
+            asignacion.personal_id = personal_id
+            asignacion.curso_id = curso_id
+            asignacion.periodo_id = periodo_id
+            asignacion.aula_id = aulas_ids[0] # En edición, tomamos la única aula que llega
+            asignacion.save()
+            return JsonResponse({'status': 'ok', 'message': 'Asignación actualizada con éxito.'})
+            
+        # --- MODO CREACIÓN MASIVA ---
+        else:
+            creados = 0
+            for aula_id in aulas_ids:
+                # update_or_create busca si el curso ya se enseña en esa aula. 
+                # Si existe, solo le cambia el profesor. Si no existe, lo crea de cero.
+                obj, created = AsignacionAcademica.objects.update_or_create(
+                    curso_id=curso_id,
+                    aula_id=aula_id,
+                    periodo_id=periodo_id,
+                    defaults={'personal_id': personal_id}
+                )
+                if created:
+                    creados += 1
+                    
+            mensaje = f'¡Éxito! Se crearon {creados} asignaciones nuevas.' if creados > 0 else 'Las aulas seleccionadas ya estaban asignadas y fueron actualizadas.'
+            return JsonResponse({'status': 'ok', 'message': mensaje})
+
+def asignacion_masiva_view(request):
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    # Traemos docentes ordenados
+    docentes = Personal.objects.filter(cargo='DOC', estado='Activo').order_by('apellidos')
+    # Traemos cursos ordenados por área
+    cursos = Curso.objects.filter(activo=True).order_by('area', 'nombre')
+    # Traemos aulas ordenadas para agruparlas en el HTML
+    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+    
+    return render(request, 'academico/asignacion_masiva.html', {
+        'periodo_actual': periodo_actual,
+        'docentes': docentes,
+        'cursos': cursos,
+        'aulas': aulas
+    })
 
 def obtener_asignacion_data(request, pk):
     asignacion = get_object_or_404(AsignacionAcademica, pk=pk)
@@ -278,6 +324,23 @@ def obtener_asignacion_data(request, pk):
         'aula': asignacion.aula.id,
         'periodo': asignacion.periodo.id,
     })
+
+def obtener_aulas_asignadas_ajax(request):
+    docente_id = request.GET.get('docente_id')
+    curso_id = request.GET.get('curso_id')
+    periodo_id = request.GET.get('periodo_id')
+    
+    # Si tenemos los 3 datos, buscamos las aulas
+    if docente_id and curso_id and periodo_id:
+        # values_list('aula_id', flat=True) nos devuelve un array limpio: [1, 4, 5]
+        aulas = AsignacionAcademica.objects.filter(
+            personal_id=docente_id,
+            curso_id=curso_id,
+            periodo_id=periodo_id
+        ).values_list('aula_id', flat=True)
+        return JsonResponse({'status': 'ok', 'aulas': list(aulas)})
+        
+    return JsonResponse({'status': 'error', 'aulas': []})
 
 @require_POST
 def eliminar_asignacion_ajax(request, pk):

@@ -46,6 +46,8 @@ urlpatterns = [
     path('asignaciones/guardar/', views.guardar_asignacion_ajax, name='guardar_asignacion_ajax'),
     path('asignaciones/datos/<int:pk>/', views.obtener_asignacion_data, name='obtener_asignacion_data'),
     path('asignaciones/eliminar/<int:pk>/', views.eliminar_asignacion_ajax, name='eliminar_asignacion_ajax'),
+    path('asignaciones/masiva/', views.asignacion_masiva_view, name='asignacion_masiva'),
+    path('asignaciones/aulas-asignadas/', views.obtener_aulas_asignadas_ajax, name='aulas_asignadas_ajax'),
     
     # ==========================================
     # 📝 MÓDULO DE MATRÍCULAS

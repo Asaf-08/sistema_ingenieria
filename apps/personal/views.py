@@ -127,7 +127,6 @@ def cambiar_estado_personal_ajax(request, pk):
 @login_required
 @never_cache
 def mis_cursos(request):
-    # 1. Identificamos quién es el usuario logueado
     personal_actual = obtener_personal_logueado(request)
     
     if not personal_actual:
@@ -135,22 +134,28 @@ def mis_cursos(request):
             'mensaje': 'Su cuenta de usuario actual no tiene asignado un perfil en la tabla de Personal.'
         })
     
-    # 2. 💥 EL FILTRO DE SEGURIDAD MODULAR: Validamos si realmente es un Docente
     if personal_actual.cargo not in ['DOC', 'Docente']:
         return render(request, 'errores/sin_perfil.html', {
             'mensaje': 'Acceso Restringido. El módulo de "Mis Cursos" es de uso exclusivo para el Personal Docente.'
         })
     
-    # En tu modelo AsignacionAcademica, el campo 'personal' ahora apunta a 'Personal'
+    # 1. Obtenemos los cursos que dicta (para el resto de tu página)
     asignaciones = AsignacionAcademica.objects.filter(
         personal=personal_actual,
         periodo__activo=True
     ).select_related('curso', 'aula').order_by('curso__nombre', 'aula__nivel', 'aula__grado')
 
-    # Mantenemos 'personal/...' si decidiste renombrar la carpeta de templates
+    # 💥 2. NUEVO: Obtenemos directamente las aulas donde es Tutor
+    aulas_tutoria = Aula.objects.filter(tutor=personal_actual)
+    
+    # 💥 3. Obtenemos el periodo actual para poder usar "bimestre_actual" en el botón
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+
     return render(request, 'personal/mis_cursos.html', {
         'personal': personal_actual,
-        'asignaciones': asignaciones
+        'asignaciones': asignaciones,
+        'aulas_tutoria': aulas_tutoria,
+        'periodo_actual': periodo_actual,
     })
 
 def lista_evaluaciones(request, asignacion_id):
