@@ -60,7 +60,7 @@ $(document).ready(function() {
         if ($('input[name="aula"]:checked').length === 0) {
             SwalPremium.fire({
                 title: 'Aulas vacías',
-                text: 'Enciende el interruptor de al menos un aula.',
+                text: 'Elige al menos un aula.',
                 icon: 'info',
                 confirmButtonColor: '#f57c00',
                 customClass: { confirmButton: 'btn rounded-pill px-4 mb-0', confirmButton: 'btn text-white' },
@@ -145,56 +145,93 @@ function confirmarEliminarAsignacion(id, nombre) {
                 type: 'POST',
                 data: {'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()},
                 success: function() { 
-                    // Recarga solo la tabla, ¡súper rápido!
-                    $('.table-responsive').load(window.location.href + ' #tabla-asignaciones', function() {
-                        inicializarTablaGlobal('#tabla-asignaciones');
-                    });
+                    window.location.reload();
                 }
             });
         }
     });
 }
 
-// ==========================================
-    // MAGIA DE AUTO-COMPLETADO DE AULAS
     // ==========================================
-    
-    // Escuchamos los cambios en los selects de Docente y Curso
+    // MAGIA DE AUTO-COMPLETADO Y VERIFICACIÓN
+    // ==========================================
+    let asignacionesAjenas = {}; // Guardaremos quién enseña en qué aula
+
     $('#select_docente, #select_curso').on('change', function() {
         let docenteId = $('#select_docente').val();
         let cursoId = $('#select_curso').val();
         let periodoId = $('input[name="periodo"]').val();
 
-        // Solo hacemos la búsqueda si el usuario ya eligió ambos (Profesor y Curso)
-        if (docenteId && cursoId) {
-            
-            // Mostramos un pequeño loader para que sepa que estamos buscando
-            Swal.fire({
-                title: 'Verificando carga actual...',
-                toast: true, position: 'top-end', showConfirmButton: false, timer: 1000,
-                didOpen: () => { Swal.showLoading(); }
-            });
+        if (docenteId) {
+            // Solo mostramos el loader visual si ya eligió ambas cosas
+            if (cursoId) {
+                Swal.fire({
+                    title: 'Verificando carga actual...',
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 1000,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+            }
 
             $.get('/academico/asignaciones/aulas-asignadas/', {
                 docente_id: docenteId,
-                curso_id: cursoId,
+                curso_id: cursoId || '', 
                 periodo_id: periodoId
             }, function(data) {
                 if (data.status === 'ok') {
-                    // 1. Apagamos todas las aulas primero (por si cambió de profe)
-                    $('.aula-checkbox').prop('checked', false);
-                    
-                    // 2. Encendemos únicamente las aulas que devolvió la base de datos
-                    data.aulas.forEach(function(aulaId) {
-                        $('input[value="' + aulaId + '"].aula-checkbox').prop('checked', true);
-                    });
-                    
-                    // 3. Verificamos el interruptor maestro por si el profe ya tiene todas las aulas
-                    verificarInterruptorMaestro();
+                    // 1. Actualizamos el contador debajo del botón
+                    $('#count-asignaciones').text(data.total_asignaciones);
+                    $('#badge-asignaciones').fadeIn();
+
+                    // 2. Si eligió curso, pintamos aulas y verificamos cruces
+                    if (cursoId) {
+                        $('.aula-checkbox').prop('checked', false);
+                        data.aulas.forEach(function(aulaId) {
+                            $('input[value="' + aulaId + '"].aula-checkbox').prop('checked', true);
+                        });
+                        
+                        asignacionesAjenas = data.otras_asignaciones;
+                        verificarInterruptorMaestro();
+                        verificarConflictos();
+                    }
                 }
             });
         }
     });
+
+    // Validar cruces al hacer clic manual en cualquier aula
+    $('.aula-checkbox').on('change', function() {
+        verificarInterruptorMaestro();
+        verificarConflictos();
+    });
+
+    // 💥 NUEVA FUNCIÓN: Identifica si marcaste un aula de otro profe
+    function verificarConflictos() {
+        let conflictos = [];
+        
+        // Capturamos el texto (nombre) del curso que está seleccionado actualmente
+        let nombreCurso = $('#select_curso option:selected').text();
+        
+        $('.aula-checkbox:checked').each(function() {
+            let aulaId = $(this).val();
+            
+            // Si el ID del aula está en el diccionario de otros profes...
+            if (asignacionesAjenas[aulaId]) {
+                // Obtenemos el texto del grado y sección de la tarjeta visual
+                let nombreAula = $(this).siblings('.aula-card').find('.grado-text').text() + ' ' + $(this).siblings('.aula-card').find('.seccion-text').text();
+                
+                // Agregamos el nombre del curso al mensaje de error
+                conflictos.push(`- <u>${nombreCurso}</u> ya asignado a ${asignacionesAjenas[aulaId]} en <b>${nombreAula}</b>`);
+            }
+        });
+
+        // Mostramos u ocultamos la alerta naranja
+        if (conflictos.length > 0) {
+            $('#texto-conflictos').html(conflictos.join('<br><br>')); // Doble salto de línea si hay más de una para que respire
+            $('#alerta-conflictos').slideDown();
+        } else {
+            $('#alerta-conflictos').slideUp();
+        }
+    }
 
     // Función auxiliar para que el interruptor maestro reaccione bien
     function verificarInterruptorMaestro() {

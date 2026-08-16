@@ -20,12 +20,9 @@
         <input type="hidden" name="periodo" value="{{ periodo_actual.id }}">
 
         <div class="row">
-            <!-- ==========================================
-                 COLUMNA IZQUIERDA: FORMULARIO PRINCIPAL
-                 ========================================== -->
+            <!-- COLUMNA IZQUIERDA: FORMULARIO PRINCIPAL -->
             <div class="col-lg-4 col-md-5 mb-4">
                 <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
-
                     <div class="card-header d-flex bg-gradient-dark align-items-center mb-4">
                         <div class="icon icon-shape bg-gradient-info shadow-info text-center rounded-circle">
                             <i class="material-symbols-rounded text-white opacity-10">tune</i>
@@ -34,9 +31,6 @@
                     </div>
 
                     <div class="card-body p-4">
-                        
-                        
-
                         <div class="p-3 bg-dark rounded-3 mb-4 border border-gray-200">
                             <span class="text-xs text-uppercase font-weight-bolder text-white">Periodo Activo {{ periodo_actual.anio }}</span>
                         </div>
@@ -55,15 +49,29 @@
                             <label class="text-sm font-weight-bolder text-dark">2. Seleccionar Curso</label>
                             <select name="curso" id="select_curso" class="form-control modern-select w-100" required>
                                 <option value="" disabled selected>-- Elige la materia --</option>
-                                {% for curso in cursos %}
+                                {% for curso in cursos|dictsort:"nombre" %}
                                     <option value="{{ curso.id }}">{{ curso.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
 
-                        <button type="button" class="btn bg-gradient-info w-100 py-3 rounded-pill shadow-sm" onclick="guardarAsignacionMasiva()" style="font-size: 15px;">
+                        <button type="button" class="btn bg-gradient-info w-100 py-3 rounded-pill shadow-sm mb-1" onclick="guardarAsignacionMasiva()" style="font-size: 15px;">
                             <i class="material-symbols-rounded align-middle me-2">check_circle</i> Confirmar y Guardar
                         </button>
+                        
+                        <div id="badge-asignaciones" class="text-center text-xs font-weight-bold text-secondary mt-2" style="display: none;">
+                            <i class="material-symbols-rounded align-middle text-xs me-1">assignment</i> 
+                            Este docente tiene <span id="count-asignaciones" class="text-info" style="font-size: 14px;">0</span> asignaciones.
+                        </div>
+
+                        <div id="alerta-conflictos" class="alert alert-dark text-white text-sm mt-4 shadow-sm rounded-3" style="display: none; background-color: #f57c00; border: none;">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="material-symbols-rounded me-2" style="font-size: 20px;">error</i>
+                                <strong>¡Atención! Reemplazo detectado</strong>
+                            </div>
+                            <div id="texto-conflictos" class="ps-4"></div>
+                        </div>
+
                     </div>
                 </div>
             </div>

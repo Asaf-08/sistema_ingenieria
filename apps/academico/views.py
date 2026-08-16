@@ -329,18 +329,33 @@ def obtener_aulas_asignadas_ajax(request):
     docente_id = request.GET.get('docente_id')
     curso_id = request.GET.get('curso_id')
     periodo_id = request.GET.get('periodo_id')
-    
-    # Si tenemos los 3 datos, buscamos las aulas
+
+    # Preparamos el diccionario de respuesta
+    data = {'status': 'ok', 'aulas': [], 'otras_asignaciones': {}, 'total_asignaciones': 0}
+
+    # 1. Contamos el total de asignaciones del docente (Si hay docente seleccionado)
+    if docente_id and periodo_id:
+        data['total_asignaciones'] = AsignacionAcademica.objects.filter(
+            personal_id=docente_id, periodo_id=periodo_id
+        ).count()
+
+    # 2. Buscamos aulas propias y ajenas (Si también hay curso seleccionado)
     if docente_id and curso_id and periodo_id:
-        # values_list('aula_id', flat=True) nos devuelve un array limpio: [1, 4, 5]
-        aulas = AsignacionAcademica.objects.filter(
-            personal_id=docente_id,
-            curso_id=curso_id,
-            periodo_id=periodo_id
-        ).values_list('aula_id', flat=True)
-        return JsonResponse({'status': 'ok', 'aulas': list(aulas)})
-        
-    return JsonResponse({'status': 'error', 'aulas': []})
+        # Aulas que SÍ le pertenecen
+        data['aulas'] = list(AsignacionAcademica.objects.filter(
+            personal_id=docente_id, curso_id=curso_id, periodo_id=periodo_id
+        ).values_list('aula_id', flat=True))
+
+        # Aulas que le pertenecen a OTROS docentes en este mismo curso
+        otras_asignaciones_qs = AsignacionAcademica.objects.filter(
+            curso_id=curso_id, periodo_id=periodo_id
+        ).exclude(personal_id=docente_id).select_related('personal')
+
+        # Guardamos: { id_del_aula : "Nombre del Profesor" }
+        for asig in otras_asignaciones_qs:
+            data['otras_asignaciones'][asig.aula_id] = f"{asig.personal.nombres} {asig.personal.apellidos}"
+
+    return JsonResponse(data)
 
 @require_POST
 def eliminar_asignacion_ajax(request, pk):
