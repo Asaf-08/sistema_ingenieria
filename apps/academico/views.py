@@ -296,7 +296,7 @@ def guardar_asignacion_ajax(request):
                 if created:
                     creados += 1
                     
-            mensaje = f'¡Éxito! Se crearon {creados} asignaciones nuevas.' if creados > 0 else 'Las aulas seleccionadas ya estaban asignadas y fueron actualizadas.'
+            mensaje = f'Se crearon {creados} asignaciones nuevas.' if creados > 0 else 'Las aulas seleccionadas ya estaban asignadas y fueron actualizadas.'
             return JsonResponse({'status': 'ok', 'message': mensaje})
 
 def asignacion_masiva_view(request):

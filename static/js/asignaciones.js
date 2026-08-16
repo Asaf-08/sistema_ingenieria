@@ -83,20 +83,32 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.status === 'ok') {
                     SwalPremium.fire({
-                        title: '¡Misión Cumplida!',
+                        title: '¡Éxito!',
                         text: response.message,
                         icon: 'success',
-                        confirmButtonText: 'Genial',
-                        customClass: { confirmButton: 'btn bg-gradient-success rounded-pill px-5 mb-0' }
-                    }).then(() => {
-                        window.location.href = "/academico/asignaciones/";
+                        showCancelButton: true, // 💥 Activamos el segundo botón
+                        confirmButtonText: 'Ir a la lista',
+                        cancelButtonText: 'Seguir asignando',
+                        reverseButtons: true, // 💥 Ponemos "Ir a la lista" a la derecha y "Seguir" a la izquierda
+                        customClass: { 
+                            confirmButton: 'btn bg-gradient-success rounded-pill px-4 mb-0 ms-2 text-white',
+                            cancelButton: 'btn btn-outline-secondary rounded-pill px-4 mb-0'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Si el usuario elige "Ir a la lista"
+                            window.location.href = "/academico/asignaciones/";
+                        }
+                        // Si elige "Seguir asignando", no programamos nada. 
+                        // El modal simplemente se cerrará y el usuario seguirá en la misma pantalla
+                        // con el mismo profesor seleccionado para elegirle otro curso.
                     });
                 } else {
                     SwalPremium.fire({
                         title: 'Error',
                         text: 'Hubo un problema al guardar los datos.',
                         icon: 'error',
-                        customClass: { confirmButton: 'btn bg-gradient-danger rounded-pill px-4 mb-0' }
+                        customClass: { confirmButton: 'btn bg-gradient-danger rounded-pill px-4 mb-0 text-white' }
                     });
                 }
             }
