@@ -109,11 +109,15 @@ def cambiar_estado_estudiante_ajax(request, pk):
     return JsonResponse({'status': 'error', 'message': 'Estado no válido.'})
 
 def lista_aulas(request):
-    aulas = Aula.objects.all()
+    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
     form = AulaForm()
     # Filtramos para que solo traiga a los docentes activos y que sean FIJOS
     docentes = Personal.objects.filter(cargo='DOC', estado='Activo', tipo_contrato='Fijo')
-    return render(request, 'academico/lista_aulas.html', {'aulas': aulas, 'form': form, 'docentes': docentes})
+    return render(request, 'academico/lista_aulas.html', {
+        'aulas': aulas, 
+        'form': form, 
+        'docentes': docentes
+    })
 
 def crear_aula(request):
     if request.method == 'POST':

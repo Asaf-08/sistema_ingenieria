@@ -30,7 +30,12 @@ function inicializarTablaAulas() {
         },
         pageLength: 10,
         lengthChange: true,
-        order: [[1, "asc"]],
+        // 💥 MAGIA DATATABLES: 1° por Nivel(1), 2° por Grado(0), 3° por Sección(2)
+        order: [
+            [1, "asc"], 
+            [0, "asc"], 
+            [2, "asc"]
+        ],
         info: true,
         autoWidth: false,
         responsive: true,
