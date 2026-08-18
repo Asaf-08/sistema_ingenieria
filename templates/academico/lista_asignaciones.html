@@ -11,7 +11,7 @@
     }
     .accordion-button:focus { box-shadow: none; border-color: transparent; }
     
-    /* 💥 CORRECCIÓN 1: Centrado matemático del ícono de búsqueda */
+    /* Centrado matemático del ícono de búsqueda */
     .search-container { position: relative; }
     .search-container i { 
         position: absolute; 
@@ -22,6 +22,16 @@
     }
     .search-input { padding-left: 40px !important; border: 2px solid #e2e8f0; border-radius: 8px; width: 300px; transition: all 0.2s; }
     .search-input:focus { border-color: #f57c00; outline: none; }
+
+    /* Diseño de las Pestañas (Nav Pills) */
+    .mi-menu-tabs .nav-item .nav-link {
+        color: #64748b !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        transition: color 0.7s ease !important;
+    }
+    .mi-menu-tabs .nav-item .nav-link.active { color: #ffffff !important; }
+    .mi-menu-tabs .moving-tab .nav-link.active{ color: #f57c00 !important; background: #f57c00 !important; }
 </style>
 {% endblock %}
 
@@ -61,106 +71,242 @@
                 </div>
             </div>
 
-            <!-- Agrupamos las asignaciones por Docente -->
-            {% regroup asignaciones by personal as docentes_list %}
+            <!-- 💥 NUEVO: PESTAÑAS (TABS) -->
+            <div class="px-4 mb-3">
+                <ul class="nav nav-pills mi-menu-tabs bg-light p-1 rounded-3 d-inline-flex border" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active px-4 py-2 d-flex align-items-center" id="pills-docentes-tab" data-bs-toggle="pill" href="#pills-docentes" role="tab">
+                            <i class="material-symbols-rounded me-2" style="font-size: 18px;">person_raised_hand</i> Vista por Docentes
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link px-4 py-2 d-flex align-items-center" id="pills-aulas-tab" data-bs-toggle="pill" href="#pills-aulas" role="tab">
+                            <i class="material-symbols-rounded me-2" style="font-size: 18px;">meeting_room</i> Vista por Aulas
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-            <div class="px-4" id="contenedor-asignaciones">
-                {% if docentes_list %}
-                <div class="accordion" id="accordionAsignaciones">
-                    {% for docente in docentes_list %}
-                    
-                    <!-- Tarjeta del Docente -->
-                    <div class="accordion-item mb-3 border border-light shadow-sm" style="border-radius: 12px; overflow: hidden;">
-                        <h2 class="accordion-header" id="heading-{{ docente.grouper.id }}">
-                            <button class="accordion-button collapsed p-3 bg-gray-100 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ docente.grouper.id }}">
+            <!-- CONTENIDO DE LAS PESTAÑAS -->
+            <div class="tab-content" id="pills-tabContent">
+                
+                <!-- ==========================================
+                     PESTAÑA 1: VISTA POR DOCENTES (Original)
+                     ========================================== -->
+                <div class="tab-pane fade show active px-4" id="pills-docentes" role="tabpanel">
+
+                    <!-- Agrupamos las asignaciones por Docente -->
+                    {% regroup asignaciones by personal as docentes_list %}
+
+                    <div id="contenedor-asignaciones">
+                        {% if docentes_list %}
+                        <div class="accordion" id="accordionAsignaciones">
+                            {% for docente in docentes_list %}
+                            
+                            <!-- Tarjeta del Docente -->
+                            <div class="accordion-item mb-3 border border-light shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                                <h2 class="accordion-header" id="heading-{{ docente.grouper.id }}">
+                                    <button class="accordion-button collapsed p-3 bg-gray-100 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ docente.grouper.id }}">
+                                        
+                                        <!-- CONTENEDOR FLEX PRINCIPAL DEL ACORDEÓN -->
+                                        <div class="d-flex justify-content-between w-100 align-items-center pe-3">
+                                            
+                                            <!-- 1. Izquierda: Datos del Docente -->
+                                            <div class="d-flex align-items-center" style="width: 35%;">
+                                                <!-- 💥 CORRECCIÓN 2: Centrado perfecto del ícono del profesor con Flexbox -->
+                                                <div class="icon icon-shape bg-white shadow-sm rounded-circle me-3 border d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                    <i class="material-symbols-rounded text-dark" style="font-size: 24px; top: 0 !important;">person_raised_hand</i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0 font-weight-bolder">{{ docente.grouper.apellidos }}, {{ docente.grouper.nombres }}</h6>
+                                                    <span class="text-xs text-secondary">DNI: {{ docente.grouper.dni }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- 💥 NUEVO FEATURE: Centro - Cursos Asignados (Oculto en celulares) -->
+                                            <div class="d-none d-lg-flex align-items-center" style="width: 45%; overflow: hidden; white-space: nowrap;">
+                                                <span class="text-xs text-secondary me-2 font-weight-bold">Dicta:</span>
+                                                <div class="d-flex flex-nowrap" style="overflow: hidden;">
+                                                    {% for asig in docente.list %}
+                                                        {% ifchanged asig.curso.id %}
+                                                            <span class="badge bg-light text-secondary border me-1 fw-normal text-capitalize">{{ asig.curso.nombre|lower }}</span>
+                                                        {% endifchanged %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            <!-- 3. Derecha: Contador de Aulas -->
+                                            <div class="text-end" style="width: 20%;">
+                                                <span class="badge" style="background-color: #f57c00;">{{ docente.list|length }} Asignaciones</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
                                 
-                                <!-- CONTENEDOR FLEX PRINCIPAL DEL ACORDEÓN -->
-                                <div class="d-flex justify-content-between w-100 align-items-center pe-3">
-                                    
-                                    <!-- 1. Izquierda: Datos del Docente -->
-                                    <div class="d-flex align-items-center" style="width: 35%;">
-                                        <!-- 💥 CORRECCIÓN 2: Centrado perfecto del ícono del profesor con Flexbox -->
-                                        <div class="icon icon-shape bg-white shadow-sm rounded-circle me-3 border d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                            <i class="material-symbols-rounded text-dark" style="font-size: 24px; top: 0 !important;">person_raised_hand</i>
+                                <!-- Lista de Cursos (Tabla Limpia) -->
+                                <div id="collapse-{{ docente.grouper.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionAsignaciones">
+                                    <div class="accordion-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table align-items-center mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso / Materia</th>
+                                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Aula y Nivel</th>
+                                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for asig in docente.list %}
+                                                    <tr>
+                                                        <td class="ps-4">
+                                                            <div class="d-flex px-2 py-1 align-items-center">
+                                                                <i class="material-symbols-rounded text-secondary opacity-5 me-2">book</i>
+                                                                <div class="d-flex flex-column">
+                                                                    <h6 class="mb-0 text-sm text-dark font-weight-bold">{{ asig.curso.nombre }}</h6>
+                                                                    <span class="text-xs text-secondary">{{ asig.curso.area }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="align-middle text-center">
+                                                            <span class="text-dark font-weight-bold text-sm me-2">{{ asig.aula.grado }} "{{ asig.aula.seccion }}"</span>
+                                                            <span class="badge badge-sm border border-secondary text-secondary bg-transparent">{{ asig.aula.nivel }}</span>
+                                                        </td>
+                                                        <td class="align-middle text-center">
+                                                            <!-- 💥 CORRECCIÓN 3: Ícono de borrar perfectamente centrado -->
+                                                            <button onclick="confirmarEliminarAsignacion('{{ asig.pk }}', 'este registro')" class="btn btn-icon-only bg-light text-danger rounded-circle mb-0 border shadow-none d-inline-flex align-items-center justify-content-center p-0" style="width: 32px; height: 32px;" data-bs-toggle="tooltip" data-bs-title="Quitar Asignación">
+                                                                <i class="material-symbols-rounded" style="font-size: 18px;">delete</i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <div>
-                                            <h6 class="mb-0 font-weight-bolder">{{ docente.grouper.apellidos }}, {{ docente.grouper.nombres }}</h6>
-                                            <span class="text-xs text-secondary">DNI: {{ docente.grouper.dni }}</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- 💥 NUEVO FEATURE: Centro - Cursos Asignados (Oculto en celulares) -->
-                                    <div class="d-none d-lg-flex align-items-center" style="width: 45%; overflow: hidden; white-space: nowrap;">
-                                        <span class="text-xs text-secondary me-2 font-weight-bold">Dicta:</span>
-                                        <div class="d-flex flex-nowrap" style="overflow: hidden;">
-                                            {% for asig in docente.list %}
-                                                {% ifchanged asig.curso.id %}
-                                                    <span class="badge bg-light text-secondary border me-1 fw-normal text-capitalize">{{ asig.curso.nombre|lower }}</span>
-                                                {% endifchanged %}
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                    <!-- 3. Derecha: Contador de Aulas -->
-                                    <div class="text-end" style="width: 20%;">
-                                        <span class="badge" style="background-color: #f57c00;">{{ docente.list|length }} Asignaciones</span>
                                     </div>
                                 </div>
-                            </button>
-                        </h2>
-                        
-                        <!-- Lista de Cursos (Tabla Limpia) -->
-                        <div id="collapse-{{ docente.grouper.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionAsignaciones">
-                            <div class="accordion-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table align-items-center mb-0">
-                                        <thead class="bg-light">
-                                            <tr>
-                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso / Materia</th>
-                                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Aula y Nivel</th>
-                                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for asig in docente.list %}
-                                            <tr>
-                                                <td class="ps-4">
-                                                    <div class="d-flex px-2 py-1 align-items-center">
-                                                        <i class="material-symbols-rounded text-secondary opacity-5 me-2">book</i>
-                                                        <div class="d-flex flex-column">
-                                                            <h6 class="mb-0 text-sm text-dark font-weight-bold">{{ asig.curso.nombre }}</h6>
-                                                            <span class="text-xs text-secondary">{{ asig.curso.area }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="material-symbols-rounded text-secondary opacity-5" style="font-size: 60px;">event_busy</i>
+                            <h5 class="mt-3 text-secondary">Aún no hay carga académica</h5>
+                            <p class="text-sm">Inicia realizando una asignación masiva para los docentes.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- ==========================================
+                     PESTAÑA 2: VISTA POR AULAS (NUEVA)
+                     ========================================== -->
+                <div class="tab-pane fade px-4" id="pills-aulas" role="tabpanel">
+                    {% regroup asignaciones_aulas by aula as aulas_list %}
+                    
+                    {% if aulas_list %}
+                    <div class="accordion" id="accordionAulas">
+                        {% for aula in aulas_list %}
+                        <div class="accordion-item mb-3 border border-light shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                            <h2 class="accordion-header" id="heading-aula-{{ aula.grouper.id }}">
+                                <button class="accordion-button collapsed p-3 bg-gray-100 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-aula-{{ aula.grouper.id }}">
+                                    <div class="d-flex justify-content-between w-100 align-items-center pe-3">
+                                        
+                                        <!-- Datos Aula -->
+                                        <div class="d-flex align-items-center" style="width: 35%;">
+                                            <!-- 💥 NUEVO: Rectángulo vertical dinámico por Nivel -->
+                                            <div class="rounded-pill me-3" style="width: 5px; height: 45px; background-color: {% if aula.grouper.nivel == 'Inicial' %}#8b5cf6{% elif aula.grouper.nivel == 'Primaria' %}#f57c00{% else %}#3b82f6{% endif %};"></div>
+                                            <div class="icon icon-shape bg-white shadow-sm rounded-circle me-3 border d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                <i class="material-symbols-rounded text-dark" style="font-size: 24px; top: 0 !important">meeting_room</i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 font-weight-bolder">{{ aula.grouper.grado }} "{{ aula.grouper.seccion }}"</h6>
+                                                <span class="text-xs text-secondary font-weight-bold">{{ aula.grouper.nivel }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Chips de Profesores -->
+                                        <div class="d-none d-lg-flex align-items-center" style="width: 45%; overflow: hidden; white-space: nowrap;">
+                                            <span class="text-xs text-secondary me-2 font-weight-bold">Docentes:</span>
+                                            <div class="d-flex flex-nowrap align-items-center" style="overflow: hidden;">
+                                                
+                                                <!-- 💥 NUEVO: Chip del Tutor -->
+                                                {% if aula.grouper.tutor %}
+                                                    <span class="badge text-white border me-2 fw-normal text-capitalize shadow-sm d-flex align-items-center" style="background-color: #414141;">
+                                                        <i class="material-symbols-rounded me-1" style="font-size: 14px;">star</i>
+                                                        {{ aula.grouper.tutor.nombres|truncatechars:12|lower }}
+                                                    </span>
+                                                {% endif %}
+
+                                                <!-- Docentes regulares -->
+                                                {% for asig in aula.list %}
+                                                    {% ifchanged asig.personal.id %}
+                                                        <!-- Evitamos imprimir al tutor de nuevo si también dicta curso -->
+                                                        {% if asig.personal.id != aula.grouper.tutor.id %}
+                                                            <span class="badge bg-light text-secondary border me-1 fw-normal text-capitalize">{{ asig.personal.nombres|truncatechars:10|lower }}</span>
+                                                        {% endif %}
+                                                    {% endifchanged %}
+                                                {% endfor %}
+                                                
+                                            </div>
+                                        </div>
+
+                                        <!-- Contador -->
+                                        <div class="text-end" style="width: 20%;">
+                                            <span class="badge" style="background-color: #f57c00;">{{ aula.list|length }} Cursos</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            
+                            <!-- Tabla Interna de Aulas -->
+                            <div id="collapse-aula-{{ aula.grouper.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionAulas">
+                                <div class="accordion-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso / Materia</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-4">Docente Asignado</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for asig in aula.list %}
+                                                <tr>
+                                                    <td class="ps-4">
+                                                        <p class="text-sm font-weight-bold mb-0 text-dark">{{ asig.curso.nombre }}</p>
+                                                        <p class="text-xs text-secondary mb-0">{{ asig.curso.area }}</p>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex px-2 py-1 align-items-center">
+                                                            <i class="material-symbols-rounded text-secondary opacity-5 me-2">person</i>
+                                                            <div class="d-flex flex-column">
+                                                                <h6 class="mb-0 text-sm text-dark">{{ asig.personal.apellidos }}, {{ asig.personal.nombres }}</h6>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <span class="text-dark font-weight-bold text-sm me-2">{{ asig.aula.grado }} "{{ asig.aula.seccion }}"</span>
-                                                    <span class="badge badge-sm border border-secondary text-secondary bg-transparent">{{ asig.aula.nivel }}</span>
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <!-- 💥 CORRECCIÓN 3: Ícono de borrar perfectamente centrado -->
-                                                    <button onclick="confirmarEliminarAsignacion('{{ asig.pk }}', 'este registro')" class="btn btn-icon-only bg-light text-danger rounded-circle mb-0 border shadow-none d-inline-flex align-items-center justify-content-center p-0" style="width: 32px; height: 32px;" data-bs-toggle="tooltip" data-bs-title="Quitar Asignación">
-                                                        <i class="material-symbols-rounded" style="font-size: 18px;">delete</i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <button onclick="confirmarEliminarAsignacion('{{ asig.pk }}')" class="btn btn-icon-only bg-light text-danger rounded-circle mb-0 border shadow-none p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" data-bs-toggle="tooltip" data-bs-title="Quitar Asignación">
+                                                            <i class="material-symbols-rounded" style="font-size: 18px;">delete</i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="material-symbols-rounded text-secondary opacity-5" style="font-size: 60px;">event_busy</i>
+                            <h5 class="mt-3 text-secondary">Aún no hay carga académica</h5>
+                        </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="material-symbols-rounded text-secondary opacity-5" style="font-size: 60px;">event_busy</i>
-                    <h5 class="mt-3 text-secondary">Aún no hay carga académica</h5>
-                    <p class="text-sm">Inicia realizando una asignación masiva para los docentes.</p>
-                </div>
-                {% endif %}
-            </div>
         </div>
     </div>
 </div>
@@ -168,4 +314,11 @@
 
 {% block scripts %}
 <script src="{% static 'js/asignaciones.js' %}"></script>
+<script>
+    // Inicializar tooltips
+    $(document).ready(function() {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    });
+</script>
 {% endblock scripts %}

@@ -253,10 +253,17 @@ def eliminar_curso_ajax(request, pk):
     return JsonResponse({'status': 'ok', 'message': 'Curso eliminado.'})
 
 def lista_asignaciones(request):
-    asignaciones = AsignacionAcademica.objects.select_related('personal', 'curso', 'aula', 'periodo').order_by('personal__apellidos', 'personal__nombres', 'curso__nombre')
+    # 1. Para la Pestaña 1: Agrupado por Docentes (Como ya lo tenías)
+    asignaciones_docentes = AsignacionAcademica.objects.select_related('personal', 'curso', 'aula', 'periodo')\
+        .order_by('personal__apellidos', 'personal__nombres', 'curso__nombre')
+
+    # 2. 💥 NUEVO - Para la Pestaña 2: Agrupado por Aulas
+    asignaciones_aulas = AsignacionAcademica.objects.select_related('personal', 'curso', 'aula', 'periodo')\
+        .order_by('aula__nivel', 'aula__grado', 'aula__seccion', 'curso__nombre')
     form = AsignacionAcademicaForm()
     return render(request, 'academico/lista_asignaciones.html', {
-        'asignaciones': asignaciones, 
+        'asignaciones': asignaciones_docentes, 
+        'asignaciones_aulas': asignaciones_aulas,
         'form': form
     })
 
