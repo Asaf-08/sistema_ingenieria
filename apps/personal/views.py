@@ -134,7 +134,7 @@ def mis_cursos(request):
             'mensaje': 'Su cuenta de usuario actual no tiene asignado un perfil en la tabla de Personal.'
         })
     
-    if personal_actual.cargo not in ['DOC', 'Docente']:
+    if personal_actual.cargo not in ['DOC', 'Docente', 'DIR', 'Director']:
         return render(request, 'errores/sin_perfil.html', {
             'mensaje': 'Acceso Restringido. El módulo de "Mis Cursos" es de uso exclusivo para el Personal Docente.'
         })

@@ -174,7 +174,12 @@ class Curso(models.Model):
         ordering = ['area', 'nombre']
 
 class AsignacionAcademica(models.Model):
-    personal = models.ForeignKey(Personal, limit_choices_to={'cargo': 'DOC'}, on_delete=models.CASCADE, related_name='asignaciones')
+    personal = models.ForeignKey(
+        Personal, 
+        limit_choices_to={'cargo__in': ['DOC', 'DIR']}, # Asegúrate de usar el código exacto de tu cargo Director
+        on_delete=models.CASCADE, 
+        related_name='asignaciones'
+    )
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='asignaciones')
     aula = models.ForeignKey(Aula, on_delete=models.CASCADE, related_name='asignaciones')
     periodo = models.ForeignKey(PeriodoLectivo, on_delete=models.CASCADE, related_name='asignaciones')
