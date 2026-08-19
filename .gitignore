@@ -22,3 +22,5 @@ whatsapp_bot/.wwebjs_auth/
 credenciales_google.json
 alumnos.xlsx
 migrar_datos.py
+importar_notas.py
+NOTAS_EJEMPLO.xlsx

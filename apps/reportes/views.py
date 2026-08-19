@@ -7,8 +7,10 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.conf import settings
+from decimal import Decimal, ROUND_HALF_UP
 
 from apps.academico.models import Aula, PeriodoLectivo, Matricula, AsignacionAcademica, Nota, Curso, EvaluacionActitudinal
+from apps.academico.services import calcular_matriz_vigesimal
 from apps.asistencia.models import AsistenciaEstudiante
 from django.db.models import Avg, Sum, Q
 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
@@ -26,17 +28,13 @@ def consolidado_notas_admin(request):
     # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
     
-    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
+    # Si hay un periodo activo, extraemos su bimestre actual.
     # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
     bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
     
     # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
     bimestre_actual = request.GET.get('bimestre', bimestre_predeterminado)
-    
-    # 💥 NUEVO: Atrapamos de dónde viene el usuario
     origen = request.GET.get('origen', '')
-    
-    # 💥 NUEVO: Atrapamos el curso que quiere inspeccionar
     asignacion_id = request.GET.get('asignacion_id')
     
     asignaciones = []
@@ -46,11 +44,10 @@ def consolidado_notas_admin(request):
     total_alumnos = 0
     promedio_aula = 0.0
     top_estudiantes = []
-    
-    # NUEVAS VARIABLES PARA LA TABLA INFERIOR
     asignacion_seleccionada = None
-    evals_cuaderno, evals_desafio, evals_examenes = [], [], []
-    datos_matriz = []
+    
+    # 💥 NOTA: Ya no declaramos las listas vacías (evals_mensual_lc, etc) aquí, 
+    # nuestro motor en services.py se encargará de devolverlas vacías si no hay datos.
     
     if aula_id:
         aula_seleccionada = get_object_or_404(Aula, id=aula_id)
@@ -75,89 +72,46 @@ def consolidado_notas_admin(request):
             evaluacion__bimestre=bimestre_actual
         ).aggregate(prom=Avg('valor'))['prom'] or 0.0
         
-        # 4. Cuadro de Honor (Top 3): Sumamos las notas usando tu related_name='notas' 💥
+        # 4. Cuadro de Honor (Top 3)
         top_estudiantes = matriculas.annotate(
             puntaje_total=Sum('notas__valor', filter=Q(notas__evaluacion__bimestre=bimestre_actual))
         ).exclude(puntaje_total__isnull=True).order_by('-puntaje_total')[:3]
         
-        # 💥 NUEVO BLOQUE: Lógica para la Matriz Detallada de la parte inferior
+        # Determinamos qué asignación se va a auditar
         if asignaciones.exists():
-            # Si eligió un curso en el select, lo buscamos. Si no, mostramos el primer curso del salón por defecto.
             if asignacion_id:
                 asignacion_seleccionada = asignaciones.filter(id=asignacion_id).first()
             else:
                 asignacion_seleccionada = asignaciones.first()
 
-            if asignacion_seleccionada:
-                # Reutilizamos el motor matemático que armamos para el profesor
-                evaluaciones = asignacion_seleccionada.evaluaciones.filter(bimestre=bimestre_actual).order_by('fecha', 'id')
-
-                evals_cuaderno = evaluaciones.filter(tipo__in=['CUADERNO', 'LIBRO'])
-                evals_desafio = evaluaciones.filter(tipo='DESAFIO')
-                evals_examenes = evaluaciones.filter(tipo__in=['MENSUAL', 'BIMESTRAL', 'SIMULACRO'])
-
-                matriculas = Matricula.objects.filter(aula=aula_seleccionada, estudiante__estado='Activo').order_by('estudiante__apellidos')
-                notas_db = Nota.objects.filter(evaluacion__in=evaluaciones).select_related('matricula', 'evaluacion')
-
-                diccionario_notas = {}
-                for n in notas_db:
-                    if n.matricula_id not in diccionario_notas:
-                        diccionario_notas[n.matricula_id] = {}
-                    diccionario_notas[n.matricula_id][n.evaluacion_id] = n.valor
-
-                for mat in matriculas:
-                    notas_alumno = diccionario_notas.get(mat.id, {})
-
-                    def calcular_promedio(grupo_evaluaciones):
-                        valores = [notas_alumno[e.id] for e in grupo_evaluaciones if e.id in notas_alumno and notas_alumno[e.id] is not None]
-                        return round(sum(valores) / len(valores), 2) if valores else 0.0
-
-                    prom_cuaderno = calcular_promedio(evals_cuaderno)
-                    prom_desafio = calcular_promedio(evals_desafio)
-                    prom_examen = calcular_promedio(evals_examenes)
-
-                    sumatoria_promedios = [p for p in [prom_cuaderno, prom_desafio, prom_examen] if p > 0]
-                    prom_general = round(sum(sumatoria_promedios) / len(sumatoria_promedios), 2) if sumatoria_promedios else 0.0
-
-                    datos_matriz.append({
-                        'estudiante': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
-                        'notas': notas_alumno,
-                        'prom_cuaderno': prom_cuaderno,
-                        'prom_desafio': prom_desafio,
-                        'prom_examen': prom_examen,
-                        'prom_general': prom_general
-                    })
-        
-    return render(request, 'personal/consolidado_notas.html', {
+    # ----------------------------------------------------
+    # 💥 EL LLAMADO MAGISTRAL AL SERVICIO: 1 sola línea de código
+    # ----------------------------------------------------
+    contexto_matriz = calcular_matriz_vigesimal(asignacion_seleccionada, aula_seleccionada, bimestre_actual)
+    
+    # Preparamos el contexto "Base" de la vista
+    context = {
         'aulas': aulas,
         'asignaciones': asignaciones,
         'aula_seleccionada': aula_seleccionada,
         'bimestre': bimestre_actual,
         'origen': origen,
-        # Enviamos las métricas reales
         'total_alumnos': total_alumnos,
         'promedio_aula': promedio_aula,
         'top_estudiantes': top_estudiantes,
-        
-        # Nuestras variables nuevas
         'asignacion_seleccionada': asignacion_seleccionada,
-        'evals_cuaderno': evals_cuaderno,
-        'evals_desafio': evals_desafio,
-        'evals_examenes': evals_examenes,
-        'datos_matriz': datos_matriz,
-    })
+    }
+    
+    # 💥 FUSIÓN: Combinamos el contexto Base con todo lo que calculó el motor matemático
+    context.update(contexto_matriz)
+    
+    return render(request, 'personal/consolidado_notas.html', context)
 
 @login_required
 def exportar_matriz_oficial_excel(request, asignacion_id):
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    
-    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
-    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
     bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
-    
-    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
     bimestre_actual = request.GET.get('bimestre', bimestre_predeterminado)
     en_blanco = request.GET.get('blanco', '0') == '1'
 
@@ -172,27 +126,29 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
             diccionario_notas[n.matricula_id] = {}
         diccionario_notas[n.matricula_id][n.evaluacion_id] = n.valor
 
-    evals_cuaderno = list(evaluaciones.filter(tipo='CUADERNO'))
-    evals_desafio = list(evaluaciones.filter(tipo='DESAFIO'))
-    evals_examenes = list(evaluaciones.filter(tipo__in=['MENSUAL', 'BIMESTRAL', 'SIMULACRO']))
+    # 💥 CLASIFICACIÓN EXACTA COMO EN LA WEB (Incluye LIBRO y CUADERNO)
+    evals_mensual_lc = evaluaciones.filter(tipo__in=['CUADERNO', 'LIBRO'], nombre__icontains='Mensual')
+    evals_bimestral_lc = evaluaciones.filter(tipo__in=['CUADERNO', 'LIBRO'], nombre__icontains='Bimestral')
+    evals_desafio = evaluaciones.filter(tipo='DESAFIO')
+    eval_mensual = evaluaciones.filter(tipo='MENSUAL').first()
+    eval_bimestral = evaluaciones.filter(tipo='BIMESTRAL').first()
+    evals_simulacro = evaluaciones.filter(tipo='SIMULACRO')
 
     # 2. Inicializar Excel y Estilos
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Notas {bimestre_actual} Bim"
     
-    # Paleta de colores
+    # Paleta y estilos (Se mantiene intacto tu excelente diseño)
     fill_naranja = PatternFill(start_color="FF6600", end_color="FF6600", fill_type="solid")
     fill_blanco = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
     fill_promedios = PatternFill(start_color="FDE9D9", end_color="FDE9D9", fill_type="solid") 
     
-    # Fuentes
     font_titulo = Font(name="Arial", size=14, bold=True)
     font_blanca = Font(name="Arial", size=9, bold=True, color="FFFFFF")
     font_negra_bold = Font(name="Arial", size=9, bold=True)
     font_normal = Font(name="Arial", size=9)
     
-    # Alineaciones
     align_centro = Alignment(horizontal="center", vertical="center", wrap_text=True)
     align_izq = Alignment(horizontal="left", vertical="center")
     align_bottom_center = Alignment(horizontal="center", vertical="bottom")
@@ -204,36 +160,29 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     # ==========================================
     # 3. CONSTRUCCIÓN DE LA CABECERA PRINCIPAL
     # ==========================================
-    # FILA 2: Título Principal con Borde Grueso y Altura 35
     ws.row_dimensions[2].height = 35
     ws.merge_cells("A2:W2")
     ws["A2"] = f"INVENTARIO DE GANANCIAS Y PÉRDIDAS DE APRENDIZAJES {asignacion.periodo.anio}"
-    ws["A2"].font = font_titulo
-    ws["A2"].alignment = align_centro
+    ws["A2"].font, ws["A2"].alignment = font_titulo, align_centro
     
     for col in range(1, 24):
         ws.cell(row=2, column=col).border = borde_grueso_outer
 
-    # FILA 3: Subtítulos del Curso
     ws.merge_cells("A3:B3")
     ws["A3"] = f"ACTIVIDAD: {asignacion.curso.nombre.upper()}"
-    
     ws.merge_cells("C3:I3")
     ws["C3"] = f"AULA: {asignacion.aula.grado} '{asignacion.aula.seccion}'"
-    
     ws.merge_cells("K3:S3")
     ws["K3"] = f"NIVEL: {asignacion.aula.get_nivel_display().upper()}"
-    
     ws.merge_cells("T3:W3")
     ws["T3"] = f"BIMESTRE: {bimestre_actual}"
 
-    for cell in ["A3", "C3", "K3", "T3"]:
-        ws[cell].font = font_negra_bold
+    for cell in ["A3", "C3", "K3", "T3"]: ws[cell].font = font_negra_bold
 
     # ==========================================
     # 4. ESTRUCTURA DE TABLA (FILAS 4, 5 y 6)
     # ==========================================
-    ws.row_dimensions[6].height = 160  # 💥 Fila 6 con altura 160
+    ws.row_dimensions[6].height = 160
 
     ws.merge_cells("A4:A6")
     ws["A4"] = "N°"
@@ -247,23 +196,17 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     ws.merge_cells("C4:E5")
     ws["C4"] = "EVALUACIONES MENSUALES"
     ws["C4"].fill, ws["C4"].font, ws["C4"].alignment = fill_naranja, font_blanca, align_centro
-
     ws["C6"], ws["D6"], ws["E6"] = "DESARROLLO DE LIBRO", "DESARROLLO DE TAREAS", "PROM - 1"
-    
-    ws["C6"].fill, ws["C6"].alignment, ws["C6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-    ws["D6"].fill, ws["D6"].alignment, ws["D6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-    ws["E6"].fill, ws["E6"].alignment, ws["E6"].font = fill_naranja, align_vertical_bottom, font_blanca
+    for cell, f, a, ft in zip(["C6","D6","E6"], [fill_blanco, fill_blanco, fill_naranja], [align_vertical_bottom]*3, [font_negra_bold, font_negra_bold, font_blanca]):
+        ws[cell].fill, ws[cell].alignment, ws[cell].font = f, a, ft
 
     # -- EVALUACIONES BIMESTRALES --
     ws.merge_cells("F4:H5")
     ws["F4"] = "EVALUACIONES BIMESTRALES"
     ws["F4"].fill, ws["F4"].font, ws["F4"].alignment = fill_naranja, font_blanca, align_centro
-
     ws["F6"], ws["G6"], ws["H6"] = "DESARROLLO DE LIBRO", "DESARROLLO DE TAREAS", "PROM - 2"
-    
-    ws["F6"].fill, ws["F6"].alignment, ws["F6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-    ws["G6"].fill, ws["G6"].alignment, ws["G6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-    ws["H6"].fill, ws["H6"].alignment, ws["H6"].font = fill_naranja, align_vertical_bottom, font_blanca
+    for cell, f, a, ft in zip(["F6","G6","H6"], [fill_blanco, fill_blanco, fill_naranja], [align_vertical_bottom]*3, [font_negra_bold, font_negra_bold, font_blanca]):
+        ws[cell].fill, ws[cell].alignment, ws[cell].font = f, a, ft
 
     # -- EVALUACIONES DIARIAS --
     ws.merge_cells("I4:Q4")
@@ -277,8 +220,7 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     for i in range(1, 9):
         col_letra = openpyxl.utils.get_column_letter(8 + i)
         ws[f"{col_letra}6"] = str(i)
-        ws[f"{col_letra}6"].fill = fill_blanco
-        ws[f"{col_letra}6"].alignment, ws[f"{col_letra}6"].font = align_bottom_center, font_negra_bold
+        ws[f"{col_letra}6"].fill, ws[f"{col_letra}6"].alignment, ws[f"{col_letra}6"].font = fill_blanco, align_bottom_center, font_negra_bold
 
     ws["Q6"] = "PROM - 3"
     ws["Q6"].fill, ws["Q6"].alignment, ws["Q6"].font = fill_naranja, align_vertical_bottom, font_blanca
@@ -293,31 +235,24 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     ws["S4"].fill, ws["S4"].alignment, ws["S4"].font = fill_naranja, align_vertical_bottom, font_blanca
 
     # -- CONCURSO DE APTITUD --
-    ws.merge_cells("T4:V5")  # 💥 Cubre fila 4 y 5
+    ws.merge_cells("T4:V5")
     ws["T4"] = "CONCURSO DE APTITUD"
     ws["T4"].fill, ws["T4"].font, ws["T4"].alignment = fill_naranja, font_blanca, align_centro
 
-    ws["T6"] = "CONCURSO DE APTITUD MENSUAL"
-    ws["T6"].fill, ws["T6"].alignment, ws["T6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-
-    ws["U6"] = "CONCURSO DE APTITUD MENSUAL"
-    ws["U6"].fill, ws["U6"].alignment, ws["U6"].font = fill_blanco, align_vertical_bottom, font_negra_bold
-
-    ws["V6"] = "PROM - CONCURSO DE APTITUD"
-    ws["V6"].fill, ws["V6"].alignment, ws["V6"].font = fill_naranja, align_vertical_bottom, font_blanca
+    ws["T6"], ws["U6"], ws["V6"] = "CONCURSO DE APTITUD MENSUAL", "CONCURSO DE APTITUD MENSUAL", "PROM - CONCURSO DE APTITUD"
+    for cell, f in zip(["T6","U6","V6"], [fill_blanco, fill_blanco, fill_naranja]):
+        ws[cell].fill, ws[cell].alignment, ws[cell].font = f, align_vertical_bottom, (font_blanca if f == fill_naranja else font_negra_bold)
 
     # -- CERTIFICACIÓN DE CALIDAD --
     ws.merge_cells("W4:W6")
     ws["W4"] = "CERTIFICACIÓN DE CALIDAD"
     ws["W4"].fill, ws["W4"].alignment, ws["W4"].font = fill_naranja, align_vertical_bottom, font_blanca
 
-    # Aplicar bordes finos a las celdas de la cabecera
     for row in ws.iter_rows(min_row=4, max_row=6, min_col=1, max_col=23):
-        for cell in row:
-            cell.border = borde_fino
+        for cell in row: cell.border = borde_fino
 
     # ==========================================
-    # 5. ESCRIBIR DATOS (Desde Fila 7)
+    # 5. ESCRIBIR DATOS Y MATEMÁTICA ESTRICTA (Desde Fila 7)
     # ==========================================
     fila_actual = 7
     for idx, mat in enumerate(matriculas, 1):
@@ -328,64 +263,70 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
 
         for col_idx in range(1, 24):
             celda = ws.cell(row=fila_actual, column=col_idx)
-            celda.border = borde_fino
-            celda.font = font_normal
-            if col_idx > 2:
-                celda.alignment = align_centro
-            
-            if col_idx in [5, 8, 17, 18, 19, 22, 23]:
-                celda.fill = fill_promedios
+            celda.border, celda.font = borde_fino, font_normal
+            if col_idx > 2: celda.alignment = align_centro
+            if col_idx in [5, 8, 17, 18, 19, 22, 23]: celda.fill = fill_promedios
 
         if not en_blanco:
             notas_alumno = diccionario_notas.get(mat.id, {})
             
-            def calcular_y_redondear(grupo):
-                valores = [float(notas_alumno[e.id]) for e in grupo if e.id in notas_alumno and notas_alumno[e.id] is not None]
+            # 💥 Función robusta para obtener una nota individual redondeada
+            def obtener_nota(eval_obj):
+                if eval_obj and eval_obj.id in notas_alumno and notas_alumno[eval_obj.id] is not None:
+                    return int(Decimal(str(notas_alumno[eval_obj.id])).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+                return ""
+
+            # 💥 Función robusta de promedio
+            def calcular_promedio(grupo):
+                valores = [obtener_nota(e) for e in grupo if obtener_nota(e) != ""]
                 if valores:
                     promedio = sum(valores) / len(valores)
-                    return int(promedio + 0.5) 
-                return 0
+                    return int(Decimal(str(promedio)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+                return ""
 
-            prom_cuaderno = calcular_y_redondear(evals_cuaderno)
-            prom_desafio = calcular_y_redondear(evals_desafio)
-            
-            nota_control = calcular_y_redondear([e for e in evals_examenes if e.tipo == 'MENSUAL'])
-            nota_iso = calcular_y_redondear([e for e in evals_examenes if e.tipo == 'BIMESTRAL'])
-            
-            simulacros_list = [e for e in evals_examenes if e.tipo == 'SIMULACRO']
-            val_sim1 = int(float(notas_alumno[simulacros_list[0].id]) + 0.5) if len(simulacros_list) > 0 and simulacros_list[0].id in notas_alumno and notas_alumno[simulacros_list[0].id] is not None else ""
-            val_sim2 = int(float(notas_alumno[simulacros_list[1].id]) + 0.5) if len(simulacros_list) > 1 and simulacros_list[1].id in notas_alumno and notas_alumno[simulacros_list[1].id] is not None else ""
-            
-            prom_simulacro = 0
-            sims_validos = [v for v in [val_sim1, val_sim2] if v != ""]
-            if sims_validos:
-                prom_simulacro = int(sum(sims_validos) / len(sims_validos) + 0.5)
+            # Identificamos evaluaciones específicas para las celdas C, D, F, G
+            libro_mensual = evals_mensual_lc.filter(tipo='LIBRO').first()
+            cuad_mensual = evals_mensual_lc.filter(tipo='CUADERNO').first()
+            libro_bim = evals_bimestral_lc.filter(tipo='LIBRO').first()
+            cuad_bim = evals_bimestral_lc.filter(tipo='CUADERNO').first()
 
-            sumatoria_general = []
-            if prom_cuaderno > 0: sumatoria_general.append(prom_cuaderno) 
-            if prom_cuaderno > 0: sumatoria_general.append(prom_cuaderno) 
-            if prom_desafio > 0: sumatoria_general.append(prom_desafio)   
-            if nota_control > 0: sumatoria_general.append(nota_control)   
-            if nota_iso > 0: sumatoria_general.append(nota_iso)           
-            if prom_simulacro > 0: sumatoria_general.append(prom_simulacro) 
+            # Calculamos los 6 componentes principales
+            prom_mensual_lc = calcular_promedio(evals_mensual_lc)
+            prom_bimestral_lc = calcular_promedio(evals_bimestral_lc)
+            prom_desafio = calcular_promedio(evals_desafio)
+            nota_mensual = obtener_nota(eval_mensual)
+            nota_bimestral = obtener_nota(eval_bimestral)
             
-            prom_final_certificacion = int(sum(sumatoria_general) / len(sumatoria_general) + 0.5) if sumatoria_general else ""
+            sims = list(evals_simulacro)
+            nota_sim1 = obtener_nota(sims[0]) if len(sims) > 0 else ""
+            nota_sim2 = obtener_nota(sims[1]) if len(sims) > 1 else ""
+            prom_simulacro = calcular_promedio(evals_simulacro)
 
-            ws[f"E{fila_actual}"] = prom_cuaderno if prom_cuaderno > 0 else ""
-            ws[f"H{fila_actual}"] = prom_cuaderno if prom_cuaderno > 0 else ""
-            ws[f"Q{fila_actual}"] = prom_desafio if prom_desafio > 0 else ""
-            ws[f"R{fila_actual}"] = nota_control if nota_control > 0 else ""
-            ws[f"S{fila_actual}"] = nota_iso if nota_iso > 0 else ""
-            ws[f"T{fila_actual}"] = val_sim1
-            ws[f"U{fila_actual}"] = val_sim2
-            ws[f"V{fila_actual}"] = prom_simulacro if prom_simulacro > 0 else ""
-            ws[f"W{fila_actual}"] = prom_final_certificacion
+            # Promedio Final
+            componentes = [prom_mensual_lc, prom_bimestral_lc, prom_desafio, nota_mensual, nota_bimestral, prom_simulacro]
+            sumatoria_validos = [p for p in componentes if p != ""]
+            prom_general = int(Decimal(str(sum(sumatoria_validos) / len(sumatoria_validos))).quantize(Decimal('1'), rounding=ROUND_HALF_UP)) if sumatoria_validos else ""
 
-            for i, ev in enumerate(evals_desafio[:8]):
-                nota = notas_alumno.get(ev.id)
-                if nota is not None:
-                    col_letra = openpyxl.utils.get_column_letter(9 + i)
-                    ws[f"{col_letra}{fila_actual}"] = int(float(nota) + 0.5)
+            # 💥 ESCRITURA EN EXCEL
+            ws[f"C{fila_actual}"] = obtener_nota(libro_mensual)
+            ws[f"D{fila_actual}"] = obtener_nota(cuad_mensual)
+            ws[f"E{fila_actual}"] = prom_mensual_lc
+            
+            ws[f"F{fila_actual}"] = obtener_nota(libro_bim)
+            ws[f"G{fila_actual}"] = obtener_nota(cuad_bim)
+            ws[f"H{fila_actual}"] = prom_bimestral_lc
+
+            for i, ev in enumerate(list(evals_desafio)[:8]):
+                col_letra = openpyxl.utils.get_column_letter(9 + i)
+                ws[f"{col_letra}{fila_actual}"] = obtener_nota(ev)
+            
+            ws[f"Q{fila_actual}"] = prom_desafio
+            ws[f"R{fila_actual}"] = nota_mensual
+            ws[f"S{fila_actual}"] = nota_bimestral
+            ws[f"T{fila_actual}"] = nota_sim1
+            ws[f"U{fila_actual}"] = nota_sim2
+            ws[f"V{fila_actual}"] = prom_simulacro
+            ws[f"W{fila_actual}"] = prom_general
 
         fila_actual += 1
 

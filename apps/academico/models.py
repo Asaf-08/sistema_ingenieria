@@ -216,8 +216,8 @@ class Evaluacion(models.Model):
         ('MENSUAL', 'Control de Calidad (Examen Mensual)'),
         ('BIMESTRAL', 'ISO Ingeniería (Examen Bimestral)'),
         ('SIMULACRO', 'Concurso de Aptitud (Simulacro)'),
-        ('CUADERNO', 'Revisión de Cuaderno'), # 💥 Separado
-        ('LIBRO', 'Revisión de Libro'),       # 💥 Nuevo
+        ('CUADERNO', 'Revisión de Cuaderno'),
+        ('LIBRO', 'Revisión de Libro'),
     ]
     
     # Añadimos los bimestres

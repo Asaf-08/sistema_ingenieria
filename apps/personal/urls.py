@@ -32,7 +32,6 @@ urlpatterns = [
     # 📝 EVALUACIONES Y NOTAS
     # ==========================================
     path('evaluaciones/<int:asignacion_id>/', views.lista_evaluaciones, name='lista_evaluaciones'),
-    path('evaluaciones/guardar/', views.guardar_evaluacion_ajax, name='guardar_evaluacion_ajax'),
     path('notas/<int:evaluacion_id>/', views.registro_notas, name='registro_notas'),
     path('notas/guardar/', views.guardar_nota_ajax, name='guardar_nota_ajax'),
     path('curso/<int:asignacion_id>/matriz/', views.matriz_notas, name='matriz_notas'),

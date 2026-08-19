@@ -3,8 +3,6 @@
 
 {% block extra_css %}
 <style>
-  /* 💥 TRUCO SENIOR: Si hay evaluaciones (elementos con clase 'evaluacion-item'), 
-     ocultamos automáticamente el mensaje de vacío ('empty-state') */
   .evaluacion-item ~ .empty-state {
     display: none !important;
   }
@@ -68,49 +66,39 @@
            </div>
         </div>
 
-        {% if not b.cerrado %}
-        <div class="row mb-4 btn-nueva-evaluacion-container" data-bimestre="{{ b.key }}">
-          <div class="col-12">
-            <button class="btn bg-gradient-dark w-100 mb-0 py-3 d-flex align-items-center justify-content-center"
-              onclick="abrirModalNuevaEvaluacion()">
-              <i class="material-symbols-rounded me-2">add_circle</i> Nueva Calificación
-            </button>
-          </div>
-        </div>
-        {% else %}
-        <div class="alert alert-warning text-white text-sm" role="alert">
-          <i class="material-symbols-rounded align-middle me-1 text-sm">lock</i> Este bimestre ha sido cerrado y enviado a coordinación. Para realizar cambios, debes reabrir el registro.
+        {% if b.cerrado %}
+        <div class="alert alert-warning text-white text-sm mb-4" role="alert">
+          <i class="material-symbols-rounded align-middle me-1 text-sm">lock</i> Este bimestre ha sido cerrado. Para realizar cambios, debes reabrir el registro.
         </div>
         {% endif %}
 
         <div class="row">
           
+          <!-- DESAFÍOS -->
           <div class="col-12 col-lg-4 mb-4">
             <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Desafíos Diarios</h6>
             <div class="card mb-4 shadow-sm border-0">
               <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key and ev.tipo == 'DESAFIO' %}
-                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
                     <div class="d-flex align-items-center">
                       <div class="icon icon-shape icon-sm bg-gradient-primary shadow text-center border-radius-md me-3">
                         <i class="material-symbols-rounded text-white" style="font-size: 16px;">assignment</i>
                       </div>
                       <div>
                         <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                        <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                        <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | Evaluación Continua</span>
                       </div>
                     </div>
                   </li>
                   {% endif %}
                 {% endfor %}
-                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                  No hay desafíos registrados en este bimestre.
-                </li>
               </ul>
             </div>
           </div>
 
+          <!-- REVISIONES -->
           <div class="col-12 col-lg-4 mb-4">
             <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Revisión de Cuaderno/Libro</h6>
             <div class="card mb-4 shadow-sm border-0">
@@ -118,51 +106,63 @@
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key %}
                     {% if ev.tipo == 'CUADERNO' or ev.tipo == 'LIBRO' %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
                       <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">menu_book</i>
                         </div>
                         <div>
                           <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | Revisión Documentaria</span>
                         </div>
                       </div>
                     </li>
                     {% endif %}
                   {% endif %}
                 {% endfor %}
-                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                  No hay revisiones registradas en este bimestre.
-                </li>
               </ul>
             </div>
           </div>
 
+          <!-- EXÁMENES Y SIMULACROS -->
           <div class="col-12 col-lg-4 mb-4">
             <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3 ps-2">Exámenes y Simulacros</h6>
             <div class="card mb-4 shadow-sm border-0">
               <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key %}
-                    {% if ev.tipo == 'MENSUAL' or ev.tipo == 'BIMESTRAL' or ev.tipo == 'SIMULACRO' %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    
+                    <!-- Mostrar Exámenes Normales -->
+                    {% if ev.tipo == 'MENSUAL' or ev.tipo == 'BIMESTRAL' %}
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
                       <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm bg-gradient-danger shadow text-center border-radius-md me-3">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">grade</i>
                         </div>
                         <div>
                           <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
-                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | {{ ev.fecha|date:"d/m/Y" }}</span>
+                          <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | Evaluación Oficial</span>
+                        </div>
+                      </div>
+                    </li>
+                    
+                    <!-- 💥 Mostrar Simulacros SOLO si es el tutor -->
+                    {% elif ev.tipo == 'SIMULACRO' and request.user.perfil_personal == asignacion.aula.tutor %}
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
+                      <div class="d-flex align-items-center">
+                        <div class="icon icon-shape icon-sm bg-gradient-success shadow text-center border-radius-md me-3">
+                          <i class="material-symbols-rounded text-white" style="font-size: 16px;">workspace_premium</i>
+                        </div>
+                        <div>
+                          <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
+                          <span class="text-xs text-secondary text-success font-weight-bold">{{ ev.get_bimestre_display }} | Concurso Institucional</span>
                         </div>
                       </div>
                     </li>
                     {% endif %}
+
                   {% endif %}
                 {% endfor %}
-                <li class="list-group-item text-center text-secondary empty-state border-0" style="padding: 1.5rem; font-style: italic; font-size: 0.85rem;">
-                  No hay exámenes registrados en este bimestre.
-                </li>
               </ul>
             </div>
           </div>
@@ -172,49 +172,6 @@
       
       {% endif %}
     {% endfor %}
-  </div>
-</div>
-
-<div class="modal fade" id="modalEvaluacion" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-gradient-dark">
-        <h5 class="modal-title text-white font-weight-bold">Nueva Calificación</h5>
-        <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-
-        <div class="alert alert-info text-white" role="alert">
-          <span class="text-md d-block"><strong>Bimestre {{ asignacion.periodo.bimestre_actual }}</strong></span>
-        </div>
-
-        <form id="formEvaluacion">
-          {% csrf_token %}
-          <input type="hidden" name="asignacion_id" value="{{ asignacion.id }}">
-
-          <div class="input-group input-group-static mb-4 mt-3">
-            <label>Tipo de Evaluación</label>
-            <select class="form-control" name="tipo">
-              <option value="DESAFIO">Desafío Diario (Tema)</option>
-              <option value="MENSUAL">Examen Mensual (Control de Calidad)</option>
-              <option value="BIMESTRAL">Examen Bimestral (ISO)</option>
-              
-              {% if request.user.perfil_personal == asignacion.aula.tutor %}
-              <option value="SIMULACRO">Simulacro (Concurso de Aptitud)</option>
-              {% endif %}
-              
-              <option value="CUADERNO">Revisión de Cuaderno</option>
-              <option value="LIBRO">Revisión de Libro</option>
-            </select>
-          </div>
-        </form>
-
-      </div>
-      <div class="modal-footer d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn bg-gradient-success mb-0" onclick="guardarEvaluacion()">Crear y Calificar</button>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock content %}

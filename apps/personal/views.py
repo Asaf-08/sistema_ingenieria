@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 import gspread
 from google.oauth2.service_account import Credentials
 from apps.academico.models import ArchivoMaterial, AsignacionAcademica, EntregaSimulacro, Evaluacion, Matricula, Nota, PeriodoLectivo, SolicitudImpresion, Aula, EvaluacionActitudinal, CierreRegistroBimestral
+from apps.academico.services import calcular_matriz_vigesimal
 from apps.asistencia.models import AsistenciaEstudiante
 from .models import Personal
 from .forms import EditarPerfilForm, PersonalForm
@@ -158,94 +159,77 @@ def mis_cursos(request):
         'periodo_actual': periodo_actual,
     })
 
+@login_required
 def lista_evaluaciones(request, asignacion_id):
-    # Obtenemos el curso y aula que el profe seleccionó
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
     
-    # Traemos todas las evaluaciones creadas para este curso, ordenadas de las más recientes a las más antiguas
-    evaluaciones = Evaluacion.objects.filter(asignacion=asignacion).order_by('-fecha', '-id')
-    
-    # 💥 Obtenemos los candados de este curso para saber qué bimestres están cerrados
+    # 1. Candados de cierres
     cierres_db = CierreRegistroBimestral.objects.filter(asignacion=asignacion)
-    # Convertimos a un diccionario { 'I': True, 'II': False } para que el HTML lo lea fácil
     diccionario_cierres = {c.bimestre: c.cerrado for c in cierres_db}
     
-    # 💥 LA MAGIA: Preparamos la data masticada para el HTML
+    # 2. Bimestres permitidos para el usuario
     bimestres_info = []
+    bimestres_permitidos = []
     for b_key, b_name in asignacion.periodo.BIMESTRES:
+        es_visible = request.user.perfil_personal == asignacion.aula.tutor or asignacion.periodo.bimestre_actual == b_key
+        if es_visible:
+            bimestres_permitidos.append(b_key)
         bimestres_info.append({
             'key': b_key,
             'name': b_name,
             'cerrado': diccionario_cierres.get(b_key, False)
         })
+
+    # ----------------------------------------------------
+    # 💥 LA MAGIA: PLANTILLA ESTÁNDAR DE EVALUACIONES
+    # ----------------------------------------------------
+    ESTANDAR_EVALUACIONES = [
+        # Desafíos
+        ('DESAFIO', 'Desafío - Tema 1'), ('DESAFIO', 'Desafío - Tema 2'), 
+        ('DESAFIO', 'Desafío - Tema 3'), ('DESAFIO', 'Desafío - Tema 4'),
+        ('DESAFIO', 'Desafío - Tema 5'), ('DESAFIO', 'Desafío - Tema 6'),
+        ('DESAFIO', 'Desafío - Tema 7'), ('DESAFIO', 'Desafío - Tema 8'),
+        # Revisiones L/C
+        ('CUADERNO', 'Revisión de Cuaderno Mensual'), ('LIBRO', 'Revisión de Libro Mensual'),
+        ('CUADERNO', 'Revisión de Cuaderno Bimestral'), ('LIBRO', 'Revisión de Libro Bimestral'),
+        # Exámenes y Simulacros
+        ('MENSUAL', 'Control de Calidad'), ('BIMESTRAL', 'ISO Ingeniería'),
+        ('SIMULACRO', 'Simulacro 1'), ('SIMULACRO', 'Simulacro 2'),
+    ]
+
+    # Obtenemos las matrículas activas una sola vez para optimizar
+    matriculas = Matricula.objects.filter(aula=asignacion.aula, periodo=asignacion.periodo, estudiante__estado='Activo')
+
+    # 3. Generación Automática Silenciosa
+    # Recorremos solo los bimestres que el profesor puede ver
+    for b_key in bimestres_permitidos:
+        for tipo, nombre in ESTANDAR_EVALUACIONES:
+            eval_obj, created = Evaluacion.objects.get_or_create(
+                asignacion=asignacion,
+                bimestre=b_key,
+                nombre=nombre,
+                defaults={'tipo': tipo}
+            )
+            # Si se acaba de crear, le generamos sus casillas de "Notas" en Null
+            if created:
+                notas_a_crear = [Nota(matricula=m, evaluacion=eval_obj, valor=None) for m in matriculas]
+                Nota.objects.bulk_create(notas_a_crear) # Bulk create es 10x más rápido que hacer create() en bucle
+
+    # 4. Traemos todas las evaluaciones y las ordenamos matemáticamente según el ESTANDAR
+    evaluaciones_qs = Evaluacion.objects.filter(asignacion=asignacion, bimestre__in=bimestres_permitidos)
     
+    # Creamos un diccionario de índices { 'Desafío - Tema 1': 0, 'Desafío - Tema 2': 1... }
+    orden_diccionario = {nombre: i for i, (tipo, nombre) in enumerate(ESTANDAR_EVALUACIONES)}
+    
+    # Convertimos a lista y ordenamos en Python
+    evaluaciones = list(evaluaciones_qs)
+    evaluaciones.sort(key=lambda x: (x.bimestre, orden_diccionario.get(x.nombre, 99)))
+
     return render(request, 'personal/lista_evaluaciones.html', {
         'asignacion': asignacion,
         'evaluaciones': evaluaciones,
-        'diccionario_cierres': diccionario_cierres, # Lo mandamos al frontend
-        'bimestres_info': bimestres_info # Lo mandamos al frontend
-    })
-
-@require_POST
-def guardar_evaluacion_ajax(request):
-    asignacion_id = request.POST.get('asignacion_id')
-    tipo = request.POST.get('tipo')
-    
-    asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    
-    # 1. SACAMOS EL BIMESTRE DIRECTO DEL AÑO ESCOLAR ACTIVO (El profe no lo toca)
-    bimestre_actual = asignacion.periodo.bimestre_actual
-    
-    # 2. Contamos cuántas evaluaciones existen de ese tipo EN ESE BIMESTRE
-    conteo = Evaluacion.objects.filter(
-        asignacion=asignacion, 
-        tipo=tipo, 
-        bimestre=bimestre_actual
-    ).count()
-    
-    numero = conteo + 1 # Si no hay, es el 1. Si hay 2, es el 3.
-    
-    # 3. Generamos el nombre exacto como querías
-    if tipo == 'DESAFIO':
-        nombre_auto = f"Desafío - Tema {numero}"
-    elif tipo == 'SIMULACRO':
-        nombre_auto = f"Concurso de Aptitud Mensual {numero}"
-    elif tipo == 'MENSUAL':
-        nombre_auto = "Control de Calidad" # Sin número porque es 1 por bimestre
-    elif tipo == 'BIMESTRAL':
-        nombre_auto = "ISO Ingeniería"     # Sin número porque es 1 por bimestre
-    elif tipo == 'CUADERNO':
-        nombre_auto = f"Cuaderno - Revisión {numero}"
-    elif tipo == 'LIBRO':
-        nombre_auto = f"Libro - Revisión {numero}"
-    else:
-        nombre_auto = f"{tipo} {numero}"
-
-    # 4. Creamos la evaluación
-    nueva_eval = Evaluacion.objects.create(
-        asignacion=asignacion,
-        tipo=tipo,
-        bimestre=bimestre_actual,
-        nombre=nombre_auto
-    )
-
-    # 5. Generamos las casillas vacías de notas para los alumnos de esa aula
-    estudiantes_matriculados = Matricula.objects.filter(
-        aula=asignacion.aula, 
-        periodo=asignacion.periodo
-    )
-
-    for matricula in estudiantes_matriculados:
-        Nota.objects.create(
-            matricula=matricula,
-            evaluacion=nueva_eval,
-            valor=None 
-        )
-
-    return JsonResponse({
-        'status': 'ok', 
-        'message': f'{nombre_auto} creado correctamente.',
-        'evaluacion_id': nueva_eval.id
+        'diccionario_cierres': diccionario_cierres,
+        'bimestres_info': bimestres_info
     })
     
 def registro_notas(request, evaluacion_id):
@@ -584,75 +568,30 @@ def guardar_actitudinal_ajax(request):
 
 @login_required
 def matriz_notas(request, asignacion_id):
-    """ Genera la Sábana de Notas dinámica para el profesor """
+    """ Genera la Sábana de Notas dinámica para el profesor usando el motor central """
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    # 1. Primero obtenemos el periodo lectivo que está activo en el colegio
+    
+    # 1. Obtener el periodo y bimestre activo
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    
-    # 💥 LA SOLUCIÓN: Si hay un periodo activo, extraemos su bimestre actual.
-    # Si por alguna razón no hay ninguno activo, usamos 'I' como salvavidas.
     bimestre_predeterminado = periodo_actual.bimestre_actual if periodo_actual else 'I'
-    
-    # 2. Capturamos el parámetro de la URL. Si viene vacío, adoptará el del sistema (ej: 'II')
     bimestre = request.GET.get('bimestre', bimestre_predeterminado)
 
-    # 1. Traemos las evaluaciones del profesor ordenadas cronológicamente
-    evaluaciones = asignacion.evaluaciones.filter(bimestre=bimestre).order_by('fecha', 'id')
-    
-    # Las agrupamos por tipo para las cabeceras HTML
-    evals_cuaderno = evaluaciones.filter(tipo='CUADERNO')
-    evals_desafio = evaluaciones.filter(tipo='DESAFIO')
-    evals_examenes = evaluaciones.filter(tipo__in=['MENSUAL', 'BIMESTRAL', 'SIMULACRO'])
+    # ----------------------------------------------------
+    # 💥 2. EL LLAMADO MAGISTRAL AL SERVICIO
+    # ----------------------------------------------------
+    # Le pasamos la asignación, el aula de esa asignación, y el bimestre
+    contexto_matriz = calcular_matriz_vigesimal(asignacion, asignacion.aula, bimestre)
 
-    # 2. Traemos a todos los alumnos del aula
-    # ✅ LÍNEA CORREGIDA
-    matriculas = Matricula.objects.filter(aula=asignacion.aula, estudiante__estado='Activo').select_related('estudiante').order_by('estudiante__apellidos')
-    
-    # 3. Traemos TODAS las notas de este curso en una sola consulta optimizada
-    notas_db = Nota.objects.filter(evaluacion__in=evaluaciones).select_related('matricula', 'evaluacion')
-    
-    # Convertimos las notas en un diccionario rápido: dict[matricula_id][evaluacion_id] = valor
-    diccionario_notas = {}
-    for n in notas_db:
-        if n.matricula_id not in diccionario_notas:
-            diccionario_notas[n.matricula_id] = {}
-        diccionario_notas[n.matricula_id][n.evaluacion_id] = n.valor
-
-    # 4. Construimos la data cruzada calculando promedios
-    datos_matriz = []
-    for mat in matriculas:
-        notas_alumno = diccionario_notas.get(mat.id, {})
-
-        # Función interna para calcular promedio ignorando los "Null" (exámenes no dados)
-        def calcular_promedio(grupo_evaluaciones):
-            valores = [notas_alumno[e.id] for e in grupo_evaluaciones if e.id in notas_alumno and notas_alumno[e.id] is not None]
-            return round(sum(valores) / len(valores), 2) if valores else 0.0
-
-        prom_cuaderno = calcular_promedio(evals_cuaderno)
-        prom_desafio = calcular_promedio(evals_desafio)
-        prom_examen = calcular_promedio(evals_examenes)
-
-        # Promedio General (Puedes cambiar esta fórmula si el colegio usa pesos diferentes)
-        sumatoria_promedios = [p for p in [prom_cuaderno, prom_desafio, prom_examen] if p > 0]
-        prom_general = round(sum(sumatoria_promedios) / len(sumatoria_promedios), 2) if sumatoria_promedios else 0.0
-
-        datos_matriz.append({
-            'estudiante': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
-            'notas': notas_alumno, # Diccionario de ID_evaluacion -> Nota
-            'prom_cuaderno': prom_cuaderno,
-            'prom_desafio': prom_desafio,
-            'prom_examen': prom_examen,
-            'prom_general': prom_general
-        })
-
-    return render(request, 'personal/matriz_notas.html', {
+    # 3. Preparamos el contexto base
+    context = {
         'asignacion': asignacion,
         'bimestre': bimestre,
-        'evals_cuaderno': evals_cuaderno,
-        'evals_desafio': evals_desafio,
-        'evals_examenes': evals_examenes,
-        'datos_matriz': datos_matriz,
-    })
+    }
+    
+    # 4. Fusionamos con la magia del motor
+    context.update(contexto_matriz)
+
+    return render(request, 'personal/matriz_notas.html', context)
 
 @login_required
 def reporte_agenda_semanal(request, aula_id):

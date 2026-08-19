@@ -452,9 +452,21 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 /* ==========================================
    7. VISTA MATRIZ (SÁBANA DE NOTAS)
    ========================================== */
+.vista-matriz .th-vertical-container {
+        height: 190px; /* Límite máximo de la cabecera */
+        vertical-align: bottom !important; /* Mantiene el texto alineado abajo */
+    }
+
 .vista-matriz .th-vertical {
-    writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; text-align: left;
-    padding-bottom: 15px !important; padding-top: 15px !important; height: 160px; vertical-align: middle;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    max-height: 220px; /* Límite de crecimiento del texto */
+    white-space: nowrap; /* Evita que el texto se rompa en dos líneas */
+    overflow: hidden; /* Oculta lo que sobresalga */
+    text-overflow: ellipsis; /* Pone los "..." */
+    display: inline-block;
+    padding: 5px 0;
+    cursor: help; /* Pone el cursor de interrogación al pasar el mouse */
 }
 .vista-matriz .col-sticky-1 { position: sticky; left: 0; background-color: #f8f9fa; z-index: 3; border-right: 1px solid #dee2e6; }
 .vista-matriz .col-sticky-2 { position: sticky; left: 50px; background-color: #f8f9fa; z-index: 3; border-right: 2px solid #dee2e6; min-width: 250px;}
