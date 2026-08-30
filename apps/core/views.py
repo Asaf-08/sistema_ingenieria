@@ -65,7 +65,7 @@ def dashboard_principal(request):
         ).order_by('evaluacion__bimestre')
         
         labels_bimestres = [f"Bimestre {n['evaluacion__bimestre']}" for n in notas_por_bimestre]
-        valores_bimestres = [float(round(n['promedio'], 1)) for n in notas_por_bimestre]
+        valores_bimestres = [float(round(n['promedio'], 1)) if n['promedio'] is not None else 0.0 for n in notas_por_bimestre]
 
         # 5. Gráfico 3: Distribución Real IA (Semáforo K-Means)
         estudiantes_con_promedio = Estudiante.objects.filter(estado='Activo').annotate(

@@ -63,11 +63,11 @@ class PeriodoLectivoForm(forms.ModelForm):
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        # 💥 AGREGAMOS 'area' A LA LISTA
-        fields = ['nombre', 'area', 'descripcion', 'activo']
+        fields = ['nombre', 'area', 'nivel_exclusivo', 'descripcion', 'activo']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'area': forms.Select(attrs={'class': 'form-control'}), # Widget para el nuevo select
+            'area': forms.Select(attrs={'class': 'form-control'}), 
+            'nivel_exclusivo': forms.Select(attrs={'class': 'form-control'}), 
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

@@ -131,6 +131,14 @@ class Estudiante(models.Model):
         return f"{self.apellidos}, {self.nombres}"
     
 class Curso(models.Model):
+    # 💥 NUEVO: Opciones de Nivel
+    NIVELES = [
+        ('INI', 'Inicial'),
+        ('PRIM', 'Primaria'),
+        ('SEC', 'Secundaria'),
+        ('GEN', 'General') 
+    ]
+
     # 💥 LISTA DE ÁREAS BASADA EN EL FORMATO DEL COLEGIO
     AREAS_ACADEMICAS = [
         # --- ÁREAS DE PRIMARIA / SECUNDARIA ---
@@ -155,23 +163,30 @@ class Curso(models.Model):
         ('TALLERES', 'Talleres'),
     ]
 
-    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Curso")
+    # 1. 💥 LE QUITAMOS EL unique=True al nombre
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Curso")
     
-    # 💥 NUEVO CAMPO ESTRATÉGICO
-    # Aumentamos el max_length a 60 para que quepan las opciones de secundaria
-    area = models.CharField(max_length=60, choices=AREAS_ACADEMICAS, default='COMUNICACION', verbose_name="Área Académica", db_index=True) # 💥
+    area = models.CharField(max_length=60, choices=AREAS_ACADEMICAS, default='COMUNICACION', verbose_name="Área Académica", db_index=True)
     
+    # 2. 💥 AGREGAMOS EL NUEVO CAMPO ESTRATÉGICO
+    nivel_exclusivo = models.CharField(max_length=15, choices=NIVELES, default='GEN', verbose_name="Nivel Exclusivo")
+
     descripcion = models.TextField(blank=True, null=True, help_text="Opcional")
-    activo = models.BooleanField(default=True, verbose_name="¿Curso Activo?", db_index=True) # 💥
+    activo = models.BooleanField(default=True, verbose_name="¿Curso Activo?", db_index=True)
 
     def __str__(self):
+        # 💥 EL TRUCO VISUAL: La secretaria verá el nivel entre paréntesis
+        if self.nivel_exclusivo != 'GEN':
+            return f"{self.nombre} ({self.get_nivel_exclusivo_display()})"
         return self.nombre
     
     class Meta:
         verbose_name = "Curso"
         verbose_name_plural = "Cursos"
-        # Ordenamos primero por área y luego alfabéticamente
         ordering = ['area', 'nombre']
+        
+        # 3. 💥 PROTECCIÓN AVANZADA: Evita duplicar el mismo curso en el mismo nivel
+        unique_together = ('nombre', 'nivel_exclusivo')
 
 class AsignacionAcademica(models.Model):
     personal = models.ForeignKey(

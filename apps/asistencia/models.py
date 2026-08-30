@@ -11,7 +11,15 @@ class AbstractAsistencia(models.Model):
         ('J', 'Falta Justificada'),
         ('F', 'Falta'),
     ]
-    # 💥 Optimizado: Las búsquedas de reportes siempre se filtran por fecha
+    
+    # 💥 NUEVO CAMPO: Para facilitar los reportes
+    bimestre = models.CharField(
+        max_length=3, 
+        choices=[('I', 'Bimestre I'), ('II', 'Bimestre II'), ('III', 'Bimestre III'), ('IV', 'Bimestre IV')],
+        default='I',
+        db_index=True
+    )
+    
     fecha = models.DateField(default=timezone.now, db_index=True)
     estado = models.CharField(max_length=1, choices=ESTADOS, default='F')
 
@@ -58,11 +66,12 @@ class AsistenciaEstudiante(AbstractAsistencia):
         ('F', 'Falta'),
         ('J', 'Falta Justificada'),
     ]
-    # 💥 Optimizado: Para contar rápidamente las faltas en el reporte cualitativo
     estado = models.CharField(max_length=1, choices=ESTADOS_ESTUDIANTE, default='P', db_index=True)
     justificacion = models.TextField(blank=True, null=True, help_text="Motivo de la falta o tardanza")
     observaciones = models.TextField(blank=True, null=True, help_text="Observaciones (Opcional)")
     
     class Meta:
+        # 💥 EL SECRETO: Mantenemos solo el estudiante y la fecha
+        # Así aseguramos que solo exista UN marcaje por día en la vida real
         unique_together = ('estudiante', 'fecha')
         verbose_name_plural = "Asistencias de Estudiantes"

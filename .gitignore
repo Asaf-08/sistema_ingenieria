@@ -23,4 +23,11 @@ credenciales_google.json
 alumnos.xlsx
 migrar_datos.py
 importar_notas.py
+importar_masivo_aula.py
+importar_asistencias.py
 NOTAS_EJEMPLO.xlsx
+NOTAS_AULA_COMPLETA0.xlsx
+NOTAS_AULA_COMPLETA1.xlsx
+NOTAS_AULA_COMPLETA2.xlsx
+NOTAS_AULA_COMPLETA3.xlsx
+ASISTENCIAS.xlsx

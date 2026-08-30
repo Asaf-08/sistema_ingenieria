@@ -40,7 +40,7 @@
                                 {% for curso in cursos %}
                                 <tr>
                                     <td>
-                                        <h6 class="mb-0 text-sm ps-3">{{ curso.nombre }}</h6>
+                                        <h6 class="mb-0 text-sm ps-3">{{ curso }}</h6>
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <span class="text-secondary text-xs font-weight-bold">{{ curso.get_area_display }}</span>
@@ -90,14 +90,31 @@
                 <form id="formCurso" onsubmit="event.preventDefault();">
                     {% csrf_token %}
                     <input type="hidden" name="curso_id" id="curso_id">
+                    
                     <div class="input-group input-group-static mb-4">
                         <label>Nombre del Curso</label>
                         {{ form.nombre }}
                     </div>
+                    
                     <div class="input-group input-group-static mb-4">
                         <label>Área Académica</label>
                         {{ form.area }}
                     </div>
+
+                    <!-- 💥 NUEVO BLOQUE: Desplegable de Nivel Exclusivo -->
+                    <div class="input-group input-group-static mb-4">
+                        <label>Nivel Exclusivo</label>
+                        {{ form.nivel_exclusivo }}
+                    </div>
+                    
+                    <!-- (Opcional) Si quieres mostrar la descripción, también debes agregarla: -->
+                    <!-- 
+                    <div class="input-group input-group-static mb-4">
+                        <label>Descripción</label>
+                        {{ form.descripcion }}
+                    </div> 
+                    -->
+
                     <div class="form-check form-switch d-flex align-items-center mb-3">
                         {{ form.activo }}
                         <label class="form-check-label mb-0 ms-3">¿Curso Activo?</label>

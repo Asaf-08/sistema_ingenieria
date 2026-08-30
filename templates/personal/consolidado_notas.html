@@ -205,7 +205,7 @@
                 <div class="card-body p-0 px-3 pb-3">
                     <!-- 💥 LA MAGIA: overscroll-behavior: contain; evita que la página entera baje -->
                     <!-- Tu caja debe seguir viéndose así en el HTML -->
-                    <div id="caja-descargas" class="border-radius-lg pe-1" style="max-height: 280px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: none;">
+                    <div id="caja-descargas" class="table-responsive border-radius-lg pe-1" style="max-height: 280px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: none;">
                         <table class="table align-items-center mb-0 table-hover">
                             
                             <!-- 💥 UX EXTRA: position-sticky mantiene los títulos fijos al bajar -->
@@ -285,10 +285,10 @@
                         {% endif %}
                         
                         <label class="text-xs font-weight-bold text-dark mb-0 text-uppercase">Curso:</label>
-                        <select id="select-curso" class="form-control border-info border-2 px-3 py-1 bg-gray-100" style="min-width: 400px; cursor: pointer;">
+                        <select id="select-curso" class="form-control border-info border-2 px-3 py-1 bg-gray-100" style="min-width: 350px; cursor: pointer;">
                             {% for asig in asignaciones %}
                                 <option value="{{ asig.id }}" {% if asignacion_seleccionada.id == asig.id %}selected{% endif %}>
-                                    {{ asig.curso.nombre }} (Prof. {{ asig.personal.apellidos }})
+                                    {{ asig.curso.nombre }} (Prof. {{ asig.personal.nombre_completo_corto }})
                                 </option>
                             {% endfor %}
                         </select>
@@ -301,8 +301,8 @@
                           <thead class="bg-light">
                             <!-- FILA SUPERIOR: AGRUPACIONES -->
                             <tr>
-                              <th rowspan="2" class="text-center text-uppercase text-secondary text-xxs font-weight-bolder col-sticky-1" style="width: 50px; vertical-align: middle;">N°</th>
-                              <th rowspan="2" class="text-start text-uppercase text-secondary text-xxs font-weight-bolder px-4 col-sticky-2" style="vertical-align: middle;">Apellidos y Nombres</th>
+                              <th {% if evals_mensual_lc or evals_bimestral_lc or evals_desafio or eval_mensual or eval_bimestral or evals_simulacro %}rowspan="2"{% endif %} class="text-center text-uppercase text-secondary text-xxs font-weight-bolder col-sticky-1" style="width: 50px; vertical-align: middle;">N°</th>
+                              <th {% if evals_mensual_lc or evals_bimestral_lc or evals_desafio or eval_mensual or eval_bimestral or evals_simulacro %}rowspan="2"{% endif %} class="text-start text-uppercase text-secondary text-xxs font-weight-bolder px-4 col-sticky-2" style="vertical-align: middle;">Apellidos y Nombres</th>
                               
                               {% if evals_mensual_lc %}
                               <th colspan="{{ evals_mensual_lc|length|add:1 }}" class="text-center text-uppercase text-info text-xxs font-weight-bolder" style="background-color: #e3f2fd;">REVISIÓN MENSUAL</th>
@@ -324,12 +324,13 @@
                               <th colspan="{{ evals_simulacro|length|add:1 }}" class="text-center text-uppercase text-success text-xxs font-weight-bolder" style="background-color: #e8f5e9;">SIMULACROS</th>
                               {% endif %}
                               
-                              <th rowspan="2" class="text-center text-uppercase text-white text-xxs font-weight-bolder bg-dark" style="vertical-align: bottom;">
+                              <th {% if evals_mensual_lc or evals_bimestral_lc or evals_desafio or eval_mensual or eval_bimestral or evals_simulacro %}rowspan="2"{% endif %} class="text-center text-uppercase text-white text-xxs font-weight-bolder bg-dark" style="vertical-align: bottom;">
                                 <div class="th-vertical mx-auto text-white">CERTIFICACIÓN GENERAL</div>
                               </th>
                             </tr>
             
-                            <!-- FILA INFERIOR: COLUMNAS DE NOTAS -->
+                            <!-- 💥 PROTECCIÓN: FILA INFERIOR (Solo se dibuja si hay datos) -->
+                            {% if evals_mensual_lc or evals_bimestral_lc or evals_desafio or eval_mensual or eval_bimestral or evals_simulacro %}
                             <tr>
                               <!-- Mensual L/C -->
                               {% for c in evals_mensual_lc %}
@@ -363,6 +364,7 @@
                               {% endfor %}
                               {% if evals_simulacro %}<th class="th-vertical-container" style="background-color: #f1f8f2;"><div class="th-vertical mx-auto text-success font-weight-bold">PROM. SIMULACROS</div></th>{% endif %}
                             </tr>
+                            {% endif %}
                           </thead>
                           
                           <!-- CUERPO DE LA TABLA -->

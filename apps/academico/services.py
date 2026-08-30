@@ -43,11 +43,14 @@ def calcular_matriz_vigesimal(asignacion, aula, bimestre):
         prom_desafio = calcular_promedio(evals_desafio)
         prom_simulacro = calcular_promedio(evals_simulacro)
         
-        nota_mensual = notas_alumno.get(eval_mensual.id, 0) if eval_mensual else 0
-        nota_bimestral = notas_alumno.get(eval_bimestral.id, 0) if eval_bimestral else 0
+        # Obtenemos la nota de forma segura, respetando si es None (vacío)
+        nota_mensual = notas_alumno.get(eval_mensual.id) if eval_mensual else None
+        nota_bimestral = notas_alumno.get(eval_bimestral.id) if eval_bimestral else None
 
         componentes = [prom_mensual_lc, prom_bimestral_lc, prom_desafio, nota_mensual, nota_bimestral, prom_simulacro]
-        sumatoria_validos = [p for p in componentes if p > 0]
+        
+        # 💥 LA SOLUCIÓN: Exigimos que "p" no sea None antes de verificar si es mayor a 0
+        sumatoria_validos = [p for p in componentes if p is not None and p > 0]
         prom_general = int(Decimal(str(sum(sumatoria_validos) / len(sumatoria_validos))).quantize(Decimal('1'), rounding=ROUND_HALF_UP)) if sumatoria_validos else 0
 
         datos_matriz.append({

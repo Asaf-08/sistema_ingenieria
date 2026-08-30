@@ -64,6 +64,10 @@ class Personal(models.Model):
     def __str__(self):
         return f"{self.apellidos}, {self.nombres} - {self.get_cargo_display()}"
     
+    @property
+    def nombre_completo_corto(self):
+        return f"{self.nombres.split()[0]} {self.apellidos.split()[0]}"
+    
     class Meta:
         verbose_name = "Personal"
         verbose_name_plural = "Personal del Colegio"

@@ -312,11 +312,11 @@ def guardar_asignacion_ajax(request):
 
 def asignacion_masiva_view(request):
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    # 💥 CAMBIO: Filtramos por una lista de cargos (Docentes y Directores)
     docentes = Personal.objects.filter(cargo__in=['DOC', 'DIR'], estado='Activo').order_by('apellidos')
-    # Traemos cursos ordenados por área
-    cursos = Curso.objects.filter(activo=True).order_by('area', 'nombre')
-    # Traemos aulas ordenadas para agruparlas en el HTML
+    
+    # 💥 LIGERO CAMBIO: Añadimos 'nivel_exclusivo' al ordenamiento final
+    cursos = Curso.objects.filter(activo=True).order_by('area', 'nombre', 'nivel_exclusivo')
+    
     aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
     
     return render(request, 'academico/asignacion_masiva.html', {

@@ -50,7 +50,7 @@
                             <select name="curso" id="select_curso" class="form-control modern-select w-100" required>
                                 <option value="" disabled selected>-- Elige la materia --</option>
                                 {% for curso in cursos|dictsort:"nombre" %}
-                                    <option value="{{ curso.id }}">{{ curso.nombre }}</option>
+                                    <option value="{{ curso.id }}">{{ curso }}</option>
                                 {% endfor %}
                             </select>
                         </div>
