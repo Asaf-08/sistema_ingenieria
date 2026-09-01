@@ -1,6 +1,8 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
+{% block title %}Carga de Materiales{% endblock title %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -25,7 +27,9 @@
                   <select name="asignacion_id" class="form-control" required>
                     <option value="">-- Seleccionar curso --</option>
                     {% for asig in asignaciones %}
-                    <option value="{{ asig.id }}">{{ asig.curso.nombre }} - {{ asig.aula.nivel }}</option>
+                      <option value="{{ asig.id }}">
+                        {{ asig.curso.nombre }} - {{ asig.aula.get_nivel_display|default:asig.aula.nivel }}
+                      </option>
                     {% endfor %}
                   </select>
                 </div>
@@ -41,6 +45,9 @@
                     <option value="TEMA_4">Tema 4</option>
                     <option value="TEMA_5">Tema 5</option>
                     <option value="TEMA_6">Tema 6</option>
+                    <option value="TEMA_7">Tema 7</option>
+                    <option value="TEMA_8">Tema 8</option>
+                    <option value="EVALUACION">Evaluación</option>
                     <option value="ASESORIA">Asesorías</option>
                     <option value="REPASO">Repaso / Adicional</option>
                   </select>
@@ -178,7 +185,7 @@
   }
 
   .drop-zone:hover {
-    border-color: #e91e63 !important;
+    border-color: #f57c00 !important;
     background-color: #fff !important;
   }
 

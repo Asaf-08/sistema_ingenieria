@@ -132,7 +132,7 @@ function crearNuevaSeccion() {
     fileStore[id] = new DataTransfer();
 
     const div = document.createElement('div');
-    div.className = "card border shadow-none p-3 animate__animated animate__fadeInUp";
+    div.className = "card border border-primary border-radius-lg px-4 shadow p-3 animate__animated animate__fadeInUp";
     div.id = `seccion_${id}`;
 
     div.innerHTML = `
@@ -173,6 +173,8 @@ function crearNuevaSeccion() {
     seccionCounter++;
     document.getElementById('total_secciones').value = seccionCounter;
     document.getElementById('submit-all').disabled = false;
+
+    actualizarTiposMateriales();
 }
 
 function eliminarSeccion(id) {
@@ -354,3 +356,45 @@ function abrirModalArchivosPersonal(btn) {
         lista.innerHTML = '<li class="list-group-item text-center text-danger">Error al cargar archivos</li>';
     });
 }
+
+// ========================================================
+// FILTRO DINÁMICO DE TIPOS DE MATERIAL SEGÚN EL TEMA
+// ========================================================
+function actualizarTiposMateriales() {
+    let temaSeleccionado = $('select[name="tema"]').val();
+    let $selectsTipos = $('select[name^="tipo_"]');
+
+    let opcionesHTML = '<option value="">-- Seleccionar tipo --</option>';
+
+    if (temaSeleccionado === 'EVALUACION') {
+        opcionesHTML += `
+            <option value="CALIDAD">Control de Calidad (Mensual)</option>
+            <option value="ISO">Examen ISO (Bimestral)</option>
+            <option value="ADICIONAL">Material Adicional</option>
+        `;
+    } else if (temaSeleccionado !== '' && temaSeleccionado !== null) {
+        opcionesHTML += `
+            <option value="SESION">Sesión de Aprendizaje</option>
+            <option value="FICHA">Ficha Aplicativa</option>
+            <option value="DESAFIO">Desafío Diario</option>
+            <option value="ADICIONAL">Material Adicional</option>
+        `;
+    }
+
+    // Iteramos sobre todos los selects de "tipo" que existan en pantalla
+    $selectsTipos.each(function() {
+        let valorPrevio = $(this).val(); // Guardamos lo que el usuario ya había elegido
+        
+        $(this).html(opcionesHTML);
+        
+        // Si la opción anterior sigue existiendo (ej: ADICIONAL), la volvemos a seleccionar
+        if ($(this).find(`option[value="${valorPrevio}"]`).length > 0) {
+            $(this).val(valorPrevio);
+        }
+    });
+}
+
+// 1. Escuchar el cambio en el selector de Tema principal
+$(document).on('change', 'select[name="tema"]', function() {
+    actualizarTiposMateriales();
+});

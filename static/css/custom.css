@@ -185,8 +185,8 @@ input:-webkit-autofill:active {
 
 .tabla-check-center .form-check-input:checked,
 .custom-checkbox .form-check-input:checked {
-    background-color: #e91e63 !important;
-    border-color: #e91e63 !important;
+    background-color: #f57c00 !important;
+    border-color: #f57c00 !important;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
 }
 
@@ -428,7 +428,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 .moving-tab .nav-link.active{ color: #414141 !important; background: #414141 !important; }
 
 /* Tarjetas y Animaciones */
-.card { border: unset !important; }
+.card { border: unset; }
 .hover-scale { transition: transform 0.2s ease-in-out; }
 .hover-scale:hover, .hover-scale:active { transform: scale(1.02); }
 
@@ -468,10 +468,10 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
     padding: 5px 0;
     cursor: help; /* Pone el cursor de interrogación al pasar el mouse */
 }
-.vista-matriz .col-sticky-1 { position: sticky; left: 0; background-color: #f8f9fa; z-index: 3; border-right: 1px solid #dee2e6; }
-.vista-matriz .col-sticky-2 { position: sticky; left: 50px; background-color: #f8f9fa; z-index: 3; border-right: 2px solid #dee2e6; min-width: 250px;}
-.vista-matriz .td-sticky-1 { position: sticky; left: 0; background-color: #ffffff; z-index: 1; border-right: 1px solid #dee2e6; }
-.vista-matriz .td-sticky-2 { position: sticky; left: 50px; background-color: #ffffff; z-index: 1; border-right: 2px solid #dee2e6; font-weight: bold;}
+.vista-matriz .col-sticky-1 { position: sticky; left: 0; background-color: #f8f9fa; z-index: 3; }
+.vista-matriz .col-sticky-2 { position: sticky; left: 0px; background-color: #f8f9fa; z-index: 3; min-width: 250px;}
+.vista-matriz .td-sticky-1 { position: sticky; left: 0; background-color: #ffffff; z-index: 1;}
+.vista-matriz .td-sticky-2 { position: sticky; left: 0px; background-color: #ffffff; z-index: 1; font-weight: bold;}
 
 #tablaMatriz { border-bottom: 1px solid #dee2e6 !important; }
 #tablaMatriz tbody tr:last-child td { border-bottom: 1px solid #dee2e6 !important; border-right: 1px solid #dee2e6 !important; }
@@ -619,4 +619,88 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 }
 #checkMarcarTodas:checked + .master-switch::after {
     transform: translateX(20px);
+}
+
+/* ==========================================================================
+   DISEÑO DE BARRA INFERIOR TIPO APP NATIVA
+   ========================================================================== */
+@media (max-width: 767.98px) {
+    
+    body, .main-content {
+        padding-bottom: 75px !important;
+    }
+
+    .mobile-bottom-nav {
+        height: 65px;
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: saturate(200%) blur(20px);
+        -webkit-backdrop-filter: saturate(200%) blur(20px);
+        border-top: 1px solid rgba(200, 200, 200, 0.3);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    /* Íconos regulares */
+    .mobile-bottom-nav .nav-item {
+        flex: 1;
+        padding-top: 8px;
+        transition: all 0.3s ease;
+        opacity: 0.55; 
+        color: #141414 !important; /* Color gris oscuro nativo de Material Dashboard */
+    }
+
+    .mobile-bottom-nav .nav-item i {
+        display: block;
+        margin: 0 auto;
+        line-height: 1;
+    }
+
+    /* 💥 ESTADO ACTIVO Y HOVER PARA BOTONES NORMALES (Naranja) */
+    .mobile-bottom-nav .nav-item:hover,
+    .mobile-bottom-nav .nav-item:active,
+    .mobile-bottom-nav .nav-item.active-nav {
+        opacity: 1;
+        transform: translateY(-3px);
+        color: #fb8c00 !important; 
+    }
+
+    /* ===================================================
+       EL BOTÓN CENTRAL FLOTANTE (ESTILO INSTAGRAM/TIKTOK)
+       =================================================== */
+    .mobile-bottom-nav .nav-item-center {
+        flex: none;
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -30px; 
+        opacity: 1 !important;
+        border: 4px solid #f8f9fa; 
+        box-sizing: content-box;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 10px rgba(251, 140, 0, 0.2) !important; /* Sombra sutil por defecto */
+    }
+
+    /* 💥 ÍCONO CENTRAL SIEMPRE BLANCO */
+    .mobile-bottom-nav .nav-item-center i {
+        margin: 0;
+        font-size: 1.8rem !important;
+        color: #ffffff !important; 
+    }
+
+    /* 💥 ESTADO ACTIVO Y HOVER PARA EL BOTÓN CENTRAL (Sombra Naranja Más Fuerte) */
+    .mobile-bottom-nav .nav-item-center:hover,
+    .mobile-bottom-nav .nav-item-center:active,
+    .mobile-bottom-nav .nav-item-center.active-center {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(251, 140, 0, 0.5) !important; 
+    }
+}
+
+@media (min-width: 768px) {
+    .mobile-bottom-nav {
+        display: none !important;
+    }
 }

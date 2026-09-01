@@ -6,6 +6,70 @@
   .evaluacion-item ~ .empty-state {
     display: none !important;
   }
+
+  /* 💥 MAGIA RESPONSIVE: Transformación a Grid para Móviles (< 992px) */
+  @media (max-width: 991.98px) {
+    /* Convertimos la lista en una cuadrícula de 2 columnas */
+    .lista-evaluaciones {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 12px !important;
+    }
+    
+    /* Transformamos cada fila en una tarjeta independiente */
+    .lista-evaluaciones .list-group-item {
+      border: 1px solid #e9ecef !important;
+      border-radius: 16px !important;
+      padding: 16px 8px !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      height: 100%;
+      background-color: #ffffff;
+      transition: transform 0.2s ease;
+    }
+    
+    .lista-evaluaciones .list-group-item:active {
+      transform: scale(0.95);
+    }
+    
+    /* Cambiamos la alineación de horizontal a vertical centrada */
+    .lista-evaluaciones .list-group-item .d-flex {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center;
+      width: 100%;
+    }
+    
+    /* Hacemos el icono un poco más grande y lo separamos del texto */
+    .lista-evaluaciones .list-group-item .icon {
+      margin-right: 0 !important;
+      margin-bottom: 12px !important;
+      width: 44px !important;
+      height: 44px !important;
+    }
+    
+    .lista-evaluaciones .list-group-item .icon i {
+      font-size: 22px !important;
+      line-height: 44px !important; /* Centra el icono verticalmente */
+    }
+    
+    /* Ajustamos la tipografía para que quepa perfectamente en la tarjeta */
+    .lista-evaluaciones .list-group-item h6 {
+      font-size: 0.85rem !important;
+      line-height: 1.2;
+      margin-bottom: 4px !important;
+      display: -webkit-box;
+      -webkit-line-clamp: 2; /* Limita a 2 líneas si el título es muy largo */
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .lista-evaluaciones .list-group-item span {
+      font-size: 0.65rem !important;
+      line-height: 1.1;
+    }
+  }
 </style>
 {% endblock %}
 

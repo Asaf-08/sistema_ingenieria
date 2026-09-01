@@ -28,26 +28,26 @@
                   <th rowspan="2" class="text-start text-uppercase text-secondary text-xxs font-weight-bolder px-4 col-sticky-2" style="vertical-align: middle;">Apellidos y Nombres</th>
                   
                   {% if evals_mensual_lc %}
-                  <th colspan="{{ evals_mensual_lc|length|add:1 }}" class="text-center text-uppercase text-info text-xxs font-weight-bolder" style="background-color: #e3f2fd;">REVISIÓN MENSUAL</th>
+                  <th colspan="{{ evals_mensual_lc|length|add:1 }}" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">REVISIÓN MENSUAL</th>
                   {% endif %}
                   
                   {% if evals_bimestral_lc %}
-                  <th colspan="{{ evals_bimestral_lc|length|add:1 }}" class="text-center text-uppercase text-primary text-xxs font-weight-bolder" style="background-color: #e8eaf6;">REVISIÓN BIMESTRAL</th>
+                  <th colspan="{{ evals_bimestral_lc|length|add:1 }}" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">REVISIÓN BIMESTRAL</th>
                   {% endif %}
                   
                   {% if evals_desafio %}
-                  <th colspan="{{ evals_desafio|length|add:1 }}" class="text-center text-uppercase text-warning text-xxs font-weight-bolder" style="background-color: #fff8e1;">DESAFÍOS DIARIOS</th>
+                  <th colspan="{{ evals_desafio|length|add:1 }}" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">DESAFÍOS DIARIOS</th>
                   {% endif %}
                   
                   {% if eval_mensual or eval_bimestral %}
-                  <th colspan="{% if eval_mensual and eval_bimestral %}2{% else %}1{% endif %}" class="text-center text-uppercase text-danger text-xxs font-weight-bolder" style="background-color: #ffebee;">EXÁMENES PRINCIPALES</th>
+                  <th colspan="{% if eval_mensual and eval_bimestral %}2{% else %}1{% endif %}" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">EXÁMENES PRINCIPALES</th>
                   {% endif %}
 
                   {% if evals_simulacro %}
-                  <th colspan="{{ evals_simulacro|length|add:1 }}" class="text-center text-uppercase text-success text-xxs font-weight-bolder" style="background-color: #e8f5e9;">SIMULACROS</th>
+                  <th colspan="{{ evals_simulacro|length|add:1 }}" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">SIMULACROS</th>
                   {% endif %}
                   
-                  <th rowspan="2" class="text-center text-uppercase text-white text-xxs font-weight-bolder bg-dark" style="vertical-align: bottom;">
+                  <th rowspan="2" class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="vertical-align: bottom;">
                     <div class="th-vertical mx-auto text-white">CERTIFICACIÓN GENERAL</div>
                   </th>
                 </tr>
@@ -58,26 +58,26 @@
                   {% for c in evals_mensual_lc %}
                     <th class="th-vertical-container"><div class="th-vertical mx-auto" data-bs-toggle="tooltip" data-bs-title="{{ c.nombre }}">{{ c.nombre }}</div></th>
                   {% endfor %}
-                  {% if evals_mensual_lc %}<th class="th-vertical-container" style="background-color: #f8fdff;"><div class="th-vertical mx-auto text-info font-weight-bold">PROM. MENSUAL</div></th>{% endif %}
+                  {% if evals_mensual_lc %}<th class="th-vertical-container" style="background-color: #F96400;"><div class="th-vertical mx-auto text-white font-weight-bold">PROM. MENSUAL</div></th>{% endif %}
 
                   <!-- Bimestral L/C -->
                   {% for c in evals_bimestral_lc %}
                     <th class="th-vertical-container"><div class="th-vertical mx-auto" data-bs-toggle="tooltip" data-bs-title="{{ c.nombre }}">{{ c.nombre }}</div></th>
                   {% endfor %}
-                  {% if evals_bimestral_lc %}<th class="th-vertical-container" style="background-color: #f3f5fa;"><div class="th-vertical mx-auto text-primary font-weight-bold">PROM. BIMESTRAL</div></th>{% endif %}
+                  {% if evals_bimestral_lc %}<th class="th-vertical-container" style="background-color: #F96400;"><div class="th-vertical mx-auto text-white font-weight-bold">PROM. BIMESTRAL</div></th>{% endif %}
 
                   <!-- Desafios -->
                   {% for d in evals_desafio %}
                     <th class="th-vertical-container"><div class="th-vertical mx-auto" data-bs-toggle="tooltip" data-bs-title="{{ d.nombre }}">{{ d.nombre }}</div></th>
                   {% endfor %}
-                  {% if evals_desafio %}<th class="th-vertical-container" style="background-color: #fffdf5;"><div class="th-vertical mx-auto text-warning font-weight-bold">PROM. DESAFÍOS</div></th>{% endif %}
+                  {% if evals_desafio %}<th class="th-vertical-container" style="background-color: #F96400;"><div class="th-vertical mx-auto text-white font-weight-bold">PROM. DESAFÍOS</div></th>{% endif %}
 
                   <!-- Exámenes -->
                   {% if eval_mensual %}
-                    <th class="th-vertical-container"><div class="th-vertical mx-auto text-danger" data-bs-toggle="tooltip" data-bs-title="{{ eval_mensual.nombre }}">{{ eval_mensual.nombre }}</div></th>
+                    <th class="th-vertical-container"><div class="th-vertical mx-auto text-white" data-bs-toggle="tooltip" data-bs-title="{{ eval_mensual.nombre }}" style="background-color: #F96400;>{{ eval_mensual.nombre }}</div></th>
                   {% endif %}
                   {% if eval_bimestral %}
-                    <th class="th-vertical-container"><div class="th-vertical mx-auto text-danger" data-bs-toggle="tooltip" data-bs-title="{{ eval_bimestral.nombre }}">{{ eval_bimestral.nombre }}</div></th>
+                    <th class="th-vertical-container"><div class="th-vertical mx-auto text-white" data-bs-toggle="tooltip" data-bs-title="{{ eval_bimestral.nombre }}" style="background-color: #F96400;>{{ eval_bimestral.nombre }}</div></th>
                   {% endif %}
 
                   <!-- Simulacros -->

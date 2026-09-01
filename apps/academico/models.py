@@ -154,11 +154,12 @@ class Curso(models.Model):
         ('EDUCACION RELIGIOSA - PSICOLOGIA', 'Educación Religiosa - Psicología'),
 
         # --- ÁREAS EXCLUSIVAS DE INICIAL ---
-        ('PSICOMOTRICIDAD', 'Psicomotriz (Ed. Fisica)'),
+        ('PSICOMOTRICIDAD', 'Psicomotriz (Ed. Física)'),
 
         # --- CURSOS INDEPENDIENTES (Áreas Propias) ---
         ('ARTE', 'Arte y Cultura'),
         ('RELIGION', 'Religión'),
+        ('INGLES', 'Inglés'),
         ('EDUCACION FISICA', 'Educación Física'),
         ('TALLERES', 'Talleres'),
     ]
@@ -210,6 +211,7 @@ class AsignacionAcademica(models.Model):
         # REGLA SENIOR: Un mismo curso en una misma aula en el mismo año, 
         # solo puede tener asignado un profesor. Esto evita registros duplicados.
         unique_together = ['curso', 'aula', 'periodo']
+        ordering = ['curso__nombre']
 
 class Matricula(models.Model):
     estudiante = models.ForeignKey(Estudiante, on_delete=models.CASCADE)

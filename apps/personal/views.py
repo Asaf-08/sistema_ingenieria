@@ -437,7 +437,22 @@ def centro_materiales(request):
         })
 
     # Bloque GET
-    asignaciones = AsignacionAcademica.objects.filter(personal=personal_actual, periodo=periodo_actual)
+    asignaciones_raw = AsignacionAcademica.objects.filter(
+        personal=personal_actual, 
+        periodo=periodo_actual
+    ).select_related('curso', 'aula').order_by('curso__nombre')
+
+    # 💥 FILTRO PARA ELIMINAR DUPLICADOS VISUALES (Agrupamos por Curso y Nivel)
+    asignaciones_unicas = {}
+    for asig in asignaciones_raw:
+        # Creamos una llave única, ej: "Matemática_Primaria"
+        clave = f"{asig.curso.nombre}_{asig.aula.nivel}"
+        if clave not in asignaciones_unicas:
+            asignaciones_unicas[clave] = asig
+            
+    # Extraemos solo los valores ya filtrados
+    asignaciones = asignaciones_unicas.values()
+
     historial = SolicitudImpresion.objects.filter(personal=personal_actual).prefetch_related('archivos').order_by('-fecha_subida')
 
     return render(request, 'personal/centro_materiales.html', {

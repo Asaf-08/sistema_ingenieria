@@ -8,6 +8,11 @@
 
 <head>
   {% include "includes/head.html" %}
+
+  <title>
+    {% block title %}Sistema Académico{% endblock title %} - Ingeniería
+  </title>
+
   {% block extrastyle %}{% endblock extrastyle %}
   {% block extra_css %}{% endblock extra_css %}
   {% block extrahead %}{% endblock extrahead %}
@@ -66,6 +71,9 @@
 
   {% block extra_js %}{% endblock extra_js %}
   {% block scripts %}{% endblock scripts %}
+
+  <!-- 💥 NUEVO BLOQUE FUERA DEL MAIN PARA LOS MODALES DE TUS VISTAS -->
+  {% block modales %}{% endblock modales %}
 
 {% if comunicado_urgente_global %}
 <div class="modal fade" id="modalComunicadoUrgente" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
@@ -179,37 +187,50 @@
   </div>
 </div>
 
-{% comment %} <div class="modal fade" id="dynamicConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 9999;">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-radius-xl p-4 bg-white"> <div class="modal-header border-0 pb-0 justify-content-center text-center flex-column">
-        <div id="modalIconContainer" class="bg-gradient-danger shadow-danger text-center border-radius-2xl mb-4 d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px;">
-          <i id="modalIcon" class="material-symbols-rounded text-white" style="font-size: 45px;">warning</i>
-        </div>
-        
-        <h4 class="modal-title font-weight-black text-dark" id="modalTitle" style="letter-spacing: -0.5px;">¿Estás seguro?</h4>
-      </div>
-      
-      <div class="modal-body border-0 text-center py-3">
-        <p class="text-secondary mb-0" id="modalMessage" style="font-size: 16px;">
-          Esta acción no se puede deshacer.
-        </p>
-      </div>
-      
-      <div class="modal-footer border-0 d-flex justify-content-center gap-3 pt-4">
-        <button type="button" class="btn btn-outline-secondary mb-0 px-4 py-2" data-bs-dismiss="modal">Cancelar</button>
+{% if request.user.perfil_personal.cargo == 'DOC' or request.user.perfil_personal.cargo == 'Docente' %}
+<!-- ==========================================================================
+     BOTTOM NAVIGATION BAR (APP ESTILO iOS) - SOLO MÓVIL
+     ========================================================================== -->
+<nav class="mobile-bottom-nav d-md-none position-fixed bottom-0 start-0 w-100 z-index-sticky blur shadow-blur">
+  <div class="d-flex justify-content-around align-items-center h-100 px-2">
+    
+    <!-- 1. Inicio -->
+    <a href="{% url 'core:home' %}" class="nav-item text-center text-dark text-decoration-none {% if request.resolver_match.url_name == 'core:home' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">home</i>
+      <span class="text-xxs font-weight-bolder d-block">Inicio</span>
+    </a>
 
-        <form id="modalForm" action="#" method="POST" class="d-inline m-0">
-          {% csrf_token %}
-          <button type="submit" id="modalConfirmBtn" class="btn bg-gradient-danger mb-0 px-4 py-2">
-            <i id="modalBtnIcon" class="material-symbols-rounded align-middle me-1" style="font-size: 20px;">delete_forever</i> 
-            <span id="modalBtnText" style="font-size: 15px;">Confirmar</span>
-          </button>
-        </form>
-      </div>
-      
-    </div>
+    <!-- 2. Avisos (Ahora apunta a comunicaciones:tablon) -->
+    <a href="{% url 'comunicaciones:tablon' %}" class="nav-item text-center text-dark text-decoration-none position-relative {% if request.resolver_match.url_name == 'tablon' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">notifications</i>
+      <span class="text-xxs font-weight-bolder d-block">Avisos</span>
+      {% if count_notificaciones > 0 %}
+      <span class="position-absolute top-0 start-50 translate-middle-x badge rounded-pill bg-danger border border-2 border-white" style="font-size: 0.5rem; padding: 2px 4px; margin-top: 4px; margin-left: 10px;">
+        {{ count_notificaciones }}
+      </span>
+      {% endif %}
+    </a>
+
+    <!-- 3. Mis Cursos (Botón Central Flotante en Naranja) -->
+    <a href="{% url 'personal:mis_cursos' %}" class="nav-item nav-item-center bg-gradient-warning text-center text-decoration-none {% if request.resolver_match.url_name == 'mis_cursos' %}active-center{% endif %}">
+      <i class="material-symbols-rounded">edit_square</i>
+    </a>
+
+    <!-- 4. Materiales -->
+    <a href="{% url 'personal:centro_materiales' %}" class="nav-item text-center text-dark text-decoration-none {% if request.resolver_match.url_name == 'centro_materiales' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">cloud_upload</i>
+      <span class="text-xxs font-weight-bolder d-block">Material</span>
+    </a>
+
+    <!-- 5. Carnet QR (Como es modal, no lleva active-nav) -->
+    <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#modalMiQR" class="nav-item text-center text-dark text-decoration-none">
+      <i class="material-symbols-rounded text-2xl mb-1">qr_code_2</i>
+      <span class="text-xxs font-weight-bolder d-block">Carnet</span>
+    </a>
+
   </div>
-</div> {% endcomment %}
+</nav>
+{% endif %}
 
 </body>
 </html>

@@ -117,11 +117,16 @@ def dashboard_principal(request):
         mis_cursos = AsignacionAcademica.objects.filter(
             personal=user_personal, 
             periodo=periodo_actual
-        ).select_related('curso', 'aula')
+        ).select_related('curso', 'aula').order_by(
+            'curso__nombre',   # 1. Agrupa por curso (ej. todas las Matemáticas juntas)
+            'aula__nivel',     # 2. Ordena por nivel (Primaria, luego Secundaria)
+            'aula__grado',     # 3. Ordena por grado (1, 2, 3...)
+            'aula__seccion'    # 4. Ordena alfabéticamente por sección (A, B, C...)
+        )
         aula_tutoria = Aula.objects.filter(tutor=user_personal).first()
 
         # 2. 💥 NUEVO: Desglose de Alumnos por Nivel (Solo los niveles que dicta)
-        niveles_dicta = mis_cursos.values_list('aula__nivel', flat=True).distinct()
+        niveles_dicta = mis_cursos.order_by().values_list('aula__nivel', flat=True).distinct()
         breakdown_alumnos = []
         mis_alumnos_count = 0
         

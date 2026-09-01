@@ -10,4 +10,5 @@ urlpatterns = [
     # Descargas de Archivos Pesados (Excel)
     path('descargar/matriz/<int:asignacion_id>/', views.exportar_matriz_oficial_excel, name='exportar_matriz_excel'),
     path('descargar/libretas/<int:aula_id>/', views.exportar_libretas_aula_excel, name='exportar_libretas_aula'),
+    path('sabanas-aula/<int:aula_id>/', views.exportar_sabanas_aula_excel, name='exportar_sabanas_aula')
 ]
