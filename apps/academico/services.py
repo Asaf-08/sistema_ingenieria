@@ -54,6 +54,7 @@ def calcular_matriz_vigesimal(asignacion, aula, bimestre):
         prom_general = int(Decimal(str(sum(sumatoria_validos) / len(sumatoria_validos))).quantize(Decimal('1'), rounding=ROUND_HALF_UP)) if sumatoria_validos else 0
 
         datos_matriz.append({
+            'matricula_id': mat.id,
             'estudiante': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
             'notas': notas_alumno,
             'prom_mensual_lc': prom_mensual_lc,

@@ -64,8 +64,67 @@ $(document).ready(function() {
         }
     }
 
+    function iniciarDataTableActitudinal() {
+        const $selectVista = $('#select-tipo-vista');
+        const $selectCurso = $('#select-curso');
+        const $tabAcademico = $('#academico-tab');
+        const $tabActitudinal = $('#actitudinal-tab');
+
+        // 1. Inicializar el DataTable Actitudinal (Ajusta el lenguaje o paginación según tu configuración general)
+        if ($('#tablaActitudinal').length) {
+            $('#tablaActitudinal').DataTable({
+                paging: false,       
+                info: false,         
+                ordering: false,     
+                pageLength: 50, // O el número que uses en la tabla principal
+                responsive: true,
+                autoWidth: false,
+                language: { 
+                    url: "/static/plugins/datatables/js/es-ES.json",
+                    emptyTable: "No hay alumnos matriculados o evaluaciones registradas en esta aula."
+                },
+                dom: "<'row mb-3 align-items-center px-4'<'col-sm-12 col-md-6 text-start'f><'col-sm-12 col-md-6 text-end'B>>" +
+                     "<'row'<'col-sm-12 px-0'<'table-responsive'tr>>>" + // 💥 LA SOLUCIÓN: El scroll envuelve SOLO a 'tr' (la tabla)
+                     "<'row pt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                buttons: []
+
+            });
+        }
+
+        if ($selectVista.length) {
+            $selectVista.on('change', function() {
+                if ($(this).val() === 'actitudinal') {
+                    // Deshabilitar el selector de curso (Lógica + Visual)
+                    $selectCurso.prop('disabled', true);
+                    $selectCurso.removeClass('border-info text-dark').addClass('border-secondary text-muted opacity-5');
+                    $selectCurso.css('cursor', 'not-allowed');
+                    
+                    // Transición de tablas
+                    $tabAcademico.removeClass('show active');
+                    $tabActitudinal.addClass('show active');
+
+                    // 💥 RECALCULAR COLUMNAS: Obliga a DataTables a ajustarse ahora que es visible
+                    $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+
+                } else {
+                    // Habilitar de nuevo el selector de curso (Lógica + Visual)
+                    $selectCurso.prop('disabled', false);
+                    $selectCurso.removeClass('border-secondary text-muted opacity-5').addClass('border-info text-dark');
+                    $selectCurso.css('cursor', 'pointer');
+                    
+                    // Transición de tablas
+                    $tabActitudinal.removeClass('show active');
+                    $tabAcademico.addClass('show active');
+                }
+            });
+        }
+    }
+
+
+
     // Inicializamos la tabla al cargar la página por primera vez
     iniciarDataTableMatriz();
+    iniciarDataTableActitudinal();
 
     // --------------------------------------------------------
     // 3. LA MAGIA: CAMBIAR DE CURSO O BIMESTRE POR AJAX
@@ -201,3 +260,40 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
     });
+
+$(document).ready(function() {
+    const $selectVista = $('#select-tipo-vista');
+    const $selectCurso = $('#select-curso');
+    const $tabAcademico = $('#academico-tab');
+    const $tabActitudinal = $('#actitudinal-tab');
+
+    if ($selectVista.length) {
+        $selectVista.on('change', function() {
+            if ($(this).val() === 'actitudinal') {
+                // 1. Deshabilitar el selector de curso (Lógica + Visual)
+                $selectCurso.prop('disabled', true);
+                
+                // Cambios visuales: Opacidad, quitar borde azul, cursor prohibido
+                $selectCurso.removeClass('border-info text-dark')
+                            .addClass('border-secondary text-muted opacity-5');
+                $selectCurso.css('cursor', 'not-allowed');
+                
+                // 2. Transición de tablas
+                $tabAcademico.removeClass('show active');
+                $tabActitudinal.addClass('show active');
+            } else {
+                // 1. Habilitar de nuevo el selector de curso (Lógica + Visual)
+                $selectCurso.prop('disabled', false);
+                
+                // Restaurar cambios visuales: Borde azul, texto oscuro, cursor manito
+                $selectCurso.removeClass('border-secondary text-muted opacity-5')
+                            .addClass('border-info text-dark');
+                $selectCurso.css('cursor', 'pointer');
+                
+                // 2. Transición de tablas
+                $tabActitudinal.removeClass('show active');
+                $tabAcademico.addClass('show active');
+            }
+        });
+    }
+});

@@ -12,8 +12,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from apps.academico.models import Aula, PeriodoLectivo, Matricula, AsignacionAcademica, Nota, Curso, EvaluacionActitudinal, Evaluacion
 from apps.academico.services import calcular_matriz_vigesimal, obtener_consolidado_aula_maestro
-from apps.asistencia.models import AsistenciaEstudiante
-from django.db.models import Avg, Sum, Q
+from django.db.models import Prefetch
 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.utils.units import pixels_to_EMU
@@ -35,6 +34,9 @@ def consolidado_notas_admin(request):
     todos_estudiantes = []
     asignacion_seleccionada = None
     
+    # 💥 INICIALIZAMOS LA VARIABLE PARA LA TABLA ACTITUDINAL
+    matriculas = [] 
+    
     if aula_id:
         aula_seleccionada = get_object_or_404(Aula, id=aula_id)
         asignaciones = AsignacionAcademica.objects.filter(aula=aula_seleccionada, periodo=periodo_actual).select_related('curso', 'personal')
@@ -43,10 +45,32 @@ def consolidado_notas_admin(request):
         if asignaciones.exists():
             asignacion_seleccionada = asignaciones.filter(id=asignacion_id).first() if asignacion_id else asignaciones.first()
 
+        # ====================================================
+        # 💥 NUEVO: PREFETCH PARA LA MATRIZ ACTITUDINAL
+        # ====================================================
+        actitudinal_prefetch = Prefetch(
+            'actitudinales', 
+            queryset=EvaluacionActitudinal.objects.filter(bimestre=bimestre_actual),
+            to_attr='eval_actitudinal'
+        )
+        
+        matriculas = Matricula.objects.filter(
+            aula=aula_seleccionada, periodo=periodo_actual
+        ).select_related('estudiante').prefetch_related(actitudinal_prefetch).order_by('estudiante__apellidos', 'estudiante__nombres')
+        # ====================================================
+
         # ----------------------------------------------------
         # LLAMADO AL MOTOR MAESTRO PARA EXTRAER ANALÍTICAS
         # ----------------------------------------------------
         data_alumnos, _ = obtener_consolidado_aula_maestro(aula_seleccionada, periodo_actual)
+        
+        # 💥 NUEVO: Vincular el promedio actitudinal maestro redondeado
+        for m in matriculas:
+            if m.id in data_alumnos:
+                # Extraemos el valor ya procesado (ej. 15, 18, etc.)
+                m.actitudinal_redondeado = data_alumnos[m.id]['comportamiento'].get(bimestre_actual)
+            else:
+                m.actitudinal_redondeado = None
         
         top_estudiantes_raw = []
         suma_promedios_aula = 0
@@ -85,6 +109,7 @@ def consolidado_notas_admin(request):
         'top_estudiantes': top_estudiantes,
         'todos_estudiantes': todos_estudiantes,
         'asignacion_seleccionada': asignacion_seleccionada,
+        'matriculas': matriculas, # 💥 PASAMOS LA VARIABLE AL TEMPLATE
     }
     context.update(contexto_matriz)
     

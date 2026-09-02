@@ -10,9 +10,10 @@ from django.utils.timezone import localtime, now
 from django.utils import timezone
 from httpx import request
 from pydantic import ValidationError
+from apps.academico.services import calcular_matriz_vigesimal, obtener_consolidado_aula_maestro
 from apps.comunicaciones.models import Notificacion, User
 from apps.personal.models import Personal
-from .models import AsignacionAcademica, Aula, Curso, EntregaSimulacro, Estudiante, EvaluacionActitudinal, EventoCronograma, EvidenciaDocente, HorarioClase, HorarioRecreo, Institucion, MaterialInstitucional, Matricula, PeriodoLectivo, PreguntaSimulacro, SolicitudImpresion, CatalogoMaterial, InventarioAula
+from .models import AsignacionAcademica, Aula, Curso, EntregaSimulacro, Estudiante, EvaluacionActitudinal, EventoCronograma, EvidenciaDocente, HorarioClase, HorarioRecreo, Institucion, MaterialInstitucional, Matricula, Nota, PeriodoLectivo, PreguntaSimulacro, SolicitudImpresion, CatalogoMaterial, InventarioAula
 from .forms import AsignacionAcademicaForm, AulaForm, CursoForm, EstudianteForm, EventoCronogramaForm, EvidenciaDocenteForm, HorarioClaseForm, InstitucionForm, MaterialInstitucionalForm, PeriodoLectivoForm, PreguntaSimulacroForm, SimulacroForm # Importamos el formulario que acabamos de crear
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
@@ -24,7 +25,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
-from django.db.models import Sum, Q
+from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
 from django.contrib import messages
 from .servicios_ml import agrupar_estudiantes_kmeans # Ajusta tu importación
@@ -553,32 +554,22 @@ def mi_aula(request):
     if not personal_actual:
         return render(request, 'errores/sin_perfil.html', {'mensaje': 'Sin perfil activo.'})
     
-    # 💥 NUEVA LÓGICA: Buscamos TODAS las aulas donde es tutor
     aulas_tutoradas = Aula.objects.filter(tutor=personal_actual).order_by('nivel', 'grado', 'seccion')
     
     if not aulas_tutoradas.exists():
-        return render(request, 'errores/sin_perfil.html', {
-            'mensaje': 'No tiene ninguna tutoría asignada en este periodo.'
-        })
+        return render(request, 'errores/sin_perfil.html', {'mensaje': 'No tiene ninguna tutoría asignada en este periodo.'})
 
-    # Atrapamos el ID del aula si el profesor usa el desplegable para cambiar de salón
     aula_id = request.GET.get('aula_id')
-    
     if aula_id:
-        aula_tutor = aulas_tutoradas.filter(id=aula_id).first()
-        # Si por alguna razón mandan un ID inválido, cargamos la primera por defecto
-        if not aula_tutor:
-            aula_tutor = aulas_tutoradas.first()
+        aula_tutor = aulas_tutoradas.filter(id=aula_id).first() or aulas_tutoradas.first()
     else:
-        aula_tutor = aulas_tutoradas.first() # Por defecto carga el primer salón
+        aula_tutor = aulas_tutoradas.first()
         
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    bimestre_actual = periodo_actual.bimestre_actual if periodo_actual else 'I'
     
-    # 💥 REEMPLAZA tu antigua variable 'cursos' por esta:
     asignaciones_aula = AsignacionAcademica.objects.filter(
-        aula=aula_tutor,
-        periodo=periodo_actual,
-        curso__activo=True
+        aula=aula_tutor, periodo=periodo_actual, curso__activo=True
     ).select_related('curso')
     
     curso_id_param = request.GET.get('curso_id', '')
@@ -587,88 +578,149 @@ def mi_aula(request):
     alumnos_procesados = []
     conteo_estados = {'danger': 0, 'warning': 0, 'success': 0}
     
-    # 💥 OPTIMIZACIÓN SENIOR (N+1 RESUELTO): 
-    # Traemos las matrículas, cruzamos con estudiante (select_related) 
-    # y precargamos TODAS sus asistencias de un solo golpe (prefetch_related)
+    # 💥 CORRECCIÓN 1: ORDEN ALFABÉTICO RESTAURADO
     matriculas = Matricula.objects.filter(
-        aula=aula_tutor, 
-        periodo=periodo_actual,
-        estudiante__estado='Activo'
-    ).select_related('estudiante').prefetch_related('estudiante__asistencias')
+        aula=aula_tutor, periodo=periodo_actual, estudiante__estado='Activo'
+    ).select_related('estudiante').order_by('estudiante__apellidos', 'estudiante__nombres')
     
-    for matricula in matriculas:
-        estudiante = matricula.estudiante
-        analisis_ia = {'promedio': 0, 'tendencia_numerica': 0, 'estado_ia': 'Sin Notas', 'color': 'secondary', 'cantidad_notas': 0}
-        
-        # 💥 OPTIMIZACIÓN: Como usamos prefetch_related, usar .all() lo saca de la memoria RAM, no de la BD
-        asistencias = estudiante.asistencias.all()
-        asistencias_totales = len(asistencias)
-        
-        if asistencias_totales > 0:
-            # Filtramos en memoria (usando una lista de comprensión)
-            asistencias_efectivas = len([a for a in asistencias if a.estado in ['P', 'T', 'J']])
-            porcentaje_asistencia = int((asistencias_efectivas / asistencias_totales) * 100)
-        else:
-            porcentaje_asistencia = 100 
+    # Extraemos el consolidado oficial general
+    data_alumnos, _ = obtener_consolidado_aula_maestro(aula_tutor, periodo_actual)
+    
+    # 💥 CORRECCIÓN 2: EXTRACCIÓN EXACTA DE NOTAS POR CURSO
+    notas_exactas_curso = {}
+    if curso_seleccionado:
+        asignacion_sel = asignaciones_aula.filter(curso_id=curso_seleccionado).first()
+        if asignacion_sel:
+            matriz_data = calcular_matriz_vigesimal(asignacion_sel, aula_tutor, bimestre_actual)
+            for fila in matriz_data.get('datos_matriz', []):
+                # 💥 CORREGIDO: Ahora leemos directamente la nueva llave 'matricula_id'
+                notas_exactas_curso[fila['matricula_id']] = fila['prom_general']
 
-        # Tu función de IA
-        analisis_ia = analizar_rendimiento_estudiante(matricula.id, curso_seleccionado)
+    for matricula in matriculas:
+        m_id = matricula.id
+        estudiante = matricula.estudiante
+        datos_maestro = data_alumnos.get(m_id, {})
         
+        # 1. ASISTENCIA EXACTA
+        asis_b = datos_maestro.get('asistencias', {}).get(bimestre_actual, {})
+        presentes = asis_b.get('P', 0) + asis_b.get('J', 0) + asis_b.get('T', 0)
+        faltas = asis_b.get('F', 0)
+        total_asis = presentes + faltas
+        porcentaje_asistencia = int((presentes / total_asis) * 100) if total_asis > 0 else 100
+
+        # 2. OBTENEMOS EL PROMEDIO OFICIAL (De tus motores)
+        if curso_seleccionado:
+            promedio_real = notas_exactas_curso.get(m_id, 0)
+        else:
+            promedio_real = datos_maestro.get('promedios_bimestre', {}).get(bimestre_actual, 0)
+            
+        # 3. LLAMAMOS A LA IA PASÁNDOLE LA VERDAD OFICIAL
+        analisis_ia = analizar_rendimiento_estudiante(
+            matricula_id=m_id, 
+            promedio_oficial=promedio_real, 
+            curso_id=curso_seleccionado, 
+            bimestre_actual=bimestre_actual
+        )
+            
         if analisis_ia['color'] in conteo_estados:
             conteo_estados[analisis_ia['color']] += 1
-                
+            
         alumnos_procesados.append({
             'objeto': estudiante,
-            'ia': analisis_ia,
-            'matricula_id': matricula.id,
-            'asistencia': porcentaje_asistencia
+            'matricula_id': m_id,
+            'asistencia': porcentaje_asistencia,
+            'ia': analisis_ia
         })
         
     return render(request, 'academico/mi_aula.html', {
-        'aula': aula_tutor,                 # El aula que estamos viendo ahorita
-        'aulas_tutoradas': aulas_tutoradas, # 💥 La lista completa para pintar el combobox
+        'aula': aula_tutor,
+        'aulas_tutoradas': aulas_tutoradas,
         'alumnos': alumnos_procesados,
         'totales': conteo_estados,
-        'total_alumnos': len(matriculas),   # 💥 Cambiamos .count() por len() para ahorrar un query extra
+        'total_alumnos': len(matriculas),
         'asignaciones_aula': asignaciones_aula,
         'curso_seleccionado': curso_seleccionado,
         'periodo': periodo_actual,
+        'bimestre_actual': bimestre_actual,
         'segment': 'mi_aula'
     })
 
 @login_required
 def generar_diagnostico_ajax(request):
     """
-    Recibe la petición AJAX desde el JavaScript modular, extrae el alumno y el curso,
-    y solicita a Gemini un análisis cualitativo adaptado.
+    Recibe la petición AJAX, extrae el alumno, curso y periodo,
+    obtiene la nota oficial del consolidador, y solicita a Gemini un análisis cualitativo.
     """
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             matricula_id = data.get('matricula_id')
             nombre_alumno = data.get('nombre_alumno')
-            
-            # 💥 NUEVO: Atrapamos el curso enviado por JavaScript
             curso_id_raw = data.get('curso_id', '')
             curso_id = int(curso_id_raw) if str(curso_id_raw).isdigit() else None
 
-            # 1. Obtenemos la matemática exacta calculada (pasándole el curso_id)
-            analisis_ia = analizar_rendimiento_estudiante(matricula_id, curso_id)
+            # 1. Definimos el contexto temporal y buscamos al alumno
+            periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+            bimestre_actual = periodo_actual.bimestre_actual if periodo_actual else 'I'
+            
+            matricula = Matricula.objects.filter(id=matricula_id).first()
+            if not matricula:
+                return JsonResponse({'status': 'error', 'mensaje': 'Matrícula no encontrada.'})
+            
+            aula_tutor = matricula.aula
 
-            # 2. Buscamos el nombre del curso si existe para darle contexto a la IA
-            contexto_curso = "en general (todas las materias)"
+            # 2. OBTENEMOS EL PROMEDIO OFICIAL EXACTO (El mismo de la libreta)
+            promedio_real = 0
+            if curso_id:
+                # Si seleccionó un curso, usamos la matriz vigesimal
+                asignacion_sel = AsignacionAcademica.objects.filter(curso_id=curso_id, aula=aula_tutor, periodo=periodo_actual).first()
+                if asignacion_sel:
+                    matriz_data = calcular_matriz_vigesimal(asignacion_sel, aula_tutor, bimestre_actual)
+                    for fila in matriz_data.get('datos_matriz', []):
+                        if fila.get('matricula_id') == matricula.id:
+                            promedio_real = fila.get('prom_general', 0)
+                            break
+            else:
+                # Si es promedio general, usamos el consolidador maestro
+                data_alumnos, _ = obtener_consolidado_aula_maestro(aula_tutor, periodo_actual)
+                datos_maestro = data_alumnos.get(matricula.id, {})
+                promedio_real = datos_maestro.get('promedios_bimestre', {}).get(bimestre_actual, 0)
+
+            # 3. LLAMAMOS AL MOTOR PREDICTIVO CON EL PROMEDIO OFICIAL
+            analisis_ia = analizar_rendimiento_estudiante(
+                matricula_id=matricula.id,
+                promedio_oficial=promedio_real,
+                curso_id=curso_id,
+                bimestre_actual=bimestre_actual
+            )
+            
+            # 4. Extraemos la nota de conducta redondeada para que Gemini la evalúe
+            eval_act = EvaluacionActitudinal.objects.filter(
+                matricula_id=matricula_id, bimestre=bimestre_actual
+            ).first()
+            
+            if eval_act and eval_act.promedio_actitudinal:
+                from decimal import Decimal, ROUND_HALF_UP
+                conducta = int(Decimal(str(eval_act.promedio_actitudinal)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            else:
+                conducta = 15
+
+            # 5. Contextualizamos la materia
+            contexto_curso = "en su rendimiento general (todas las materias)"
             if curso_id:
                 curso_obj = Curso.objects.filter(id=curso_id).first()
                 if curso_obj:
                     contexto_curso = f"específicamente en el curso de {curso_obj.nombre}"
 
-            # 3. Llamamos a tu modelo 'gemini-3.1-flash-lite' en servicios_ia.py
+            # 6. Llamamos a Gemini
             diagnostico_texto = generar_diagnostico_cualitativo(
                 nombre_alumno=nombre_alumno,
                 promedio=analisis_ia['promedio'],
                 tendencia=analisis_ia['tendencia_numerica'],
+                conducta=conducta,
                 estado_ia=analisis_ia['estado_ia'],
-                contexto_curso=contexto_curso # Le pasamos qué curso es
+                contexto_curso=contexto_curso,
+                bimestre=bimestre_actual
             )
 
             return JsonResponse({'status': 'success', 'diagnostico': diagnostico_texto})
@@ -683,10 +735,13 @@ def generar_clustering_ia_api(request):
     try:
         data = json.loads(request.body)
         aula_id = data.get('aula_id')
-        periodo_id = data.get('periodo_id') # Asumo que lo pasaremos desde el JS
+        periodo_id = data.get('periodo_id')
         
-        # Llamamos al algoritmo
-        resultado = agrupar_estudiantes_kmeans(aula_id, periodo_id)
+        # 💥 NUEVO: Extraemos el curso_id si existe
+        curso_id_raw = data.get('curso_id', '')
+        curso_id = int(curso_id_raw) if str(curso_id_raw).isdigit() else None
+        
+        resultado = agrupar_estudiantes_kmeans(aula_id, periodo_id, curso_id)
         
         if "error" in resultado:
             return JsonResponse({"status": "error", "mensaje": resultado["error"]})
@@ -694,8 +749,7 @@ def generar_clustering_ia_api(request):
         return JsonResponse(resultado)
         
     except Exception as e:
-        print(f"Error de Machine Learning: {str(e)}")
-        return JsonResponse({"status": "error", "mensaje": "Fallo al procesar el algoritmo de clustering."})
+        return JsonResponse({"status": "error", "mensaje": "Fallo al procesar clustering."})
     
 @login_required
 def panel_supervision(request):

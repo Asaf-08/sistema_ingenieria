@@ -6,7 +6,12 @@
   
   <div class="row mb-4 align-items-center">
     <div class="col-lg-6">
-        <h3 class="font-weight-black text-dark mb-0">Mi Aula</h3>
+        <h3 class="font-weight-black text-dark mb-0 d-flex align-items-center">
+            Mi Aula 
+            <span class="badge bg-gradient-info ms-3 align-middle" style="font-size: 0.45em; padding: 0.6em 1em;">
+                BIMESTRE {{ bimestre_actual }}
+            </span>
+        </h3>
         {% if aulas_tutoradas|length > 1 %}
             <form method="GET" action="." class="d-flex align-items-center mt-2">
                 <label class="text-xs font-weight-bold text-secondary mb-0 me-2 text-uppercase">Aula:</label>
@@ -24,9 +29,9 @@
     </div>
     <div class="col-lg-6 d-flex flex-column flex-lg-row justify-content-lg-end align-items-stretch align-items-lg-end gap-3 mt-4 mt-lg-0">
 
-      <a href="{% url 'personal:sincronizar_google_sheets' aula.id %}" onclick="iniciarSincronizacion()" class="btn bg-gradient-success mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
+      {% comment %} <a href="{% url 'personal:sincronizar_google_sheets' aula.id %}" onclick="iniciarSincronizacion()" class="btn bg-gradient-success mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
         <i class="material-symbols-rounded text-sm me-2">cloud_sync</i> Sincronizar con Drive
-      </a>
+      </a> {% endcomment %}
 
       <a href="{% url 'personal:reporte_agenda_semanal' aula.id %}" class="btn bg-gradient-info mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
         <i class="material-symbols-rounded text-sm me-2">confirmation_number</i> Tickets de Agenda
@@ -36,7 +41,7 @@
         <i class="material-symbols-rounded text-sm me-2">inventory_2</i> Gestionar Inventario
       </a>
 
-      <a href="{% url 'asistencia:reporte_asistencia_estudiantes' %}?aula_id={{ aula.id }}&origen=mi_aula" class="btn btn-outline-dark mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
+      <a href="{% url 'asistencia:reporte_asistencia_estudiantes' %}?aula_id={{ aula.id }}&origen=mi_aula" class="btn btn-gradient-success mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
         <i class="material-symbols-rounded text-sm me-2">fact_check</i> Asistencia
       </a>
 
@@ -166,7 +171,7 @@
                   <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Notas Registradas</th>
                   <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Asistencia</th>
                   <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Promedio Actual</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tendencia IA</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" title="Proyección al finalizar el bimestre">Proyección IA</th>
                   <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Semáforo Predictivo</th>
                   <th class="text-secondary opacity-7"></th>
                 </tr>
@@ -204,22 +209,28 @@
                         </div>
                     </div>
                 </td>
+                  <!-- Celda de Promedio Actual -->
                   <td class="align-middle text-center">
                     <span class="text-sm font-weight-bold {% if item.ia.promedio < 11 %}text-danger{% elif item.ia.promedio < 14 %}text-warning{% else %}text-dark{% endif %}">
                       {{ item.ia.promedio }}
                     </span>
                   </td>
+
+                  <!-- 💥 NUEVA Celda de Proyección IA -->
                   <td class="align-middle text-center">
-                    {% if item.ia.tendencia_numerica > 0.2 %}
-                      <span class="text-success text-sm font-weight-bold"><i class="material-symbols-rounded text-sm align-middle">trending_up</i> Alta</span>
-                    {% elif item.ia.tendencia_numerica < -0.2 %}
-                      <span class="text-danger text-sm font-weight-bold"><i class="material-symbols-rounded text-sm align-middle">trending_down</i> Baja</span>
+                    {% if item.ia.estado_ia != 'Sin Datos' %}
+                        <span class="text-sm font-weight-bold text-{{ item.ia.color }}">
+                            <i class="material-symbols-rounded text-sm align-middle">{{ item.ia.icono }}</i> 
+                            {{ item.ia.promedio_proyectado }}
+                        </span>
                     {% else %}
-                      <span class="text-secondary text-sm font-weight-bold"><i class="material-symbols-rounded text-sm align-middle">trending_flat</i> Estable</span>
+                        <span class="text-secondary text-sm font-weight-bold">-</span>
                     {% endif %}
                   </td>
+
+                  <!-- 💥 Celda de Semáforo Predictivo (Con animación de pulso si hay caída abrupta) -->
                   <td class="align-middle text-center">
-                    <span class="badge badge-sm bg-gradient-{{ item.ia.color }} px-3 py-2 border-radius-md">
+                    <span class="badge badge-sm bg-gradient-{{ item.ia.color }} px-3 py-2 border-radius-md {% if item.ia.alerta_critica %}shadow-danger{% endif %}" {% if item.ia.alerta_critica %}style="animation: pulse 2s infinite;"{% endif %}>
                       {{ item.ia.estado_ia }}
                     </span>
                   </td>
@@ -251,23 +262,40 @@
 
 </div>
 
-<div class="modal fade" id="modalDiagnosticoIA" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border-radius-xl">
-      <div class="modal-header bg-gradient-warning">
-        <h5 class="modal-title text-white">
-          <i class="material-symbols-rounded align-middle me-2">psychology</i> 
-          Diagnóstico de la IA: <span id="nombreAlumnoModal"></span>
-        </h5>
-        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4" id="contenidoDiagnostico">
-        </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cerrar</button>
-      </div>
+<div id="pantallaCarga" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 99999; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+    
+    <div class="spinner-border text-info" style="width: 4rem; height: 4rem; border-width: 0.3em;" role="status">
+        <span class="visually-hidden">Loading...</span>
     </div>
-  </div>
+    
+    <h3 class="text-white mt-4 font-weight-bold">Sincronizando con Google Drive...</h3>
+    <p class="text-white text-sm" style="opacity: 0.8;">Construyendo matriz académica. Por favor, no cierre ni recargue esta ventana.</p>
+</div>
+
+<input type="hidden" id="csrfTokenIA" value="{{ csrf_token }}">
+
+{% endblock content %}
+
+{% block modales %}
+
+<div class="modal fade" id="modalDiagnosticoIA" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-radius-xl">
+            <div class="modal-header bg-gradient-warning">
+                <h5 class="modal-title text-white">
+                    <i class="material-symbols-rounded align-middle me-2">psychology</i> 
+                    Diagnóstico de la IA: <span id="nombreAlumnoModal"></span>
+                </h5>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="contenidoDiagnostico">
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <span class="text-xs text-secondary font-weight-bold" id="contexto-curso-modal-diag"></span>
+                <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="modalClusteringIA" tabindex="-1" aria-hidden="true">
@@ -289,25 +317,15 @@
                 <div id="contenedor-perfiles-ia" class="row mt-4"></div>
                 
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between">
+                <span class="text-xs text-secondary font-weight-bold" id="contexto-curso-modal-kmeans"></span>
                 <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cerrar Análisis</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="pantallaCarga" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 99999; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    
-    <div class="spinner-border text-info" style="width: 4rem; height: 4rem; border-width: 0.3em;" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-    
-    <h3 class="text-white mt-4 font-weight-bold">Sincronizando con Google Drive...</h3>
-    <p class="text-white text-sm" style="opacity: 0.8;">Construyendo matriz académica. Por favor, no cierre ni recargue esta ventana.</p>
-</div>
-
-<input type="hidden" id="csrfTokenIA" value="{{ csrf_token }}">
-{% endblock content %}
+{% endblock modales %}
 
 {% block scripts %}
 {% load static %}

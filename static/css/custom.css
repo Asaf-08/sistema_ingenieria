@@ -475,6 +475,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 
 #tablaMatriz { border-bottom: 1px solid #dee2e6 !important; }
 #tablaMatriz tbody tr:last-child td { border-bottom: 1px solid #dee2e6 !important; border-right: 1px solid #dee2e6 !important; }
+#tablaActitudinal tbody tr:last-child td { border-bottom: 1px solid #E5E5E5 !important; border-right: 1px solid #E5E5E5 !important; }/* Usa el color gris claro nativo del template */
 #tablaMatriz tbody tr:last-child td.td-sticky-1 { border-left: 1px solid #dee2e6 !important; }
 
 /* DataTables invertido en la Matriz */
@@ -704,3 +705,5 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
         display: none !important;
     }
 }
+
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }

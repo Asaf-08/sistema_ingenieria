@@ -57,18 +57,29 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'db_torreblanca', # Ej: bd_torreblanca
+#         'USER': 'root', # Por lo general en XAMPP es root
+#         'PASSWORD': '', # Por lo general en XAMPP está en blanco
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+        
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         }
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_torreblanca', # Ej: bd_torreblanca
-        'USER': 'root', # Por lo general en XAMPP es root
-        'PASSWORD': '', # Por lo general en XAMPP está en blanco
-        'HOST': 'localhost',
-        'PORT': '3306',
-        
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway', # Por defecto Railway siempre nombra a la BD como 'railway'
+        'USER': 'postgres', # Usualmente es root
+        'PASSWORD': 'EmkoHyuJHaOxBRrZaPptoikOqLrqjLYv', # Cópialo de la pestaña Variables
+        'HOST': 'hayabusa.proxy.rlwy.net', # O el host público que te dio Railway
+        'PORT': '25733', # O el puerto público que te dio Railway (OJO: No es 3306)
     }
 }
 

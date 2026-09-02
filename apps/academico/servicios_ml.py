@@ -1,71 +1,86 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 import numpy as np # 💥 NUEVO: Importación necesaria para calcular la varianza
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from django.db.models import Avg
-from apps.academico.models import Matricula, Nota
-from apps.academico.models import EvaluacionActitudinal # Ajusta la importación según tu app
+from apps.academico.models import Aula, Matricula, Nota, PeriodoLectivo, AsignacionAcademica
+from apps.academico.services import obtener_consolidado_aula_maestro, calcular_matriz_vigesimal
 
-def agrupar_estudiantes_kmeans(aula_id, periodo_id):
+def agrupar_estudiantes_kmeans(aula_id, periodo_id, curso_id=None):
     """
-    Extrae las notas y la conducta de los alumnos de un aula, 
-    y aplica K-Means con un 'K Dinámico' basado en la dispersión matemática.
+    Agrupa a los estudiantes usando K-Means dinámico, 
+    alimentado EXCLUSIVAMENTE por los promedios oficiales del bimestre actual.
     """
-    # 1. Obtener los alumnos matriculados en esa aula
-    matriculas = Matricula.objects.filter(aula_id=aula_id, periodo_id=periodo_id)
+    try:
+        aula = Aula.objects.get(id=aula_id)
+        periodo = PeriodoLectivo.objects.get(id=periodo_id)
+        bimestre_actual = periodo.bimestre_actual or 'I'
+    except (Aula.DoesNotExist, PeriodoLectivo.DoesNotExist):
+        return {"error": "Aula o periodo no encontrados."}
+
+    # Extraemos el consolidado general (esto siempre se necesita para la conducta)
+    data_alumnos, _ = obtener_consolidado_aula_maestro(aula, periodo)
     
-    if matriculas.count() < 3:
-        return {"error": "Se necesitan al menos 3 estudiantes para generar agrupamientos matemáticos."}
-
+    # 💥 LÓGICA DE CURSO: Definimos de dónde sacar el Promedio Académico
+    notas_oficiales_acad = {}
+    if curso_id:
+        asignacion_sel = AsignacionAcademica.objects.filter(curso_id=curso_id, aula=aula, periodo=periodo).first()
+        if asignacion_sel:
+            matriz_data = calcular_matriz_vigesimal(asignacion_sel, aula, bimestre_actual)
+            for fila in matriz_data.get('datos_matriz', []):
+                notas_oficiales_acad[fila.get('matricula_id')] = fila.get('prom_general', 0)
+    else:
+        for m_id, data in data_alumnos.items():
+            notas_oficiales_acad[m_id] = data.get('promedios_bimestre', {}).get(bimestre_actual, 0)
+            
     datos = []
     
-    # 2. Extracción de características (Feature Extraction)
-    for mat in matriculas:
-        # Promedio Académico
-        promedio_notas = Nota.objects.filter(matricula=mat).aggregate(Avg('valor'))['valor__avg']
-        prom_academico = float(promedio_notas) if promedio_notas else 0.0
+    # 2. FEATURE EXTRACTION
+    for m_id, data in data_alumnos.items():
+        mat = data['matricula']
         
-        # Promedio Actitudinal (Si no tiene, le ponemos 20 por defecto o un neutro)
-        eval_act = EvaluacionActitudinal.objects.filter(matricula=mat).first()
-        if eval_act:
-            prom_actitudinal = float(eval_act.promedio_actitudinal)
-        else:
-            prom_actitudinal = 15.0 # Un valor neutro si el tutor aún no califica
-            
-        datos.append({
-            'matricula_id': mat.id,
-            'nombre': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
-            'promedio_academico': prom_academico,
-            'promedio_actitudinal': prom_actitudinal
-        })
+        # Leemos de nuestro diccionario dinámico (Curso específico o General)
+        prom_academico_raw = notas_oficiales_acad.get(m_id, 0)
+        prom_actitudinal_raw = data.get('comportamiento', {}).get(bimestre_actual, 15.0)
         
+        if prom_academico_raw > 0:
+            prom_academico = int(Decimal(str(prom_academico_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            prom_actitudinal = int(Decimal(str(prom_actitudinal_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+            datos.append({
+                'matricula_id': mat.id,
+                'nombre': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
+                'promedio_academico': prom_academico,
+                'promedio_actitudinal': prom_actitudinal
+            })
+
+    if len(datos) < 3:
+        return {"error": "Se necesitan al menos 3 estudiantes con notas en este filtro para generar agrupamientos."}
+
     df = pd.DataFrame(datos)
     
-    # 💥 3. INTELIGENCIA DINÁMICA: Cálculo de la Varianza
-    # Extraemos los datos puros para medir qué tan diferentes son los alumnos entre sí
+    # 3. INTELIGENCIA DINÁMICA: Cálculo de la Varianza
     X_raw = df[['promedio_academico', 'promedio_actitudinal']].values
     varianza_media = np.var(X_raw, axis=0).mean()
     
-    # Decidimos cuántos grupos (K) crear basados en las matemáticas, no en reglas rígidas
     if varianza_media < 2.0:
-        # Todos tienen notas casi idénticas (ej. Todos son de 18 y 19). Hacemos 1 solo grupo.
         k_optimo = 1
     elif varianza_media < 5.0:
-        # Hay cierta diferencia pero no extrema. Los dividimos en 2 perfiles.
         k_optimo = 2
     else:
-        # Hay mucha desigualdad en el salón (Alumnos de 20 y alumnos de 08). Usamos 3 perfiles.
         k_optimo = 3
     
-    # 4. Normalización de datos (Imprescindible para algoritmos de distancia)
+    # 4. Normalización de datos
     scaler = StandardScaler()
     caracteristicas = scaler.fit_transform(X_raw)
     
-    # 💥 5. Aplicar K-Means Clustering con el 'k_optimo' en lugar del 3 fijo
+    # 5. Aplicar K-Means Clustering 
     kmeans = KMeans(n_clusters=k_optimo, random_state=42, n_init=10)
     df['cluster'] = kmeans.fit_predict(caracteristicas)
     
-# 6. Interpretación Automática de los Clusters (Asignar nombres descriptivos)
+    # 6. Interpretación Automática de los Centroides
     centroides = df.groupby('cluster')[['promedio_academico', 'promedio_actitudinal']].mean()
     
     perfiles_nombres = {}
@@ -73,38 +88,46 @@ def agrupar_estudiantes_kmeans(aula_id, periodo_id):
         acad = fila['promedio_academico']
         acti = fila['promedio_actitudinal']
         
-        # 💥 REGLAS ESTRICTAS SIN "LIMBOS NUMÉRICOS"
-        # Asumimos que la nota aprobatoria base es 13.
-        
-        if acad >= 14.5 and acti >= 14.5:
+        # 1. Nivel Superior (Los top de la clase: Notas altas y buena conducta)
+        if acad >= 16.5 and acti >= 15.0:
+            perfiles_nombres[cluster_id] = "🏆 Alto Rendimiento (Sobresaliente en notas y conducta)"
+            
+        # 2. Nivel Bueno (El grupo promedio-alto)
+        elif acad >= 13.5 and acti >= 14.0:
             perfiles_nombres[cluster_id] = "🌟 Perfil Óptimo (Buen rendimiento y conducta)"
             
-        elif acad < 13 and acti < 13:
+        # 3. Riesgo Crítico (Bajas notas y mala conducta)
+        elif acad < 12.5 and acti < 13.0:
             perfiles_nombres[cluster_id] = "🚨 Riesgo Integral (Requiere apoyo académico y conductual)"
             
-        elif acad < 13 and acti >= 13:
-            perfiles_nombres[cluster_id] = "📚 Esfuerzo sin resultados (Buena conducta, bajo rendimiento)"
+        # 4. Esfuerzo sin resultados (Conducta decente, pero no aprueba)
+        elif acad < 12.5 and acti >= 13.0:
+            perfiles_nombres[cluster_id] = "📚 Esfuerzo sin resultados (Buena actitud, bajo rendimiento)"
             
-        elif acad >= 13 and acti < 13:
-            perfiles_nombres[cluster_id] = "⚠️ Talento indisciplinado (Buenas notas, problemas de conducta)"
+        # 5. Talento Indisciplinado (Aprueba, pero su conducta es un problema)
+        elif acad >= 13.0 and acti < 12.5:
+            perfiles_nombres[cluster_id] = "⚠️ Talento indisciplinado (Rendimiento aceptable, mala conducta)"
             
+        # 6. El punto medio 
         else:
-            # Aquí solo caerán los que tengan entre 13 y 14.4 en ambas cosas
-            perfiles_nombres[cluster_id] = "📊 Perfil Promedio (Estable)"
+            if acad > acti:
+                perfiles_nombres[cluster_id] = "📊 Perfil Estable (Mejor en notas que en conducta)"
+            else:
+                perfiles_nombres[cluster_id] = "📊 Perfil Estable (Mejor actitud que notas)"
 
-    # 💥 7. Preparar la respuesta JSON iterando solo hasta el k_optimo
+    # 7. Preparar la respuesta JSON
     resultados = []
-    for cluster_id in range(k_optimo):
+    # Usamos unique() para asegurarnos de solo iterar sobre los clusters que realmente se crearon
+    for cluster_id in df['cluster'].unique():
         alumnos_en_cluster = df[df['cluster'] == cluster_id]
         
-        # Opcional pero recomendado: si el modelo crea un grupo y no tiene alumnos, lo ignoramos
-        if len(alumnos_en_cluster) == 0:
-            continue
-            
         resultados.append({
             "perfil": perfiles_nombres.get(cluster_id, "Grupo No Definido"),
             "cantidad": len(alumnos_en_cluster),
             "alumnos": alumnos_en_cluster[['nombre', 'promedio_academico', 'promedio_actitudinal']].to_dict(orient='records')
         })
         
+    # Ordenar los resultados para que el grupo "Óptimo" o de mejor nota salga primero
+    resultados.sort(key=lambda x: ("Riesgo" in x['perfil'], "Esfuerzo" in x['perfil'], "Talento" in x['perfil']))
+
     return {"status": "success", "clusters": resultados}

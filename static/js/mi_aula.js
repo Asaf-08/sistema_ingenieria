@@ -14,18 +14,25 @@ function registrarEventosDashboard() {
     // EVENTOS PARA GEMINI IA
     // =============================================================
     
-    // 1. Botón principal de Diagnóstico en la tabla (RESPETA TU CLASE .btn-diagnostico)
-    $('#tablaPredictiva tbody').on('click', '.btn-diagnostico', function (e) {
+    // 1. Botón principal de Diagnóstico IA (Solucionado Bug de Evento AJAX)
+    $(document).on('click', '.btn-diagnostico', function (e) {
         e.preventDefault();
         const btn = $(this);
         const matriculaId = btn.data('matricula-id');
-        const cursoId = btn.data('curso-id') || 'general';
         const nombreAlumno = btn.data('nombre');
         const urlEndPoint = btn.data('url');
 
+        // 💥 NUEVO: Siempre leer el selector actual en el momento del clic
+        const selector = $('#select-curso-aula');
+        const cursoId = selector.val() || '';
+        
+        // Limpiamos los emojis para inyectar el texto en el footer
+        const contextoTexto = selector.find(':selected').text().replace('📊', '').replace('📘', '').trim();
+        $('#contexto-curso-modal-diag').html(`<i class="material-symbols-rounded text-sm align-middle me-1">school</i> Evaluando: ${contextoTexto}`);
+
         if (!matriculaId) return;
 
-        const claveCache = 'diagnostico_ia_alumno_' + matriculaId + '_curso_' + cursoId;
+        const claveCache = 'diagnostico_ia_alumno_' + matriculaId + '_curso_' + (cursoId || 'general');
         const diagnosticoGuardado = localStorage.getItem(claveCache);
 
         if (diagnosticoGuardado) {
@@ -75,7 +82,17 @@ function registrarEventosDashboard() {
         e.preventDefault();
         let aulaId = $(this).data('aula-id');
         let periodoId = $(this).data('periodo-id');
-        ejecutarClusteringKMeans(aulaId, periodoId);
+
+        // 💥 NUEVO: Atrapamos el curso seleccionado y su texto
+        const selector = $('#select-curso-aula');
+        const cursoId = selector.val() || '';
+        const contextoTexto = selector.find(':selected').text().replace('📊', '').replace('📘', '').trim();
+
+        // 💥 NUEVO: Inyectamos el texto en el footer del modal
+        $('#contexto-curso-modal-kmeans').html(`<i class="material-symbols-rounded text-sm align-middle me-1">school</i> Evaluando: ${contextoTexto}`);
+
+        // Pasamos el cursoId a la función
+        ejecutarClusteringKMeans(aulaId, periodoId, cursoId);
     });
 
     // -------------------------------------------------------------
@@ -83,7 +100,6 @@ function registrarEventosDashboard() {
     // -------------------------------------------------------------
     $(document).on('change', '#select-curso-aula', function() {
         let cursoId = $(this).val();
-        // Atrapamos el ID de la asignación desde el data-attribute
         let asignacionId = $(this).find(':selected').data('asignacion'); 
         
         let btnSabana = $('#btn-sabana-notas');
@@ -113,15 +129,23 @@ function registrarEventosDashboard() {
             didOpen: () => { Swal.showLoading(); }
         });
 
-        // 4. Inyección del nuevo Dashboard (Tarjetas + Tabla)
-        $('#dashboard-dinamico-aula').load(urlAjax + ' #dashboard-dinamico-aula > *', function(response, status, xhr) {
-            if (status == "error") {
-                Swal.fire('Error', 'Hubo un problema al cargar los datos del curso.', 'error');
-            } else {
-                Swal.close();
-                // Actualizamos la URL del navegador en silencio por si recarga la página
-                window.history.replaceState(null, null, urlAjax);
-            }
+        // 4. Inyección Múltiple (Tarjetas + Tabla) usando $.get
+        $.get(urlAjax, function(data) {
+            // Extraemos y reemplazamos solo el contenido de las tarjetas
+            let nuevoDashboard = $(data).find('#dashboard-dinamico-aula').html();
+            $('#dashboard-dinamico-aula').html(nuevoDashboard);
+
+            // Extraemos y reemplazamos solo el contenido de la tabla
+            let nuevaTabla = $(data).find('#tablaPredictiva').html();
+            $('#tablaPredictiva').html(nuevaTabla);
+
+            Swal.close();
+            
+            // Actualizamos la URL del navegador en silencio
+            window.history.replaceState(null, null, urlAjax);
+            
+        }).fail(function() {
+            Swal.fire('Error', 'Hubo un problema al cargar los datos del curso.', 'error');
         });
     });
 
@@ -225,7 +249,7 @@ function formatearTextoIA(texto) {
 // FUNCIONES DE MACHINE LEARNING (K-Means)
 // =========================================================================
 
-function ejecutarClusteringKMeans(aulaId, periodoId) {
+function ejecutarClusteringKMeans(aulaId, periodoId, cursoId) { // 💥 Agregamos cursoId aquí
     if (!aulaId || !periodoId) {
         Swal.fire('Error', 'Faltan datos de contexto (Aula o Periodo).', 'error');
         return;
@@ -240,20 +264,19 @@ function ejecutarClusteringKMeans(aulaId, periodoId) {
         }
     });
 
-    // 💥 MANTENEMOS TU URL ORIGINAL EXACTA
     $.ajax({
         url: '/academico/api/clustering-ia/', 
         type: 'POST',
         data: JSON.stringify({
             'aula_id': aulaId,
-            'periodo_id': periodoId
+            'periodo_id': periodoId,
+            'curso_id': cursoId // 💥 AQUÍ ENVIAMOS EL CURSO AL BACKEND
         }),
         contentType: 'application/json',
         success: function (response) {
             if (response.status === 'success') {
                 Swal.close(); 
                 renderizarPerfiles(response.clusters);
-                // 💥 MANTENEMOS TU ID ORIGINAL DEL MODAL
                 $('#modalClusteringIA').modal('show');
             } else {
                 Swal.fire('Atención', response.mensaje, 'warning');
@@ -269,44 +292,80 @@ function renderizarPerfiles(clusters) {
     let contenedor = $('#contenedor-perfiles-ia');
     contenedor.empty(); 
 
+    // 1. Lógica de distribución inteligente de columnas
+    let totalGrupos = clusters.length;
+    let claseColumna = "col-12 col-md-6 col-lg-4"; // Por defecto para 3 o más grupos
+
+    if (totalGrupos === 1) {
+        claseColumna = "col-12"; // Ocupa todo el ancho
+    } else if (totalGrupos === 2) {
+        claseColumna = "col-12 col-lg-6"; // Mitad y mitad
+    }
+
     clusters.forEach(function (cluster) {
         let colorCard = "dark";
-        let icono = "groups";
+        let icono = "hub"; 
         
-        if (cluster.perfil.includes("Óptimo") || cluster.perfil.includes("Alto") || cluster.perfil.includes("Excelente")) {
-            colorCard = "success"; icono = "star";
-        } else if (cluster.perfil.includes("Riesgo") || cluster.perfil.includes("Bajo")) {
-            colorCard = "danger"; icono = "warning";
-        } else if (cluster.perfil.includes("Esfuerzo") || cluster.perfil.includes("Talento") || cluster.perfil.includes("Regular")) {
-            colorCard = "warning"; icono = "trending_flat";
+        // Asignación de colores e íconos con estética de IA
+        if (cluster.perfil.includes("Alto Rendimiento")) {
+            colorCard = "primary"; // Azul/Morado para los de excelencia
+            icono = "emoji_events"; // Ícono de trofeo
+        } else if (cluster.perfil.includes("Óptimo")) {
+            colorCard = "success"; // Verde para el grupo bueno/estable
+            icono = "auto_awesome"; // Estrellas IA
+        } else if (cluster.perfil.includes("Riesgo") || cluster.perfil.includes("Integral")) {
+            colorCard = "danger"; // Rojo para casos críticos
+            icono = "warning";
+        } else if (cluster.perfil.includes("Esfuerzo") || cluster.perfil.includes("Talento")) {
+            colorCard = "warning"; // Amarillo para alertas de seguimiento
+            icono = "insights"; 
+        } else {
+            colorCard = "info"; // Celeste para los estables regulares
+            icono = "psychology"; 
         }
 
-        let listaAlumnosHTML = '<ul class="list-group list-group-flush border-radius-lg">';
+        let listaAlumnosHTML = '<ul class="list-group list-group-flush bg-transparent border-radius-lg">';
         cluster.alumnos.forEach(function(alumno) {
             listaAlumnosHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-2 px-3">
-                    <span class="font-weight-bold text-dark text-truncate" style="max-width: 60%;">${alumno.nombre}</span>
-                    <div class="text-end">
-                        <span class="badge bg-light text-dark border me-1" title="Promedio Académico">A: ${alumno.promedio_academico.toFixed(1)}</span>
-                        <span class="badge bg-light text-dark border" title="Promedio Conductual">C: ${alumno.promedio_actitudinal.toFixed(1)}</span>
+                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-3 px-3 bg-transparent border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="icon icon-shape icon-sm shadow border-radius-sm bg-gradient-${colorCard} text-center me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            <i class="material-symbols-rounded text-white" style="font-size: 16px;">person</i>
+                        </div>
+                        <span class="font-weight-bold text-dark text-truncate" style="max-width: 150px;">${alumno.nombre}</span>
+                    </div>
+                    <div class="text-end d-flex gap-2">
+                        <span class="badge bg-white text-dark border border-${colorCard} border-radius-md px-2 py-1 shadow-sm" title="Promedio Académico (A)">
+                            <i class="material-symbols-rounded text-xxs align-middle me-1">menu_book</i>A: ${alumno.promedio_academico}
+                        </span>
+                        <span class="badge bg-white text-dark border border-${colorCard} border-radius-md px-2 py-1 shadow-sm" title="Promedio Conductual (C)">
+                            <i class="material-symbols-rounded text-xxs align-middle me-1">psychology</i>C: ${alumno.promedio_actitudinal}
+                        </span>
                     </div>
                 </li>`;
         });
         listaAlumnosHTML += '</ul>';
 
+        // 2. Construcción de la tarjeta con estilo limpio y decoraciones
         let cardHTML = `
-            <div class="col-12 col-md-6 col-xl-4 mb-4">
-                <div class="card h-100 border border-${colorCard} border-2 shadow-sm">
-                    <div class="card-header pb-0 p-3 bg-gradient-${colorCard}">
-                        <h6 class="mb-0 text-white d-flex align-items-center text-sm">
-                            <i class="material-symbols-rounded me-2">${icono}</i>
-                            ${cluster.perfil}
+            <div class="${claseColumna} mb-4">
+                <div class="card h-100 shadow-lg border-0 overflow-hidden" style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+                    <div class="card-header pb-3 p-4 bg-gradient-${colorCard} position-relative">
+                        <!-- Decoración de fondo semitransparente -->
+                        <div class="position-absolute top-0 end-0 opacity-2 pt-2 pe-3">
+                            <i class="material-symbols-rounded" style="font-size: 4rem;">${icono}</i>
+                        </div>
+                        
+                        <h6 class="mb-0 text-white d-flex align-items-center text-md font-weight-bolder position-relative z-index-1">
+                            <i class="material-symbols-rounded me-2 bg-white text-${colorCard} p-1 border-radius-md shadow-sm" style="font-size: 18px;">${icono}</i>
+                            ${cluster.perfil.split('(')[0].trim()} <!-- Corta el nombre principal para más limpieza -->
                         </h6>
-                        <p class="text-xs text-white opacity-8 mb-0 mt-1">
-                            ${cluster.cantidad} estudiante(s) en este perfil
+                        <p class="text-xs text-white opacity-9 mb-0 mt-2 position-relative z-index-1 fw-bold">
+                            <i class="material-symbols-rounded text-xs align-middle me-1">group</i> 
+                            ${cluster.cantidad} estudiante(s) perfilados
                         </p>
                     </div>
-                    <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+                    <div class="card-body p-2" style="max-height: 350px; overflow-y: auto;">
                         ${cluster.cantidad > 0 ? listaAlumnosHTML : '<p class="text-xs text-center text-secondary my-4">No hay alumnos con este perfil.</p>'}
                     </div>
                 </div>
