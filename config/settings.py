@@ -58,19 +58,21 @@ ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_torreblanca', # Ej: bd_torreblanca
-        'USER': 'root', # Por lo general en XAMPP es root
-        'PASSWORD': '', # Por lo general en XAMPP está en blanco
-        'HOST': 'localhost',
-        'PORT': '3306',
+     'default': {
+         'ENGINE': 'django.db.backends.mysql',
+         'NAME': 'db_torreblanca', # Ej: bd_torreblanca
+         'USER': 'root', # Por lo general en XAMPP es root
+         'PASSWORD': '', # Por lo general en XAMPP está en blanco
+         'HOST': 'localhost',
+         'PORT': '3306',
         
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
-    }
+         'OPTIONS': {
+             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+         }
+     }
 }
+
+
 
 # 💥 NUEVO: Intercepta la base de datos si estamos en Railway
 DATABASE_URL = os.environ.get('DATABASE_URL')
