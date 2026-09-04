@@ -17,7 +17,7 @@ def analizar_rendimiento_estudiante(matricula_id, promedio_oficial, curso_id=Non
     if promedio_oficial is None or promedio_oficial == 0:
         return {
             'promedio': "-", 'promedio_proyectado': "-", 'tendencia_numerica': 0, 
-            'estado_ia': 'Sin Datos', 'color': 'secondary', 'icono': 'horizontal_rule', 'alerta_critica': False
+            'estado_ia': 'Sin Datos', 'color': 'secondary', 'icono': 'horizontal_rule', 'alerta_critica': False, 'cantidad_notas': 0
         }
 
     # Extraemos el historial para ver la curva de rendimiento

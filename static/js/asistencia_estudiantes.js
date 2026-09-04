@@ -73,7 +73,7 @@ $(document).ready(function () {
         info: true,
         autoWidth: false,
         responsive: true,
-        dom: '<"d-flex justify-content-between align-items-center px-4 pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
+        dom: '<"d-flex justify-content-between align-items-center py-4 pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
         initComplete: function () {
             $('.dataTables_filter input')
                 .addClass('form-control border-bottom border-2 px-3 py-1')
@@ -94,15 +94,6 @@ $(document).ready(function () {
     });
 
     $('[data-bs-toggle="tooltip"]').tooltip();
-
-/*     // 1. Llamamos a tu función global para que le dé el idioma y el diseño
-    inicializarTablaGlobal('#tabla-matriz-estudiantes', 'Buscar estudiante...');
-
-    // 2. 💥 TRUCO MÁGICO: Le decimos a la tabla que cambie a 50 registros y se redibuje sola
-    $('#tabla-matriz-estudiantes').DataTable().page.len(50).draw();
-
-    // 3. Inicializamos los tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip(); */
 });
 
 // 1. DESBLOQUEAR LA TABLA (Modo Edición)

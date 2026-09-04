@@ -1,3 +1,5 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.contrib import messages
 from django import forms
 
@@ -610,25 +612,35 @@ def matriz_notas(request, asignacion_id):
 
 @login_required
 def reporte_agenda_semanal(request, aula_id):
-    """ Genera los tickets de agendas filtrando por TEMA """
     aula = get_object_or_404(Aula, id=aula_id)
-    asignaciones = AsignacionAcademica.objects.filter(aula=aula)
+    
+    # 💥 1. OBTENEMOS EL CONTEXTO DE TIEMPO EXACTO
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
 
+    # 💥 2. FILTRAMOS ESTRICTAMENTE POR EL PERIODO ACTUAL
+    asignaciones = AsignacionAcademica.objects.filter(aula=aula, periodo=periodo_actual)
+    matriculas = Matricula.objects.filter(aula=aula, periodo=periodo_actual, estudiante__estado='Activo').select_related('estudiante').order_by('estudiante__apellidos')
+
+    # 💥 3. FILTRAMOS LOS TEMAS POR EL BIMESTRE ACTUAL
     temas_disponibles = Evaluacion.objects.filter(
-        asignacion__in=asignaciones, tipo='DESAFIO'
+        asignacion__in=asignaciones, 
+        tipo='DESAFIO',
+        bimestre=bimestre_activo
     ).values_list('nombre', flat=True).distinct().order_by('nombre')
 
     tema_seleccionado = request.GET.get('tema', '')
     if not tema_seleccionado and temas_disponibles:
         tema_seleccionado = temas_disponibles[0]
 
+    # Evaluaciones exactas
     evaluaciones = Evaluacion.objects.filter(
         asignacion__in=asignaciones,
         tipo='DESAFIO',
-        nombre=tema_seleccionado
+        nombre=tema_seleccionado,
+        bimestre=bimestre_activo
     )
 
-    matriculas = Matricula.objects.filter(aula=aula, estudiante__estado='Activo').select_related('estudiante').order_by('estudiante__apellidos')
     notas_db = Nota.objects.filter(evaluacion__in=evaluaciones).select_related('matricula', 'evaluacion__asignacion__curso')
     
     notas_dict = {}
@@ -645,20 +657,23 @@ def reporte_agenda_semanal(request, aula_id):
     for mat in matriculas:
         cursos_alumno = []
         notas_alumno = notas_dict.get(mat.id, {})
-        todas_las_notas = [] # 💥 Para guardar todas las notas y sacar el promedio global
+        todas_las_notas = [] 
         
         for asig in asignaciones:
             notas_curso = notas_alumno.get(asig.curso.id, [])
             if notas_curso: 
-                todas_las_notas.extend(notas_curso)
+                promedio_curso_raw = sum(notas_curso) / len(notas_curso)
+                nota_final = int(Decimal(str(promedio_curso_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+                
+                todas_las_notas.append(nota_final)
                 cursos_alumno.append({
                     'nombre': asig.curso.nombre,
-                    'notas': notas_curso,
+                    'nota': nota_final, 
                 })
 
         if cursos_alumno:
-            # 💥 Calculamos el promedio global del tema
-            promedio_global = round(sum(todas_las_notas) / len(todas_las_notas), 2) if todas_las_notas else 0
+            promedio_global_raw = sum(todas_las_notas) / len(todas_las_notas)
+            promedio_global = int(Decimal(str(promedio_global_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
             
             datos_reporte.append({
                 'estudiante': f"{mat.estudiante.apellidos}, {mat.estudiante.nombres}",
@@ -673,7 +688,8 @@ def reporte_agenda_semanal(request, aula_id):
         'aula': aula,
         'temas_disponibles': temas_disponibles,
         'tema_seleccionado': tema_seleccionado,
-        'datos_reporte': datos_reporte
+        'datos_reporte': datos_reporte,
+        'bimestre_actual': bimestre_activo # 💥 Lo enviamos al HTML
     })
 
 def exportar_agenda_excel(aula, tema, datos_reporte):
@@ -699,7 +715,7 @@ def exportar_agenda_excel(aula, tema, datos_reporte):
         fila_actual += 1
 
         ws.merge_cells(start_row=fila_actual, start_column=2, end_row=fila_actual, end_column=3)
-        ws.cell(row=fila_actual, column=2, value=f"TEMA: {tema} | PROM. GLOBAL: {alumno['promedio_global']}").font = font_bold
+        ws.cell(row=fila_actual, column=2, value=f"TEMA: {tema} | PROM. TOTAL: {alumno['promedio_global']}").font = font_bold
         ws.cell(row=fila_actual, column=2).alignment = align_center
         fila_actual += 2
 
@@ -719,10 +735,11 @@ def exportar_agenda_excel(aula, tema, datos_reporte):
             c.alignment = align_center
 
         fila_actual += 1
+        
+        # 💥 SOLUCIÓN EXCEL: Ya no hay arrays que unir, es un valor directo
         for curso in alumno['cursos']:
-            notas_str = " - ".join([str(int(n)) if n.is_integer() else str(n) for n in curso['notas']])
             c1 = ws.cell(row=fila_actual, column=2, value=curso['nombre'])
-            c2 = ws.cell(row=fila_actual, column=3, value=notas_str)
+            c2 = ws.cell(row=fila_actual, column=3, value=curso['nota'])
 
             for c in (c1, c2): c.border = borde
             c1.alignment = align_left

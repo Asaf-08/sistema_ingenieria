@@ -70,7 +70,7 @@ function inicializarTablaGlobal(idTabla, textoBuscador = "Buscar...") {
         info: true,
         autoWidth: false,
         responsive: true,
-        dom: '<"d-flex justify-content-between align-items-center px-4 pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
+        dom: '<"d-flex justify-content-between align-items-center pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
         initComplete: function () {
             $('.dataTables_filter input')
                 .addClass('form-control border-bottom border-2 px-3 py-1')

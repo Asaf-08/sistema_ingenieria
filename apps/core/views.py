@@ -123,7 +123,7 @@ def dashboard_principal(request):
             'aula__grado',     # 3. Ordena por grado (1, 2, 3...)
             'aula__seccion'    # 4. Ordena alfabéticamente por sección (A, B, C...)
         )
-        aula_tutoria = Aula.objects.filter(tutor=user_personal).first()
+        aulas_tutoria = Aula.objects.filter(tutor=user_personal)
 
         # 2. 💥 NUEVO: Desglose de Alumnos por Nivel (Solo los niveles que dicta)
         niveles_dicta = mis_cursos.order_by().values_list('aula__nivel', flat=True).distinct()
@@ -174,7 +174,7 @@ def dashboard_principal(request):
         context.update({
             'rol': 'DOCENTE',
             'mis_cursos_lista': mis_cursos, # 💥 Enviamos los cursos para la nueva tarjeta
-            'aula_tutoria': aula_tutoria,
+            'aulas_tutoria': aulas_tutoria,
             'mis_alumnos_count': mis_alumnos_count,
             'breakdown_alumnos': breakdown_alumnos, # 💥 Enviamos el desglose
             'ultimo_material': ultimo_material,

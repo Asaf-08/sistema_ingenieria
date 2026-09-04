@@ -8,7 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
-from apps.academico.models import Aula, Estudiante
+from apps.academico.models import Aula, Estudiante, PeriodoLectivo
 from apps.personal.models import Personal
 from apps.asistencia.models import AsistenciaPersonal, AsistenciaEstudiante
 from apps.personal.views import obtener_personal_logueado
@@ -79,6 +79,8 @@ def reporte_asistencia_estudiantes(request):
     
     # 💥 MAGIA RBAC: Definimos quién tiene acceso a los filtros globales
     es_admin = personal_actual.cargo in ['DIR', 'COO', 'SEC', 'ASI']
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
 
     # 1. Filtramos por una fecha específica (por defecto HOY)
     fecha_query = request.GET.get('fecha')
@@ -131,6 +133,19 @@ def reporte_asistencia_estudiantes(request):
     
     dict_asistencias = {a.estudiante_id: a for a in asistencias_db}
 
+    # 💥 HISTORIAL ESTRICTO: Adaptado a los campos reales de tu modelo
+    historial_db = AsistenciaEstudiante.objects.filter(
+        estudiante__in=estudiantes,
+        bimestre=bimestre_activo  # Usamos tu campo exacto
+    ).values('estudiante_id', 'estado')
+    
+    stats_globales = {e.id: {'P': 0, 'T': 0, 'F': 0, 'J': 0} for e in estudiantes}
+    
+    for registro in historial_db:
+        estado = registro['estado']
+        if estado in stats_globales[registro['estudiante_id']]:
+            stats_globales[registro['estudiante_id']][estado] += 1
+
     # 6. Armamos la Matriz Maestra
     lista_completa = []
     for e in estudiantes:
@@ -138,6 +153,7 @@ def reporte_asistencia_estudiantes(request):
         lista_completa.append({
             'estudiante': e,
             'asistencia': asis,
+            'stats': stats_globales[e.id], # 💥 Inyectamos las estadísticas al HTML
         })
 
     return render(request, 'asistencia/reporte_estudiantes.html', {
@@ -148,6 +164,7 @@ def reporte_asistencia_estudiantes(request):
         'es_admin': es_admin, # 💥 Pasamos el permiso al HTML
         'aula_obj': aula_obj,  # 💥 Enviamos el objeto del aula
         'origen': origen,      # 💥 Enviamos la bandera de origen
+        'bimestre_actual': bimestre_activo,
     })
 
 # 💥 NUEVA API: GUARDA LA ASISTENCIA MASIVA EN 1 SEGUNDO

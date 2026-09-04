@@ -1,4 +1,6 @@
 import datetime
+from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP
 import json
 import requests
 import threading
@@ -1782,10 +1784,7 @@ def eliminar_material_ajax(request):
     return JsonResponse({'success': True, 'mensaje': 'Material eliminado permanentemente.'})
 
 def obtener_textos_actitudinales(notas_dict):
-    """ Función Helper que devuelve el texto exacto según el rango de la nota """
     textos_finales = {}
-    
-    # Textos predefinidos (Rúbrica)
     rubrica = {
         'Puntualidad': {
             'excelente': 'Se presenta a diario y puntualmente a cada clase cumpliendo el horario establecido.',
@@ -1821,18 +1820,24 @@ def obtener_textos_actitudinales(notas_dict):
             'adecuado': 'Entrega sus tareas, pero en ocasiones presenta retrasos o trabajos incompletos.',
             'regular': 'Suele olvidar sus materiales, cuadernos o la entrega de trabajos asignados.',
             'proceso': 'No cumple con las actividades académicas asignadas, afectando su aprendizaje.'
+        },
+        # 💥 NUEVO CRITERIO: APOYO PPFF
+        'Apoyo_PPFF': {
+            'excelente': 'El PPFF brinda las herramientas necesarias para el progreso personal, favoreciendo el desarrollo académico.',
+            'bueno': 'El PPFF brinda un apoyo constante, facilitando el desarrollo académico del estudiante desde casa.',
+            'adecuado': 'El PPFF acompaña de forma intermitente, cumpliendo con los requerimientos básicos solicitados.',
+            'regular': 'El PPFF muestra escasa participación en las actividades académicas, requiriendo mayor compromiso.',
+            'proceso': 'El PPFF carece de involucramiento en el proceso educativo, lo cual limita el progreso del estudiante.'
         }
     }
 
-    # Lógica para elegir el rango
     for criterio, nota in notas_dict.items():
-        if nota >= 19: nivel = 'excelente'     # 91-100%
-        elif nota >= 17: nivel = 'bueno'       # 81-90%
-        elif nota >= 14: nivel = 'adecuado'    # 66-80%
-        elif nota >= 11: nivel = 'regular'     # 51-65%
-        else: nivel = 'proceso'                # 0-50%
+        if nota >= 19: nivel = 'excelente'
+        elif nota >= 17: nivel = 'bueno'
+        elif nota >= 14: nivel = 'adecuado'
+        elif nota >= 11: nivel = 'regular'
+        else: nivel = 'proceso'
         
-        # En caso de que el tutor no haya puesto notas (0), dejamos el mensaje genérico
         if nota == 0:
             textos_finales[criterio] = "Aún no se han registrado evaluaciones para este criterio en el presente bimestre."
         else:
@@ -1840,61 +1845,126 @@ def obtener_textos_actitudinales(notas_dict):
 
     return textos_finales
 
+def obtener_recomendaciones_fallback(notas_dict):
+    """ 
+    Genera 4 recomendaciones automáticas e institucionales enfocadas 
+    100% en el estudiante, ignorando la métrica de los padres.
+    """
+    recomendaciones = []
+    
+    # Filtramos estrictamente las 5 notas del alumno (ignoramos PPFF)
+    criterios_alumno = ['Puntualidad', 'Presentacion', 'Participacion', 'Disciplina', 'Responsabilidad']
+    notas_estudiante = {k: notas_dict.get(k, 0) for k in criterios_alumno}
+    
+    promedio = sum(notas_estudiante.values()) / len(notas_estudiante)
+    criterio_critico = min(notas_estudiante, key=notas_estudiante.get)
+    
+    # 1. Apertura (Reconocimiento global)
+    if promedio >= 15:
+        recomendaciones.append("Felicitaciones por tus logros académicos en este bimestre; tu esfuerzo constante se refleja claramente en tu progreso continuo.")
+    else:
+        recomendaciones.append("Reconocemos tu esfuerzo en este periodo; continúa trabajando con perseverancia, pues cada avance te acerca más a tus metas.")
+        
+    # 2. Recomendación específica (Abordando el punto más bajo)
+    if notas_estudiante[criterio_critico] < 14:
+        alertas = {
+            'Puntualidad': "Te sugerimos organizar mejor tus tiempos diarios para asegurar tu puntualidad y aprovechar al máximo el inicio de tus clases.",
+            'Presentacion': "Recuerda que portar correctamente el uniforme y cuidar tu presentación personal refleja tu identidad con la institución.",
+            'Participacion': "Te animamos a participar más activamente en las sesiones; tus ideas son valiosas y enriquecen el aprendizaje de todos.",
+            'Disciplina': "Es fundamental que mantengas el respeto por las normas de convivencia y las indicaciones de tus docentes en todo momento.",
+            'Responsabilidad': "Te recomendamos organizar mejor tus actividades diarias para cumplir puntualmente con la entrega de todos tus deberes."
+        }
+        recomendaciones.append(alertas[criterio_critico])
+    else:
+        recomendaciones.append("Continúa demostrando ese excelente nivel de compromiso; tu dedicación constante es un gran ejemplo para el aula.")
+        
+    # 3. Refuerzo de valores institucionales
+    recomendaciones.append("Mantén tu compromiso con las normas y valores de la institución, ya que esto fortalece tu formación y demuestra responsabilidad.")
+    
+    # 4. Cierre motivacional
+    recomendaciones.append("Sigue esforzándote con la misma dedicación y constancia; tu disciplina será clave para alcanzar grandes logros.")
+    
+    return recomendaciones
+
 def reporte_progresivo_pdf(request, matricula_id):
-    """ Genera el Informe Técnico Pedagógico Progresivo con Datos Reales """
-    
-    # 1. Obtenemos la matrícula exacta
     matricula = get_object_or_404(Matricula, id=matricula_id)
-    estudiante = matricula.estudiante
-    aula = matricula.aula
-    
-    # 2. 💥 LÓGICA DINÁMICA: Obtenemos el bimestre del periodo activo
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    # Si no hay periodo activo por alguna razón, usamos 'I' por seguridad
     bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
     
-    # 3. DATOS REALES: Buscamos las notas actitudinales del alumno
     try:
+        evaluacion = EvaluacionActitudinal.objects.get(matricula=matricula, bimestre=bimestre_activo)
+        # 💥 CALCULO AUTOMÁTICO DE PPFF
+        promedio_raw = (evaluacion.puntualidad + evaluacion.presentacion + evaluacion.cuidado_patrimonio + evaluacion.orden_limpieza + evaluacion.respeto_normas) / 5
+        apoyo_ppff = int(Decimal(str(promedio_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
         
-        evaluacion = EvaluacionActitudinal.objects.get(
-            matricula=matricula, 
-            bimestre=bimestre_activo
-        )
         notas_actitudinales = {
-            'Puntualidad': evaluacion.puntualidad,
-            'Presentacion': evaluacion.presentacion,   # Sin tilde
-            'Participacion': evaluacion.cuidado_patrimonio, # Sin tilde
-            'Disciplina': evaluacion.orden_limpieza,
-            'Responsabilidad': evaluacion.respeto_normas
+            'Puntualidad': evaluacion.puntualidad, 'Presentacion': evaluacion.presentacion,
+            'Participacion': evaluacion.cuidado_patrimonio, 'Disciplina': evaluacion.orden_limpieza,
+            'Responsabilidad': evaluacion.respeto_normas, 'Apoyo_PPFF': apoyo_ppff
         }
         
-        # Leemos si la IA ya hizo el trabajo antes
-        recomendaciones_guardadas = []
+        # Cargamos IA o usamos el Fallback
         if evaluacion.recomendacion_ia:
             recomendaciones_guardadas = json.loads(evaluacion.recomendacion_ia)
+        else:
+            recomendaciones_guardadas = obtener_recomendaciones_fallback(notas_actitudinales)
             
     except EvaluacionActitudinal.DoesNotExist:
-        # Si el tutor aún no registra notas, enviamos todo en 0
         evaluacion = None
-        notas_actitudinales = {
-            'Puntualidad': 0, 'Presentación': 0, 'Participación': 0, 'Disciplina': 0, 'Responsabilidad': 0
-        }
-        recomendaciones_guardadas = []
+        notas_actitudinales = {k: 0 for k in ['Puntualidad', 'Presentacion', 'Participacion', 'Disciplina', 'Responsabilidad', 'Apoyo_PPFF']}
+        recomendaciones_guardadas = ["Aún no se han registrado notas actitudinales para este bimestre."]
 
     textos_tabla = obtener_textos_actitudinales(notas_actitudinales)
 
-    context = {
-        'matricula': matricula,
-        'estudiante': estudiante,
-        'aula': aula,
-        'notas_actitudinales': notas_actitudinales,
-        'textos_tabla': textos_tabla,
-        'evaluacion_id': evaluacion.id if evaluacion else None, # ID para que el JS sepa a quién llamar
-        'recomendaciones_ia': recomendaciones_guardadas, # Puede estar vacío
-        'bimestre_actual': bimestre_activo,
-    }
+    return render(request, 'academico/reporte_progresivo.html', {
+        'matricula': matricula, 'estudiante': matricula.estudiante, 'aula': matricula.aula,
+        'notas_actitudinales': notas_actitudinales, 'textos_tabla': textos_tabla,
+        'evaluacion_id': evaluacion.id if evaluacion else None,
+        'recomendaciones_ia': recomendaciones_guardadas, 'bimestre_actual': bimestre_activo,
+    })
     
-    return render(request, 'academico/reporte_progresivo.html', context)
+def reporte_progresivo_aula(request, aula_id):
+    aula = get_object_or_404(Aula, id=aula_id)
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
+    
+    matriculas = Matricula.objects.filter(aula=aula, periodo=periodo_actual, estudiante__estado='Activo').order_by('estudiante__apellidos')
+    
+    informes = []
+    for matricula in matriculas:
+        try:
+            evaluacion = EvaluacionActitudinal.objects.get(matricula=matricula, bimestre=bimestre_activo)
+            # 💥 CALCULO AUTOMÁTICO DE PPFF
+            promedio_raw = (evaluacion.puntualidad + evaluacion.presentacion + evaluacion.cuidado_patrimonio + evaluacion.orden_limpieza + evaluacion.respeto_normas) / 5
+            apoyo_ppff = int(Decimal(str(promedio_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            
+            notas_actitudinales = {
+                'Puntualidad': evaluacion.puntualidad, 'Presentacion': evaluacion.presentacion,
+                'Participacion': evaluacion.cuidado_patrimonio, 'Disciplina': evaluacion.orden_limpieza,
+                'Responsabilidad': evaluacion.respeto_normas, 'Apoyo_PPFF': apoyo_ppff
+            }
+            
+            # Cargamos IA o usamos el Fallback para el lote
+            if evaluacion.recomendacion_ia:
+                recoms = json.loads(evaluacion.recomendacion_ia)
+            else:
+                recoms = obtener_recomendaciones_fallback(notas_actitudinales)
+                
+        except EvaluacionActitudinal.DoesNotExist:
+            notas_actitudinales = {k: 0 for k in ['Puntualidad', 'Presentacion', 'Participacion', 'Disciplina', 'Responsabilidad', 'Apoyo_PPFF']}
+            recoms = ["Aún no se han registrado notas actitudinales para este bimestre."]
+            
+        informes.append({
+            'estudiante': matricula.estudiante,
+            'notas': notas_actitudinales,
+            'textos': obtener_textos_actitudinales(notas_actitudinales),
+            'recomendaciones': recoms,
+            'matricula_id': matricula.id
+        })
+        
+    return render(request, 'academico/reporte_progresivo_aula.html', {
+        'aula': aula, 'informes': informes, 'bimestre_actual': bimestre_activo
+    })
 
 # 2. LA VISTA ASÍNCRONA (AJAX)
 @csrf_exempt # Evita errores de seguridad al llamar por AJAX

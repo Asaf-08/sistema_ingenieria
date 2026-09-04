@@ -77,6 +77,7 @@ urlpatterns = [
     # ==========================================
     path('tutor/mi-aula/', views.mi_aula, name='mi_aula'),
     path('matriculas/reporte-progresivo/<int:matricula_id>/', views.reporte_progresivo_pdf, name='reporte_progresivo'),
+    path('aula/reporte-progresivo/<int:aula_id>/', views.reporte_progresivo_aula, name='reporte_progresivo_aula'),
     
     path('api/diagnostico-ia/', views.generar_diagnostico_ajax, name='api_diagnostico_ia'),
     path('api/clustering-ia/', views.generar_clustering_ia_api, name='api_clustering_ia'),

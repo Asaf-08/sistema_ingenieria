@@ -18,7 +18,8 @@ $(document).ready(function() {
         parseFloat($canvas.attr('data-presentacion')) || 0,
         parseFloat($canvas.attr('data-participacion')) || 0,
         parseFloat($canvas.attr('data-disciplina')) || 0,
-        parseFloat($canvas.attr('data-responsabilidad')) || 0
+        parseFloat($canvas.attr('data-responsabilidad')) || 0,
+        parseFloat($canvas.attr('data-apoyo-ppff')) || 0
     ];
     
     // ========================================================= 
@@ -40,7 +41,7 @@ $(document).ready(function() {
     const actitudinalChart = new Chart(ctx, {
         type: 'bar', 
         data: {
-            labels: ['Puntualidad', 'Presentación', 'Participación', 'Disciplina', 'Responsabilidad'],
+            labels: ['Puntualidad', 'Presentación', 'Participación', 'Disciplina', 'Responsabilidad', 'Apoyo PPFF'],
             datasets: [{
                 label: 'Porcentaje de Logro (%)',
                 data: porcentajes,
@@ -51,6 +52,7 @@ $(document).ready(function() {
             }]
         },
         options: {
+            devicePixelRatio: 4,
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: 1000 }, 
@@ -84,7 +86,7 @@ $(document).ready(function() {
             margin:       0,
             filename:     `Informe_Progresivo_${Date.now()}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 }, 
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            html2canvas:  { scale: 4, letterRendering: true, useCORS: true, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 

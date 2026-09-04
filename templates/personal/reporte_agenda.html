@@ -3,14 +3,18 @@
 
 {% block content %}
 <style>
+  /* =========================================
+     ESTILOS OPTIMIZADOS PARA ENCAJAR 20 CURSOS
+     ========================================= */
   .ticket-agenda {
       background: #fff;
       border: 2px dashed #b0bec5;
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 30px;
-      margin-top: 15px; /* Empuja el ticket un poco hacia abajo para dar espacio a la tijera */
+      padding: 15px; /* Reducido para ganar espacio */
+      margin-bottom: 10px;
+      margin-top: 15px; 
       position: relative;
+      height: calc(100% - 30px);
   }
   .ticket-agenda::before {
       content: "✂️ Línea de corte";
@@ -20,64 +24,132 @@
       background: #f8f9fa;
       padding: 0 10px;
       color: #6c757d;
-      font-size: 12px;
+      font-size: 11px;
   }
+  
+  /* Compresión máxima de la tabla para listas largas */
   .table-ticket th, .table-ticket td {
-      padding: 4px 8px !important;
-      font-size: 13px !important;
+      padding: 2px 8px !important; /* Padding mínimo vertical */
+      font-size: 11px !important; /* Letra de agenda (muy nítida) */
       border-color: #e9ecef;
+      line-height: 1.1 !important;
   }
+  
   .firma-box {
       border-top: 1px solid #000;
-      width: 200px;
-      margin: 30px auto 0 auto;
-      padding-top: 5px;
+      width: 160px;
+      margin: 10px auto 0 auto;
+      padding-top: 2px;
   }
 
+  /* =========================================
+     MAGIA DE IMPRESIÓN (VERTICAL, 2 POR HOJA)
+     ========================================= */
   @media print {
-      body { background: #fff; }
-      .sidenav, .navbar, .no-print, footer, .fixed-plugin { display: none !important; }
-      .main-content { margin-left: 0 !important; padding: 0 !important; }
-      .container-fluid { padding: 0 !important; }
-      
-      /* 💥 MAGIA DE IMPRESIÓN: Da un margen superior al papel físico */
       @page {
-          margin-top: 15mm; 
-          margin-bottom: 15mm;
+          size: landscape; /* Orientación Horizontal (A4 = 297mm ancho x 210mm alto) */
+          margin: 10mm; /* Márgenes físicos de la impresora */
       }
       
-      .ticket-agenda { 
-          border: 1px dashed #000; 
-          margin-bottom: 25px;
-          margin-top: 20px;
-          break-inside: avoid;
-          page-break-inside: avoid;
+      /* 1. CURA PARA EL RECORTE DE PÁGINAS (Fuerza a mostrar todas las hojas) */
+      html, body { 
+          background: #fff !important; 
+          height: auto !important; 
+          overflow: visible !important; 
       }
-      .ticket-agenda::before { background: #fff; content: "✂️"; }
+      
+      /* 2. OCULTAR ELEMENTOS INNECESARIOS (Incluyendo tu Bottom Nav) */
+      .sidenav, .navbar, .no-print, footer, .fixed-plugin, 
+      .fixed-bottom, .mobile-bottom-nav { 
+          display: none !important; 
+      }
+      
+      /* 3. DESACTIVAR FLEXBOX EN CONTENEDORES PADRE (Evita que Chrome corte la lista) */
+      .main-content, .container-fluid, #areaImpresion { 
+          display: block !important; 
+          margin: 0 !important; 
+          padding: 0 !important; 
+          height: auto !important;
+          overflow: visible !important;
+      }
+      
+      /* 💥 REDUCIMOS EL ESPACIO ENTRE LOS TICKETS (Padding de 4mm en lugar de 10mm) */
+      .col-print-6 {
+          width: 50% !important;
+          float: left !important;
+          display: block !important;
+          margin: 0 !important;
+          padding: 0 4mm !important; 
+      }
+
+      .ticket-agenda { 
+          /* 💥 MAGIA FLEXBOX: Permite empujar la firma hacia abajo */
+          display: flex !important;
+          flex-direction: column !important;
+          
+          border: 2px dashed #b0bec5 !important; 
+          border-radius: 12px !important;
+          
+          /* 💥 ALTO TOTAL: A4 horizontal mide 210mm de alto. 185mm ocupa toda la hoja dejando márgenes seguros */
+          height: 185mm !important; 
+          margin: 0 auto !important; 
+          padding: 5mm 8mm !important;
+          
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+      }
+
+      .ticket-agenda::before { 
+          background: #fff !important; 
+          content: none !important; 
+          font-size: 14px !important;
+          top: 50px !important;
+      }
+
+      /* 💥 LIMPIEZA DE FLOTANTES Y SALTO OBLIGATORIO */
+      .salto-pagina {
+          clear: both !important;
+          page-break-after: always !important;
+          break-after: page !important;
+          display: block !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+      }
   }
 </style>
 
 <div class="container-fluid py-4">
   
-  <div class="d-flex align-items-center mb-4 no-print">
-      <a href="{% url 'academico:mi_aula' %}" class="text-dark me-3 transition-hover" title="Volver atrás">
-          <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
-      </a>
-      <div>
-          <h4 class="font-weight-black text-dark mb-0">🎟️ Tickets de Agenda: {{ aula.grado }} "{{ aula.seccion }}"</h4>
-          <p class="text-sm text-secondary mb-0">Reporte de Desafíos por Tema Evaluado.</p>
+  <div class="d-flex align-items-center justify-content-between mb-4 no-print">
+      
+      <!-- Lado Izquierdo: Botón y Títulos -->
+      <div class="d-flex align-items-center">
+          <a href="{% url 'academico:mi_aula' %}" class="text-dark me-3 transition-hover" title="Volver atrás">
+              <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
+          </a>
+          <div>
+              <h4 class="font-weight-black text-dark mb-0">🎟️ Tickets de Agenda: {{ aula.grado }} "{{ aula.seccion }}"</h4>
+              <p class="text-sm text-secondary mb-0">Reporte de Desafíos por Tema Evaluado.</p>
+          </div>
       </div>
+
+      <!-- 💥 Lado Derecho: Indicador de Bimestre -->
+      <div class="bg-gradient-dark shadow-sm border-radius-md px-3 py-2 text-center">
+          <span class="text-white font-weight-black text-sm">BIMESTRE {{ bimestre_actual }}</span>
+      </div>
+
   </div>
   
   <div class="card shadow-sm mb-4 no-print border-radius-lg">
-    <div class="card-body p-4">
+    <div class="card-body px-4">
       <form method="GET" class="d-flex flex-column flex-md-row gap-3 align-items-md-end w-100">
           
           <div class="flex-grow-1">
               <label class="text-xs font-weight-bold text-secondary mb-1">Seleccionar Tema Evaluado:</label>
               <select name="tema" class="form-select border px-3 py-2 w-100" onchange="this.form.submit()">
                   {% if not temas_disponibles %}
-                      <option value="">No hay desafíos registrados aún</option>
+                      <option value="">No hay desafíos registrados aún en el Bimestre {{ bimestre_actual }}</option>
                   {% else %}
                       {% for t in temas_disponibles %}
                           <option value="{{ t }}" {% if t == tema_seleccionado %}selected{% endif %}>{{ t }}</option>
@@ -102,32 +174,41 @@
   <div class="row" id="areaImpresion">
     
     {% for alumno in datos_reporte %}
-    <div class="col-md-6">
+    <!-- La clase mb-4 solo afecta en web, en impresión se resetea -->
+    <div class="col-md-6 col-print-6 mb-4">
         <div class="ticket-agenda">
             
-            <div class="text-center mb-3">
-                <img loading="lazy" src="{% static 'assets/img/logo_colegio.webp' %}" alt="Logo Colegio" style="height: 45px; object-fit: contain; margin-bottom: 8px;">
-                <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 14px;">INGENIERÍA - Torre Blanca</h6>
-                <span class="text-xs font-weight-bold text-secondary text-uppercase d-block mt-1">REPORTE DE DESAFÍOS DIARIOS</span>
+            <div class="d-flex justify-content-between align-items-center mb-3">
                 
-                <div class="mt-2 p-1 border-radius-sm" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
-                    <span class="text-xs text-dark font-weight-bold d-block">{{ tema_seleccionado }}</span>
-                    <span class="text-sm font-weight-black {% if alumno.promedio_global >= 11 %}text-success{% else %}text-danger{% endif %}">
-                        PROMEDIO TOTAL: {{ alumno.promedio_global|floatformat:1 }}
-                    </span>
+                <div class="d-flex align-items-center text-start">
+                    <img loading="lazy" src="{% static 'assets/img/logo_colegio.webp' %}" alt="Logo Colegio" style="height: 45px; object-fit: contain; margin-right: 12px;">
+                    <div>
+                        <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 13px;">INGENIERÍA - Torre Blanca</h6>
+                        <span class="text-dark d-block" style="font-size: 10px; font-weight: 800;">REPORTE DE DESAFÍOS DIARIOS</span>
+                    </div>
                 </div>
+
+                <div class="text-end">
+                    <div class="p-2 border-radius-sm text-center" style="background-color: #f8f9fa; border: 1px solid #e9ecef; min-width: 140px;">
+                        <span class="text-dark font-weight-bold d-block" style="font-size: 11px;">{{ tema_seleccionado }} - BIM. {{ bimestre_actual }}</span>
+                        <span class="font-weight-black {% if alumno.promedio_global >= 11 %}text-success{% else %}text-danger{% endif %}" style="font-size: 13px;">
+                            PROMEDIO: {{ alumno.promedio_global }}
+                        </span>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="mb-2">
-                <p class="text-sm text-dark font-weight-bold mb-0">Estudiante: <span class="font-weight-normal">{{ alumno.estudiante }}</span></p>
-                <p class="text-sm text-dark font-weight-bold mb-0">Aula: <span class="font-weight-normal">{{ aula.grado }} "{{ aula.seccion }}"</span></p>
+            <div class="mb-3 d-flex justify-content-between px-2">
+                <p class="text-sm text-dark font-weight-bold mb-0" style="max-width: 60%; font-size: 12px !important">Estudiante: <span class="font-weight-normal">{{ alumno.estudiante }}</span></p>
+                <p class="text-sm text-dark font-weight-bold mb-0" style="font-size: 12px !important">Aula: <span class="font-weight-normal">{{ aula.grado }} "{{ aula.seccion }}"</span></p>
             </div>
 
-            <table class="table table-bordered table-sm table-ticket w-100 text-center mb-0">
+            <table class="table table-bordered table-ticket w-100 text-center mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="text-start text-dark font-weight-bold">CURSO</th>
-                        <th class="text-dark font-weight-bold">NOTA</th>
+                        <th class="text-start text-dark font-weight-bold py-2">CURSO</th>
+                        <th class="text-dark font-weight-bold py-2" style="width: 80px;">NOTA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,14 +216,14 @@
                     <tr>
                         <td class="text-start text-dark font-weight-bold">{{ curso.nombre }}</td>
                         <td class="text-secondary font-weight-bold">
-                            {% for nota in curso.notas %}{{ nota|floatformat:0 }}{% if not forloop.last %} - {% endif %}{% endfor %}
+                            {{ curso.nota }}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <div class="text-center pt-5">
+            <div class="text-center pt-3 mt-auto">
                 <div class="firma-box">
                     <p class="text-xs text-secondary font-weight-bold mb-0">Firma del Apoderado</p>
                 </div>
@@ -150,10 +231,16 @@
 
         </div>
     </div>
+
+    <!-- 💥 SALTO DE PÁGINA ESTRUCTURAL: Se genera cada 2 tickets y se oculta en web -->
+    {% if forloop.counter|divisibleby:2 and not forloop.last %}
+        <div class="salto-pagina d-none d-print-block"></div>
+    {% endif %}
+
     {% empty %}
     <div class="col-12 text-center py-5 no-print">
         <div class="alert alert-light" role="alert">
-            No se encontraron notas de desafíos para el tema "{{ tema_seleccionado }}".
+            No se encontraron notas de desafíos para el tema "{{ tema_seleccionado }}" en este bimestre.
         </div>
     </div>
     {% endfor %}

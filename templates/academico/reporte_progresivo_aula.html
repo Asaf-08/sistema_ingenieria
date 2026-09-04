@@ -1,0 +1,145 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Informes Progresivos - {{ aula.grado }} {{ aula.seccion }} {% endblock title %}
+
+{% block extra_css %}
+<style>
+    /* Diseño amigable para pantalla y exportación */
+    .a4-wrapper { background-color: #e9ecef; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
+    
+    .a4-container {
+        width: 210mm; height: 296.5mm; margin: 0 auto;
+        padding: 8mm; background: white; box-sizing: border-box;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: 'Arial', sans-serif; color: #000;
+        overflow: hidden;
+    }
+
+    .a4-inner { width: 100%; height: 100%; border: 4px double #a0a0a0; padding: 5mm 10mm; display: flex; flex-direction: column; }
+    .doc-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 12px; margin-bottom: 25px; }
+    .doc-header .logo img { height: 55px; object-fit: contain; }
+    .doc-header .grade-box { border: 2px solid #000; padding: 5px 20px; font-weight: 900; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px;}
+    .title-container { text-align: center; margin-bottom: 20px; }
+    .doc-title { color: #ed7d31; font-weight: 900; font-size: 20pt; margin: 0 0 10px 0; }
+    .doc-bimestre { display: inline-block; border: 1px solid #ccc; color: #a0a0a0; font-weight: bold; font-size: 12pt; padding: 4px 30px; letter-spacing: 2px; }
+    .student-box { border: 1px solid #5b9bd5; border-radius: 10px; padding: 10px 20px; font-size: 13pt; font-weight: bold; margin-bottom: 20px; display: flex; }
+    .student-box span { flex-grow: 1; border-bottom: 2px dotted #5b9bd5; margin-left: 10px; color: #000; padding-left: 10px; text-transform: uppercase; }
+    
+    .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .doc-table th, .doc-table td { border: 1px solid #000; padding: 8px 5px; text-align: center; font-size: 8.5pt; width: 16.66%; vertical-align: top; }
+    .doc-table th { background-color: #ed7d31; color: white; font-weight: bold; }
+    .doc-table td.desc { text-align: justify; font-size: 7.5pt; line-height: 1.2; }
+    
+    .chart-section { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; gap: 30px; }
+    .chart-container { width: 45%; }
+    .chart-legend { width: 35%; font-size: 8.5pt; line-height: 1.6; }
+    .legend-item { display: flex; align-items: flex-start; margin-bottom: 8px; }
+    .legend-color { width: 12px; height: 12px; margin-right: 8px; margin-top: 3px; flex-shrink: 0; }
+    
+    .recommendations-box { border: 1px solid #d3d3d3; padding: 5px 20px 0px 20px; margin-bottom: 30px; }
+    .recommendations-title { color: #000080; font-weight: bold; text-decoration: underline; font-size: 11pt; margin-bottom: 15px; }
+    .recommendations-list { list-style: none; padding: 0; margin: 0; }
+    .recommendations-list li { font-size: 10pt; margin-bottom: 12px; text-align: justify; display: flex; }
+    .recommendations-list li::before { content: "✓"; margin-right: 15px; font-weight: bold; font-size: 11pt; }
+    
+    .signature-container { display: flex; justify-content: space-between; padding: 15px 50px 5px 50px; margin-bottom: 5px; margin-top: auto; }
+    .signature-line { font-weight: bold; font-size: 11pt; text-decoration: underline; }
+    .doc-footer { border: 1px solid #5b9bd5; border-radius: 10px; padding: 8px; text-align: center; color: #000080; font-style: italic; font-size: 9.5pt; }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mx-4">
+        <div>
+            <h4 class="mb-0 text-dark">Informes Técnicos del Aula</h4>
+            <p class="text-sm text-secondary mb-0">Se han generado {{ informes|length }} reportes listos para impresión por lotes.</p>
+        </div>
+        <!-- Variables pasadas al JS mediante atributos data -->
+        <button id="btn-exportar-lote" class="btn bg-gradient-danger mb-0 d-flex align-items-center"
+            data-grado="{{ aula.grado }}" data-seccion="{{ aula.seccion }}">
+            <i class="material-symbols-rounded text-sm me-2">picture_as_pdf</i> Exportar a PDF
+        </button>
+    </div>
+
+    <!-- Contenedor general que será exportado -->
+    <div class="a4-wrapper" id="contenedor-padre-pdf">
+        {% for info in informes %}
+        <div class="a4-container">
+            <div class="a4-inner">
+                <div class="doc-header">
+                    <div class="logo">
+                        <img loading="lazy" src="{% static 'assets/img/logo_colegio_completo.webp' %}" style="height: 45px;">
+                    </div>
+                    <div class="grade-box">{{ aula.grado }} - {{ aula.nivel }}</div>
+                </div>
+
+                <div class="title-container">
+                    <h1 class="doc-title">INFORME TÉCNICO PEDAGÓGICO PROGRESIVO</h1>
+                    <div class="doc-bimestre">BIMESTRE {{ bimestre_actual }}</div>
+                </div>
+                
+                <div class="student-box">EMPRENDEDOR: <span>{{ info.estudiante.apellidos }}, {{ info.estudiante.nombres }}</span></div>
+                
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>PUNTUALIDAD</th><th>PRESENTACIÓN</th><th>PARTICIPACIÓN</th>
+                            <th>DISCIPLINA</th><th>RESPONSABILIDAD</th><th>APOYO PPFF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="desc">{{ info.textos.Puntualidad }}</td>
+                            <td class="desc">{{ info.textos.Presentacion }}</td>
+                            <td class="desc">{{ info.textos.Participacion }}</td>
+                            <td class="desc">{{ info.textos.Disciplina }}</td>
+                            <td class="desc">{{ info.textos.Responsabilidad }}</td>
+                            <td class="desc">{{ info.textos.Apoyo_PPFF }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="chart-section">
+                    <div class="chart-container">
+                        <canvas class="graficoLote" height="200"
+                            data-puntualidad="{{ info.notas.Puntualidad }}" data-presentacion="{{ info.notas.Presentacion }}"
+                            data-participacion="{{ info.notas.Participacion }}" data-disciplina="{{ info.notas.Disciplina }}"
+                            data-responsabilidad="{{ info.notas.Responsabilidad }}" data-apoyo-ppff="{{ info.notas.Apoyo_PPFF }}">
+                        </canvas>
+                    </div>
+                    <div class="chart-legend" style="width: 15%;">
+                        <div class="legend-item"><div class="legend-color" style="background-color: #dc3545;"></div><div><b>EN PROCESO</b><br>0 - 50 (%)</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #fd7e14;"></div><div><b>REGULAR</b><br>51 - 65 (%)</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #ffc107;"></div><div><b>ADECUADO</b><br>66 - 80 (%)</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #0d6efd;"></div><div><b>BUENO</b><br>81 - 90 (%)</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #198754;"></div><div><b>EXCELENTE</b><br>91 - 100 (%)</div></div>
+                    </div>
+                </div>
+
+                <div class="recommendations-box">
+                    <div class="recommendations-title">RECOMENDACIONES:</div>
+                    <ul class="recommendations-list">
+                        {% for rec in info.recomendaciones %}<li>{{ rec }}</li>{% endfor %}
+                    </ul>
+                </div>
+
+                <div class="signature-container">
+                    <div class="signature-line">TUTOR DE AULA</div>
+                    <div class="signature-line">DIRECCIÓN</div>
+                </div>
+
+                <div class="doc-footer">"El principio de la Educación es predicar con el Ejemplo"</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
+<script src="{% static 'plugins/html2pdf/html2pdf.bundle.min.js' %}"></script>
+<!-- Referencia a tu nuevo archivo JS -->
+<script src="{% static 'js/reporte_progresivo_aula.js' %}"></script>
+{% endblock extra_js %}

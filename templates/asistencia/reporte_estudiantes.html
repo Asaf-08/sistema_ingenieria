@@ -62,26 +62,34 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card my-4 shadow-sm">
+            <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-3 d-flex align-items-center">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg py-4 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
                         
-                        <h6 class="text-white mb-0 d-flex align-items-center">
-                            
+                        <!-- Lado Izquierdo: Botón, Icono y Título -->
+                        <div class="d-flex align-items-center">
                             {% if not es_admin or origen == 'mi_aula' %}
                             <a href="{% url 'academico:mi_aula' %}?aula_id={{ aula_seleccionada }}" class="text-white me-3 d-flex align-items-center opacity-8" title="Volver a Mi Aula" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
                                 <i class="material-symbols-rounded" style="font-size: 26px;">arrow_back</i>
                             </a>
                             {% endif %}
 
-                            <i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias
-                            
-                            {% if aula_obj and not es_admin %}
-                                <span class="ms-2 fw-normal opacity-8 text-sm"> | {{ aula_obj.grado }} "{{ aula_obj.seccion }}" - {{ aula_obj.get_nivel_display }}</span>
-                            {% elif aula_obj and origen == 'mi_aula' %}
-                                <span class="ms-2 fw-normal opacity-8 text-sm"> | {{ aula_obj.grado }} "{{ aula_obj.seccion }}" - {{ aula_obj.get_nivel_display }}</span>
-                            {% endif %}
-                        </h6>
+                            <div>
+                                <h5 class="text-white mb-0">
+                                    <i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias
+                                </h5>
+                                {% if aula_obj and not es_admin %}
+                                    <p class="text-white opacity-8 text-sm mb-0">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" de {{ aula_obj.nivel }}</p>
+                                {% elif aula_obj and origen == 'mi_aula' %}
+                                    <p class="text-white opacity-8 text-sm mb-0">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" de {{ aula_obj.nivel }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 💥 Lado Derecho: Bimestre -->
+                        <div>
+                            <span class="badge bg-gradient-info text-md">Bimestre {{ bimestre_actual }}</span>
+                        </div>
 
                     </div>
                 </div>
@@ -90,7 +98,7 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center px-4 mt-3 mb-4 gap-3">
                         {% csrf_token %}
                         <div class="d-flex flex-wrap gap-2">
-                            <button id="btn-habilitar-edicion" class="btn btn-outline-dark mb-0 d-flex align-items-center" onclick="habilitarModoEdicion()">
+                            <button id="btn-habilitar-edicion" class="btn bg-gradient-info mb-0 d-flex align-items-center" onclick="habilitarModoEdicion()">
                                 <i class="material-symbols-rounded text-sm me-1">edit_square</i> Tomar Asistencia Manual
                             </button>
                             <button id="btn-guardar-matriz" class="btn bg-gradient-info mb-0 d-flex align-items-center d-none" onclick="guardarMatrizAsistencia()">
@@ -142,7 +150,7 @@
                         </form>
                     </div>
 
-                    <div class="table-responsive px-4">
+                    <div class="table-responsive-lg px-4">
                         <table id="tabla-matriz-estudiantes" class="table align-items-center mb-0 w-100 table-hover">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -157,11 +165,33 @@
                             <tbody>
                                 {% for item in lista_completa %}
                                 <tr class="fila-estudiante" data-estudiante-id="{{ item.estudiante.id }}">
-                                    <td>
+                                    <!-- Agregamos position-static al td para que el menú flote libre -->
+                                    <td class="position-static">
                                         <div class="d-flex flex-column justify-content-center px-2 py-2">
-                                            <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ item.estudiante.apellidos }}, {{ item.estudiante.nombres }}</h6>
+                                            
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ item.estudiante.apellidos }}, {{ item.estudiante.nombres }}</h6>
+                                                
+                                                <!-- 💥 MENÚ DE 3 PUNTITOS (Liberado) -->
+                                                <div class="dropdown">
+                                                    <button class="btn btn-link text-secondary mb-0 p-0" type="button" 
+                                                            data-bs-toggle="dropdown" 
+                                                            aria-expanded="false" 
+                                                            title="Ver resumen histórico">
+                                                        <i class="material-symbols-rounded text-lg">more_vert</i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end px-2 py-2 shadow-sm border-radius-md" style="min-width: 140px; z-index: 9999;">
+                                                        <li><span class="dropdown-item-text text-xs font-weight-bold text-secondary text-center border-bottom pb-2 mb-1">Resumen Global</span></li>
+                                                        <li class="d-flex justify-content-between px-3 py-1 text-sm"><span class="text-success font-weight-bold">Presentes:</span> <span>{{ item.stats.P }}</span></li>
+                                                        <li class="d-flex justify-content-between px-3 py-1 text-sm"><span class="text-warning font-weight-bold">Tardanzas:</span> <span>{{ item.stats.T }}</span></li>
+                                                        <li class="d-flex justify-content-between px-3 py-1 text-sm"><span class="text-danger font-weight-bold">Faltas:</span> <span>{{ item.stats.F }}</span></li>
+                                                        <li class="d-flex justify-content-between px-3 py-1 text-sm"><span class="text-dark font-weight-bold">Justif.:</span> <span>{{ item.stats.J }}</span></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+
                                             {% if item.asistencia and item.asistencia.justificacion %}
-                                                <span class="text-xxs text-info"><i class="material-symbols-rounded align-middle" style="font-size: 12px;">info</i> {{ item.asistencia.justificacion }}</span>
+                                                <span class="text-xxs text-info mt-1"><i class="material-symbols-rounded align-middle" style="font-size: 12px;">info</i> {{ item.asistencia.justificacion }}</span>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -203,6 +233,8 @@
     </div>
 </div>
 
+{% block modales %}
+
 <div class="modal fade" id="modalEditarHora" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
@@ -224,5 +256,7 @@
         </div>
     </div>
 </div>
+
+{% endblock modales %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/asistencia_estudiantes.js' %}"></script>{% endblock %}

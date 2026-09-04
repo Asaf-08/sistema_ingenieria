@@ -41,7 +41,7 @@
         <i class="material-symbols-rounded text-sm me-2">inventory_2</i> Gestionar Inventario
       </a>
 
-      <a href="{% url 'asistencia:reporte_asistencia_estudiantes' %}?aula_id={{ aula.id }}&origen=mi_aula" class="btn btn-gradient-success mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
+      <a href="{% url 'asistencia:reporte_asistencia_estudiantes' %}?aula_id={{ aula.id }}&origen=mi_aula" class="btn bg-gradient-success mb-0 d-flex align-items-center justify-content-center w-100 w-lg-auto" style="min-height: 42px;">
         <i class="material-symbols-rounded text-sm me-2">fact_check</i> Asistencia
       </a>
 
@@ -153,6 +153,10 @@
                   <i class="material-symbols-rounded text-md me-2">table_view</i> Sábana Notas
                 </a>
 
+                <a href="{% url 'academico:reporte_progresivo_aula' aula.id %}" target="_blank" class="btn bg-white mb-0 d-flex align-items-center text-primary justify-content-center shadow-sm px-4" style="min-height: 42px;" data-bs-toggle="tooltip" data-bs-title="Generar PDF de todo el aula">
+                    <i class="material-symbols-rounded text-md me-2">picture_as_pdf</i> Informes (Aula)
+                </a>
+
                 <button type="button" id="btn-analisis-ia" class="btn bg-white text-warning mb-0 d-flex align-items-center justify-content-center shadow-sm px-4" data-aula-id="{{ aula.id }}" data-periodo-id="{{ periodo.id }}" style="min-height: 42px;">
                   <i class="material-symbols-rounded text-md me-2 text-warning">auto_awesome</i> Perfiles (K-Means)
                 </button>
@@ -248,7 +252,7 @@
                       data-bs-toggle="tooltip" data-bs-title="Generar Informe Progresivo"
                       style="width: 35px; height: 35px; padding: 0;">
                       <i class="material-symbols-rounded text-white" style="font-size: 18px;">summarize</i>
-                  </a>
+                    </a>
                   </td>
                 </tr>
                 {% endfor %}

@@ -123,7 +123,7 @@
         text-align: center;
         font-size: 8.5pt;
         vertical-align: top;
-        width: 20%; /* Asegura que las 5 columnas sean iguales al quitar PPFF */
+        width: 16.6%;
     }
 
     .doc-table th {
@@ -238,15 +238,15 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mx-4">
         <div>
             <h4 class="mb-0 text-dark">Generación de Informe Técnico</h4>
             <p class="text-sm text-secondary mb-0">Vista previa del documento oficial.</p>
         </div>
         <button id="btn-exportar" class="btn bg-gradient-danger mb-0 d-flex align-items-center"
             data-apellidos="{{ estudiante.apellidos|default:'Alumno' }}">
-        <i class="material-symbols-rounded text-sm me-2">picture_as_pdf</i> Exportar a PDF
-    </button>
+            <i class="material-symbols-rounded text-sm me-2">picture_as_pdf</i> Exportar a PDF
+        </button>
     </div>
 
     <div class="a4-wrapper" id="a4-wrapper">
@@ -265,7 +265,7 @@
 
             <div class="title-container">
                 <h1 class="doc-title">INFORME TÉCNICO PEDAGÓGICO PROGRESIVO</h1>
-                <div class="doc-bimestre">BIMESTRE I</div>
+                <div class="doc-bimestre">BIMESTRE {{ bimestre_actual }}</div>
             </div>
             
             <div class="student-box">
@@ -280,6 +280,7 @@
                         <th>PARTICIPACIÓN</th>
                         <th>DISCIPLINA</th>
                         <th>RESPONSABILIDAD</th>
+                        <th>APOYO PPFF</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -289,6 +290,7 @@
                         <td class="desc">{{ textos_tabla.Participacion }}</td>
                         <td class="desc">{{ textos_tabla.Disciplina }}</td>
                         <td class="desc">{{ textos_tabla.Responsabilidad }}</td>
+                        <td class="desc">{{ textos_tabla.Apoyo_PPFF }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -300,10 +302,11 @@
                         data-presentacion="{{ notas_actitudinales.Presentacion|default:'0' }}"
                         data-participacion="{{ notas_actitudinales.Participacion|default:'0' }}"
                         data-disciplina="{{ notas_actitudinales.Disciplina|default:'0' }}"
-                        data-responsabilidad="{{ notas_actitudinales.Responsabilidad|default:'0' }}">
+                        data-responsabilidad="{{ notas_actitudinales.Responsabilidad|default:'0' }}"
+                        data-apoyo-ppff="{{ notas_actitudinales.Apoyo_PPFF|default:'0' }}">
                     </canvas>
                 </div>
-                <div class="chart-legend">
+                <div class="chart-legend" style="width: 15%;">
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #dc3545;"></div>
                         <div><b>EN PROCESO</b><br>0 - 50 (%)</div>

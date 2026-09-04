@@ -5,9 +5,54 @@
  */
 
 $(document).ready(function () {
-    inicializarTablaGlobal('#tablaPredictiva', 'Buscar alumno por DNI o Apellidos...');
+    incializarTablaPredictiva('#tablaPredictiva', 'Buscar alumno por DNI o Apellidos...');
     registrarEventosDashboard();
 });
+
+function incializarTablaPredictiva() {
+    $('#tablaPredictiva').DataTable({
+        language: {
+            url: "/static/plugins/datatables/js/es-ES.json",
+            search: "_INPUT_",
+            searchPlaceholder: "Buscar alumno por DNI o Apellidos...",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            infoEmpty: "Mostrando 0 a 0 de 0 registros",
+            zeroRecords: "No se encontraron resultados",
+            paginate: {
+                first: "Primero",
+                last: "Último",
+                next: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_right</i>',
+                previous: '<i class="material-symbols-rounded" style="font-size: 18px;">chevron_left</i>'
+            }
+        },
+        pageLength: 50,
+        deferRender: true,
+        lengthChange: true,
+        ordering: true,
+        info: true,
+        autoWidth: false,
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center pt-3"f l>t<"d-flex justify-content-between align-items-center p-4"ip>',
+        initComplete: function () {
+            $('.dataTables_filter input')
+                .addClass('form-control border-bottom border-2 px-3 py-1')
+                .attr('placeholder', "Buscar alumno por DNI o Apellidos...");
+                
+            $('.dataTables_filter label').contents().filter(function () {
+                return this.nodeType === 3;
+            }).remove();
+
+            $('.dataTables_length select')
+                .addClass('form-control border-bottom border-2 px-2 py-1 mx-2')
+                .css({
+                    'display': 'inline-block',
+                    'width': 'auto',
+                    'background-color': 'transparent'
+                });
+        }
+    });
+}
 
 function registrarEventosDashboard() {
     // =============================================================
@@ -330,9 +375,9 @@ function renderizarPerfiles(clusters) {
                 <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-3 px-3 bg-transparent border-bottom">
                     <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm shadow border-radius-sm bg-gradient-${colorCard} text-center me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                            <i class="material-symbols-rounded text-white" style="font-size: 16px;">person</i>
+                            <i class="material-symbols-rounded text-white" style="font-size: 16px; top:0;">person</i>
                         </div>
-                        <span class="font-weight-bold text-dark text-truncate" style="max-width: 150px;">${alumno.nombre}</span>
+                        <span class="font-weight-bold text-xs text-dark" style="max-width: 150px;">${alumno.nombre}</span>
                     </div>
                     <div class="text-end d-flex gap-2">
                         <span class="badge bg-white text-dark border border-${colorCard} border-radius-md px-2 py-1 shadow-sm" title="Promedio Académico (A)">

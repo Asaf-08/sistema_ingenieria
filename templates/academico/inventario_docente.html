@@ -59,10 +59,6 @@
                     <td><input type="number" min="0" name="malo_{{ fila.id_material }}" value="{{ fila.malo }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
                     <td><input type="number" min="0" name="requiere_{{ fila.id_material }}" value="{{ fila.requiere }}" class="form-control border px-2 text-center" style="width: 80px; margin: 0 auto;"></td>
                   </tr>
-                  {% empty %}
-                  <tr>
-                    <td colspan="5" class="text-center py-4">La Coordinadora aún no ha registrado el catálogo maestro de materiales.</td>
-                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
