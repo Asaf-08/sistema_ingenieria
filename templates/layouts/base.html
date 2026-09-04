@@ -230,6 +230,46 @@
 
   </div>
 </nav>
+{% elif request.user.perfil_personal.cargo == 'COO' or request.user.perfil_personal.cargo == 'Coordinador' %}
+<!-- ==========================================================================
+     BOTTOM NAVIGATION BAR (APP ESTILO iOS) - COORDINADORAS
+     ========================================================================== -->
+<nav class="mobile-bottom-nav d-md-none position-fixed bottom-0 start-0 w-100 z-index-sticky blur shadow-blur">
+  <div class="d-flex justify-content-around align-items-center h-100 px-2">
+    
+    <!-- 1. Inicio -->
+    <a href="{% url 'core:home' %}" class="nav-item text-center text-dark text-decoration-none {% if request.resolver_match.url_name == 'home' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">home</i>
+      <span class="text-xxs font-weight-bolder d-block">Inicio</span>
+    </a>
+
+    <!-- 2. Consolidado Notas -->
+    <a href="{% url 'reportes:consolidado_notas' %}" class="nav-item text-center text-dark text-decoration-none {% if request.resolver_match.url_name == 'consolidado_notas' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">table_chart</i>
+      <span class="text-xxs font-weight-bolder d-block">Notas</span>
+    </a>
+
+    <!-- 3. Auditoría (Botón Central Flotante) -->
+    <a href="{% url 'personal:auditoria_academica' %}" class="nav-item nav-item-center bg-gradient-info text-center text-decoration-none {% if request.resolver_match.url_name == 'auditoria_academica' %}active-center{% endif %}">
+      <i class="material-symbols-rounded">fact_check</i>
+    </a>
+
+    <!-- 4. Comunicaciones -->
+    <a href="{% url 'comunicaciones:gestion_comunicado' %}" class="nav-item text-center text-dark text-decoration-none {% if request.resolver_match.url_name == 'gestion_comunicado' %}active-nav{% endif %}">
+      <i class="material-symbols-rounded text-2xl mb-1">campaign</i>
+      <span class="text-xxs font-weight-bolder d-block">Avisos</span>
+    </a>
+
+    <!-- 5. Carnet QR -->
+    <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#modalMiQR" class="nav-item text-center text-dark text-decoration-none">
+      <i class="material-symbols-rounded text-2xl mb-1">qr_code_2</i>
+      <span class="text-xxs font-weight-bolder d-block">Carnet</span>
+    </a>
+
+  </div>
+</nav>
+{% endif %}
+
 {% endif %}
 
 </body>

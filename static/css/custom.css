@@ -671,7 +671,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
     .mobile-bottom-nav .nav-item-center {
         flex: none;
         width: 55px;
-        height: 55px;
+        height: 50px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -703,6 +703,13 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 @media (min-width: 768px) {
     .mobile-bottom-nav {
         display: none !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    /* Ajusta el body o tu contenedor principal (.main-content) */
+    body {
+        padding-bottom: 85px !important; 
     }
 }
 

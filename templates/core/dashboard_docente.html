@@ -217,7 +217,7 @@
       <div class="position-relative h-100" style="min-height: 420px;">
         
         <!-- 💥 TARJETA ABSOLUTA: Al ser absoluta, no empuja la fila hacia abajo, solo copia su tamaño exacto -->
-        <div class="card shadow-sm card-hover d-flex flex-column position-absolute w-100" style="top: 0; bottom: 3.3rem; left: 0;">
+        <div class="card shadow-sm card-hover border d-flex flex-column position-absolute w-100" style="top: 0; bottom: 3.3rem; left: 0;">
           
           <div class="card-header pb-3 bg-transparent">
             <div class="d-flex align-items-center">
@@ -276,7 +276,7 @@
         
         {% for nivel, alumnos in mejores_por_nivel.items %}
         <div class="{% if mejores_por_nivel|length == 1 %}col-12{% elif mejores_por_nivel|length == 2 %}col-md-6{% else %}col-md-4{% endif %} mb-4">
-          <div class="card shadow-sm h-100 card-hover">
+          <div class="card shadow-sm h-100 border card-hover">
             <div class="card-header pb-0 bg-transparent">
               <h6 class="text-dark mb-0 text-center">Nivel {{ nivel }}</h6>
             </div>

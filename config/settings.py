@@ -145,6 +145,7 @@ TIME_ZONE = 'America/Lima'
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'https://*.ngrok.io',
+    'https://*.up.railway.app',
 ]
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False 
@@ -170,9 +171,6 @@ if not DEBUG:
 
 # 1. Romper el Bucle Infinito (Entender el proxy de Railway)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# 2. Confiar en los dominios de Railway para evitar errores CSRF 403 al loguearse
-CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 
 # ==========================================
 # CONFIGURACIÓN DEL MICROSERVICIO DE WHATSAPP
