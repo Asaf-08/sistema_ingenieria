@@ -43,6 +43,7 @@ urlpatterns = [
     # ==========================================
     # 🧠 TUTORÍA Y EVALUACIÓN ACTITUDINAL
     # ==========================================
+    path('matriz-actitudinal/<int:aula_id>/<str:bimestre>/', views.matriz_actitudinal, name='matriz_actitudinal'),
     path('tutor/aula/<int:aula_id>/actitudinal/<str:bimestre>/', views.registro_actitudinal, name='registro_actitudinal'),
     path('tutor/actitudinal/guardar-ajax/', views.guardar_actitudinal_ajax, name='guardar_actitudinal_ajax'),
     

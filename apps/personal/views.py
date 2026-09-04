@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.contrib import messages
 from django import forms
 
+from django.db.models import Prefetch
 from django.shortcuts import redirect, render, get_object_or_404
 import gspread
 from google.oauth2.service_account import Credentials
@@ -609,6 +610,37 @@ def matriz_notas(request, asignacion_id):
     context.update(contexto_matriz)
 
     return render(request, 'personal/matriz_notas.html', context)
+
+@login_required
+def matriz_actitudinal(request, aula_id, bimestre):
+    aula = get_object_or_404(Aula, id=aula_id)
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    actitudinal_prefetch = Prefetch(
+        'actitudinales', 
+        queryset=EvaluacionActitudinal.objects.filter(bimestre=bimestre),
+        to_attr='eval_actitudinal'
+    )
+    
+    matriculas = Matricula.objects.filter(
+        aula=aula, periodo=periodo_actual, estudiante__estado='Activo'
+    ).select_related('estudiante').prefetch_related(actitudinal_prefetch).order_by('estudiante__apellidos', 'estudiante__nombres')
+
+    # Calculamos el promedio redondeado en memoria para cada matrícula
+    for m in matriculas:
+        if m.eval_actitudinal:
+            act = m.eval_actitudinal[0]
+            # Asegúrate de que los campos coincidan con los de tu modelo
+            promedio_raw = (act.puntualidad + act.presentacion + act.cuidado_patrimonio + act.orden_limpieza + act.respeto_normas) / 5
+            m.actitudinal_redondeado = int(Decimal(str(promedio_raw)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        else:
+            m.actitudinal_redondeado = 0
+
+    return render(request, 'personal/matriz_actitudinal.html', {
+        'aula': aula,
+        'bimestre': bimestre,
+        'matriculas': matriculas
+    })
 
 @login_required
 def reporte_agenda_semanal(request, aula_id):

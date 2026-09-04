@@ -1,0 +1,88 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4 vista-matriz">
+  
+  <div class="d-flex align-items-center mb-4">
+      <a href="{% url 'personal:mis_cursos' %}" class="text-dark me-3 transition-hover" title="Volver a mis cursos">
+          <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
+      </a>
+      <div>
+          <h4 class="font-weight-black text-dark mb-0">📊 Matriz Actitudinal</h4>
+          <p class="text-sm text-secondary mb-0">Aula: {{ aula.grado }} "{{ aula.seccion }}" | Bimestre: {{ bimestre }}</p>
+      </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-radius-lg bg-white">
+        <div class="card-body px-0 pb-2">
+          
+          <div class="table-responsive p-0">
+            <table id="tablaActitudinal" class="table align-items-center mb-0 table-bordered text-center table-hover" style="width: 100%;">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder col-sticky-1" style="width: 50px;">N°</th>
+                        <th class="text-start text-uppercase text-secondary text-xxs font-weight-bolder px-4 col-sticky-2">Apellidos y Nombres</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" title="Puntualidad y Asistencia" style="background-color: #F96400;">Puntual.</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" title="Presentación Personal" style="background-color: #F96400;">Present.</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" title="Cuidado del Patrimonio Institucional" style="background-color: #F96400;">Patrim.</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" title="Orden y Limpieza" style="background-color: #F96400;">Orden</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" title="Respeto a Normas" style="background-color: #F96400;">Respeto</th>
+                        <th class="text-center text-uppercase text-white text-xxs font-weight-bolder" style="background-color: #F96400;">Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matriculas %}
+                    {% with act=m.eval_actitudinal|first %}
+                    <tr>
+                        <td class="td-sticky-1 text-center text-sm">
+                            <span class="text-xs font-weight-bold text-secondary">{{ forloop.counter }}</span>
+                        </td>
+                        <td class="td-sticky-2 text-start text-sm px-4">
+                            <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ m.estudiante.apellidos }}, {{ m.estudiante.nombres }}</h6>
+                        </td>
+                        
+                        {% if act %}
+                            <td class="align-middle text-center text-sm"><span class="text-dark font-weight-bold">{{ act.puntualidad }}</span></td>
+                            <td class="align-middle text-center text-sm"><span class="text-dark font-weight-bold">{{ act.presentacion }}</span></td>
+                            <td class="align-middle text-center text-sm"><span class="text-dark font-weight-bold">{{ act.cuidado_patrimonio }}</span></td>
+                            <td class="align-middle text-center text-sm"><span class="text-dark font-weight-bold">{{ act.orden_limpieza }}</span></td>
+                            <td class="align-middle text-center text-sm"><span class="text-dark font-weight-bold">{{ act.respeto_normas }}</span></td>
+                            <td class="align-middle text-center text-sm text-white {% if m.actitudinal_redondeado >= 11 %}bg-success{% else %}bg-danger{% endif %}" style="font-size: 16px;">
+                                {{ m.actitudinal_redondeado }}
+                            </td>
+                        {% else %}
+                            <td class="align-middle text-center text-sm text-secondary">-</td>
+                            <td class="align-middle text-center text-sm text-secondary">-</td>
+                            <td class="align-middle text-center text-sm text-secondary">-</td>
+                            <td class="align-middle text-center text-sm text-secondary">-</td>
+                            <td class="align-middle text-center text-sm text-secondary">-</td>
+                            <td class="align-middle text-center text-sm bg-gray-100 text-secondary">-</td>
+                        {% endif %}
+                    </tr>
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<!-- Reutilizamos los scripts de exportación de DataTables -->
+<script defer src="{% static 'plugins/datatables/js/dataTables.buttons.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/jszip.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/pdfmake.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/vfs_fonts.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/buttons.html5.min.js' %}"></script>
+<script defer src="{% static 'plugins/datatables/js/buttons.print.min.js' %}"></script>
+<!-- Asegúrate de crear o enlazar un JS que inicialice #tablaActitudinal -->
+<script defer src="{% static 'js/matriz_notas.js' %}"></script> 
+{% endblock %}
