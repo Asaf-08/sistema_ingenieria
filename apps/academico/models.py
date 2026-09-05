@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from apps.personal.models import Personal
 from django.core.exceptions import ValidationError
+from simple_history.models import HistoricalRecords
 
 
 class PeriodoLectivo(models.Model):
@@ -259,6 +260,8 @@ class Nota(models.Model):
     
     # Guardamos la nota. Puede ser null/blank si el alumno faltó al examen
     valor = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    
+    history = HistoricalRecords()
     
     def __str__(self):
         return f"{self.matricula.estudiante.apellidos} - {self.valor}"

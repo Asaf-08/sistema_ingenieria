@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     
     'debug_toolbar',  # 💥 Añadido para auditoría de rendimiento
     'storages', # 💥 Nueva: Para hablar con AWS
+    'simple_history',
 
     'apps.core',
     'apps.academico',
@@ -47,6 +48,7 @@ MIDDLEWARE = [
 
     'django.contrib.auth.middleware.AuthenticationMiddleware',  # 👈 requerido
     'django.contrib.messages.middleware.MessageMiddleware',  # 👈 requerido
+    'simple_history.middleware.HistoryRequestMiddleware',
 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
