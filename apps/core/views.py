@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.db.models import Count, Avg, Q, Sum
+from django.db.models import Q
 from datetime import timedelta
 from django.core.cache import cache
 
@@ -52,7 +52,9 @@ class LoginPersonalizadoView(LoginView):
 def dashboard_principal(request):
     """ Vista inteligente multirrol para el inicio del sistema """
     periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
-    hoy = timezone.now().date()
+    ahora = timezone.now()
+    hoy = ahora.date()
+    
     user_personal = getattr(request.user, 'perfil_personal', None)
     
     # Inicializamos el contexto base
@@ -175,7 +177,9 @@ def dashboard_principal(request):
             presentes = AsistenciaEstudiante.objects.filter(fecha=dia_evaluar, estado__in=['P', 'T', 'J']).count()
             asistencias_semana.append(presentes)
 
-        hace_un_mes = hoy - timedelta(days=30)
+        # 💥 CORRECCIÓN: Usamos 'ahora' en lugar de 'hoy' para evitar el error de naive datetime
+        hace_un_mes = ahora - timedelta(days=30)
+        
         riesgo_mes_pasado = Estudiante.objects.filter(estado='Activo', fecha_registro__lt=hace_un_mes).annotate(
             prom_ant=Avg('matricula__notas__valor')
         ).filter(prom_ant__lt=11).count()
