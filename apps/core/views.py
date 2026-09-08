@@ -1,3 +1,4 @@
+from django.core.serializers import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -275,8 +276,6 @@ def dashboard_principal(request):
         graficos_tutor = {}
         
         if es_tutor_secundaria and aulas_tutoria.exists():
-            from django.db.models import Avg
-            import json # Aseguramos la importación
             
             def calcular_metricas_aula(aulas_queryset):
                 promedios = Matricula.objects.filter(
