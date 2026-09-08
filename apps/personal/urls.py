@@ -40,6 +40,8 @@ urlpatterns = [
     
     path('auditoria-notas/', views.auditoria_academica_admin, name='auditoria_academica'),
     
+    path('gestion-global-notas/', views.gestion_global_notas, name='gestion_global_notas'),
+    
     # ==========================================
     # 🧠 TUTORÍA Y EVALUACIÓN ACTITUDINAL
     # ==========================================

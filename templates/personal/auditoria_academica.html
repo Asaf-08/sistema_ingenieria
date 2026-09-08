@@ -29,6 +29,11 @@
                   <i class="material-symbols-rounded align-middle text-sm me-2">inventory_2</i> Entrega de Materiales
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link mb-0 px-0 py-1 font-weight-bold d-flex align-items-center justify-content-center" data-bs-toggle="tab" href="#tab-historial" role="tab" aria-selected="false">
+                  <i class="material-symbols-rounded align-middle text-sm me-2">history</i> Registro de Cambios
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -146,6 +151,109 @@
               </div>
             </div>
 
+            <!-- 💥 TERCERA PESTAÑA: HISTORIAL DE MODIFICACIONES -->
+            <div class="tab-pane fade" id="tab-historial" role="tabpanel">
+              <div class="px-4 py-3 d-flex align-items-center justify-content-between bg-gray-50 border-radius-lg mb-3 mx-2">
+                <div>
+                    <label class="text-sm font-weight-bold mb-0 text-dark">Rastro de Auditoría (Notas)</label>
+                    <p class="text-xs text-secondary mb-0 mx-1">Visualizando las últimas 50 modificaciones en el sistema.</p>
+                </div>
+                <div class="icon icon-shape bg-gradient-dark shadow text-center border-radius-md" style="width: 40px; height: 40px;">
+                    <i class="material-symbols-rounded text-white opacity-10 text-md">policy</i>
+                </div>
+              </div>
+
+              <div class="table-responsive p-0 px-3">
+                <table class="table align-items-center mb-0 table-hover">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Fecha y Hora</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estudiante y Curso</th>
+                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acción</th>
+                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nota Ant.</th>
+                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nota Nva.</th>
+                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Responsable</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for cambio in historial_cambios %}
+                    <tr>
+                      <!-- Fecha -->
+                      <td class="py-3 px-4">
+                        <p class="text-sm font-weight-bold mb-0 text-dark">{{ cambio.history_date|date:"d/m/Y" }}</p>
+                        <p class="text-xs text-secondary mb-0">{{ cambio.history_date|time:"H:i" }}</p>
+                      </td>
+                      
+                      <!-- Estudiante y Curso -->
+                      <td class="py-3 px-4">
+                        <p class="text-sm font-weight-bold text-dark mb-0">{{ cambio.matricula.estudiante.apellidos }}, {{ cambio.matricula.estudiante.nombres }}</p>
+                        <p class="text-xs text-info mb-0">{{ cambio.evaluacion.asignacion.curso.nombre }}</p>
+                      </td>
+                      
+                      <!-- Tipo de Acción (AHORA ES UN BOTÓN CLICKEABLE) -->
+                      <td class="align-middle text-center py-3">
+                        <button type="button" class="btn btn-link p-0 m-0 w-100" 
+                                onclick="verDetalleAuditoria(this)"
+                                data-accion="{% if cambio.history_type == '+' %}Creado{% elif cambio.history_type == '~' %}Modificado{% else %}Eliminado{% endif %}"
+                                data-color="{% if cambio.history_type == '+' %}success{% elif cambio.history_type == '~' %}warning{% else %}danger{% endif %}"
+                                data-fecha="{{ cambio.history_date|date:'d/m/Y - H:i:s' }}"
+                                data-estudiante="{{ cambio.matricula.estudiante.apellidos }}, {{ cambio.matricula.estudiante.nombres }}"
+                                data-curso="{{ cambio.evaluacion.asignacion.curso.nombre }}"
+                                data-aula="{{ cambio.evaluacion.asignacion.aula.grado }} '{{ cambio.evaluacion.asignacion.aula.seccion }}' ({{ cambio.evaluacion.asignacion.aula.get_nivel_display }})"
+                                data-evaluacion="{{ cambio.evaluacion.nombre }}"
+                                data-tipo="{{ cambio.evaluacion.get_tipo_display }}"
+                                data-bimestre="{{ cambio.evaluacion.get_bimestre_display }}"
+                                data-ant="{{ cambio.prev_record.valor|floatformat:'0'|default:'-' }}"
+                                data-nva="{{ cambio.valor|floatformat:'0' }}"
+                                data-responsable="{{ cambio.history_user.first_name }} {{ cambio.history_user.last_name }}"
+                                data-titular="{{ cambio.evaluacion.asignacion.personal.nombres }} {{ cambio.evaluacion.asignacion.personal.apellidos }}">
+                          
+                          {% if cambio.history_type == '+' %}
+                            <span class="badge bg-gradient-success w-100 py-2 transition-hover"><i class="material-symbols-rounded text-xxs align-middle me-1">add_circle</i> Creado</span>
+                          {% elif cambio.history_type == '~' %}
+                            <span class="badge bg-gradient-warning w-100 py-2 transition-hover"><i class="material-symbols-rounded text-xxs align-middle me-1">edit</i> Modificado</span>
+                          {% elif cambio.history_type == '-' %}
+                            <span class="badge bg-gradient-danger w-100 py-2 transition-hover"><i class="material-symbols-rounded text-xxs align-middle me-1">delete</i> Eliminado</span>
+                          {% endif %}
+                        </button>
+                      </td>
+                      
+                      <!-- Nota Anterior (Sin decimales) -->
+                      <td class="align-middle text-center py-3">
+                        <span class="text-sm font-weight-bold text-secondary">{{ cambio.prev_record.valor|floatformat:"0"|default:"-" }}</span>
+                      </td>
+                      
+                      <!-- Nota Nueva (Sin decimales) -->
+                      <td class="align-middle text-center py-3">
+                        <span class="text-sm font-weight-black text-dark" style="font-size: 15px;">{{ cambio.valor|floatformat:"0" }}</span>
+                      </td>
+                      
+                      <!-- Usuario Responsable -->
+                      <td class="py-3 px-4">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-gray-200 rounded-circle p-1 me-2 d-flex justify-content-center align-items-center" style="width: 28px; height: 28px;">
+                            <i class="material-symbols-rounded text-secondary text-xs">person</i>
+                          </div>
+                          <div>
+                            <p class="text-sm font-weight-bold mb-0 text-dark">{{ cambio.history_user.first_name }}</p>
+                            <p class="text-xs text-secondary mb-0">{{ cambio.history_user.last_name }}</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="6" class="text-center text-sm py-5 text-secondary">
+                        <i class="material-symbols-rounded text-4xl opacity-5 mb-2 d-block">history_toggle_off</i>
+                        No hay registros de modificaciones recientes en el sistema.
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -165,6 +273,104 @@
     </div>
   </div>
 </div>
+
+{% block modales %}
+
+<!-- =========================================================
+     MODAL DE RECIBO DE AUDITORÍA (HISTORIAL DE NOTAS)
+     ========================================================= -->
+<div class="modal fade" id="modalDetalleAuditoria" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-radius-xl shadow-lg">
+      <div class="modal-header bg-gradient-dark p-3">
+        <h5 class="modal-title text-white mb-0 d-flex align-items-center">
+          <i class="material-symbols-rounded me-2">policy</i> Detalle de Auditoría
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <div class="modal-body p-4 bg-gray-50">
+        
+        <!-- Cabecera del recibo -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-1">Fecha del Suceso</h6>
+                <span class="text-dark font-weight-bold" id="aud-fecha"></span>
+            </div>
+            <span id="aud-badge" class="badge px-3 py-2"></span>
+        </div>
+
+        <!-- Contexto Académico -->
+        <div class="mb-4">
+            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-2">Contexto Académico</h6>
+            <ul class="list-group list-group-flush border-radius-lg shadow-sm">
+                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-2">
+                    <span class="text-secondary"><i class="material-symbols-rounded text-sm align-middle me-1">person</i> Estudiante:</span>
+                    <span class="font-weight-bold text-dark text-end" id="aud-estudiante"></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-2">
+                    <span class="text-secondary"><i class="material-symbols-rounded text-sm align-middle me-1">menu_book</i> Curso:</span>
+                    <span class="font-weight-bold text-dark text-end" id="aud-curso"></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-2">
+                    <span class="text-secondary"><i class="material-symbols-rounded text-sm align-middle me-1">meeting_room</i> Aula:</span>
+                    <span class="font-weight-bold text-dark text-end" id="aud-aula"></span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center text-sm py-2">
+                    <span class="text-secondary"><i class="material-symbols-rounded text-sm align-middle me-1">assignment</i> Evaluación:</span>
+                    <div class="text-end">
+                        <span class="font-weight-bold text-dark d-block" id="aud-evaluacion"></span>
+                        <span class="text-xs text-info" id="aud-tipo-bim"></span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- El Cambio de Nota -->
+        <div class="card bg-white shadow-sm mb-4 border-0">
+            <div class="card-body p-3 d-flex justify-content-around align-items-center">
+                <div class="text-center">
+                    <p class="text-xs text-secondary text-uppercase font-weight-bold mb-1">Nota Anterior</p>
+                    <h3 class="text-danger mb-0" id="aud-ant"></h3>
+                </div>
+                <div class="text-center">
+                    <i class="material-symbols-rounded text-secondary text-3xl opacity-5">arrow_forward</i>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-secondary text-uppercase font-weight-bold mb-1">Nota Nueva</p>
+                    <h3 class="text-success mb-0" id="aud-nva"></h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Responsabilidad (El cruce clave) -->
+        <div class="bg-gray-200 border-radius-md p-3">
+            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-2">Trazabilidad de Usuario</h6>
+            
+            <div class="d-flex align-items-center mb-2">
+                <i class="material-symbols-rounded text-dark me-2">verified_user</i>
+                <div>
+                    <span class="text-xs text-secondary d-block">Usuario que ejecutó la acción:</span>
+                    <span class="text-sm font-weight-bold text-dark" id="aud-responsable"></span>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center mb-2">
+                <i class="material-symbols-rounded text-secondary me-2">school</i>
+                <div>
+                    <span class="text-xs text-secondary d-block">Docente Titular Asignado:</span>
+                    <span class="text-sm font-weight-bold text-secondary" id="aud-titular"></span>
+                </div>
+            </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock modales %}
+
 {% endblock %}
 
 {% block scripts %}

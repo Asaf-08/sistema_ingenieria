@@ -144,6 +144,13 @@ class HorarioClaseForm(forms.ModelForm):
             'color': forms.TextInput(attrs={'class': 'form-control form-control-color w-100', 'type': 'color', 'style': 'height: 40px; border-radius: 0.375rem;'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 💥 Sobrescribe cómo se renderiza el texto de cada opción en el select
+        if 'personal' in self.fields:
+            self.fields['personal'].label_from_instance = lambda obj: f"{obj.apellidos}, {obj.nombres}"
+
 class EventoCronogramaForm(forms.ModelForm):
     class Meta:
         model = EventoCronograma
@@ -157,6 +164,20 @@ class EventoCronogramaForm(forms.ModelForm):
             'aula_afectada': forms.Select(attrs={'class': 'form-control'}),
             'tipo_academico': forms.Select(attrs={'class': 'form-control border-bottom border-2 px-3 py-1'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        if 'aula_afectada' in self.fields:
+            # 1. Definimos el orden estricto: Nivel -> Grado -> Sección
+            from apps.academico.models import Aula # Asegúrate de tener la ruta correcta de tu modelo
+            self.fields['aula_afectada'].queryset = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+            
+            # 2. Formateamos el texto amigable (Ej: Primaria - 1er grado "A")
+            self.fields['aula_afectada'].label_from_instance = lambda obj: f'{obj.get_nivel_display()} - {obj.grado} "{obj.seccion}"'
+            
+            # 3. Texto por defecto
+            self.fields['aula_afectada'].empty_label = "--- Seleccionar Aula (Opcional) ---"
 
 class SimulacroForm(forms.ModelForm):
     class Meta:

@@ -8,7 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
-from apps.academico.models import Aula, Estudiante, PeriodoLectivo
+from apps.academico.models import Aula, Estudiante, Matricula, PeriodoLectivo
 from apps.personal.models import Personal
 from apps.asistencia.models import AsistenciaPersonal, AsistenciaEstudiante
 from apps.personal.views import obtener_personal_logueado
@@ -54,6 +54,30 @@ def generar_qr(request, tipo, id_usuario):
     img.save(response, "PNG")
     return response
 
+@login_required
+def panel_fotochecks(request):
+    """ Vista dedicada para imprimir fotochecks QR por Aula """
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    aulas = Aula.objects.all().order_by('nivel', 'grado', 'seccion')
+    
+    aula_id = request.GET.get('aula_id')
+    matriculas = []
+    aula_seleccionada = None
+    
+    if aula_id and aula_id.isdigit():
+        aula_seleccionada = get_object_or_404(Aula, id=aula_id)
+        if periodo_actual:
+            # Traemos los estudiantes ordenados alfabéticamente
+            matriculas = Matricula.objects.filter(
+                periodo=periodo_actual, 
+                aula=aula_seleccionada
+            ).select_related('estudiante').order_by('estudiante__apellidos')
+            
+    return render(request, 'academico/panel_fotochecks.html', {
+        'aulas': aulas,
+        'matriculas': matriculas,
+        'aula_seleccionada': aula_seleccionada
+    })
 # ==========================================================
 # 📊 REPORTES ADMINISTRATIVOS
 # ==========================================================

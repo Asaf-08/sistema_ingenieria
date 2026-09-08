@@ -13,9 +13,14 @@
                 </div>
 
                 <div class="card-body px-0 pt-0 pb-2">
-                    <div class="d-flex justify-content-start px-4 mt-3 mb-3">
+                    <div class="d-flex justify-content-between px-4 mt-3 mb-3">
                         <a href="{% url 'academico:matricula_masiva' %}" class="btn bg-gradient-info mb-0">
                             <i class="material-symbols-rounded align-middle text-sm me-1">person_add</i> Ir a Matricular Alumnos
+                        </a>
+                        
+                        <!-- 💥 BOTÓN ALINEADO A LA DERECHA -->
+                        <a href="{% url 'asistencia:panel_fotochecks' %}" class="btn bg-gradient-dark mb-0 shadow-sm">
+                            <i class="material-symbols-rounded align-middle text-sm me-1">badge</i> Imprimir Carnets QR
                         </a>
                     </div>
                     

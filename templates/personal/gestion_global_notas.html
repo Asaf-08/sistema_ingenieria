@@ -1,0 +1,174 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* =========================================================
+       DISEÑO ELEGANTE Y PREMIUM PARA ACORDEONES Y TARJETAS
+       ========================================================= */
+    .accordion-item {
+        border: none !important;
+        border-radius: 1rem !important;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+    
+    .accordion-button {
+        border-radius: 1rem !important;
+        background-color: #ffffff !important;
+        color: #414141 !important;
+        padding: 1.25rem 1.5rem;
+        box-shadow: none !important;
+        transition: all 0.3s ease;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: #f8fbff !important;
+        color: #FB8C00 !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .accordion-button::after {
+        filter: grayscale(100%) opacity(50%);
+    }
+    .accordion-button:not(.collapsed)::after {
+        filter: none;
+    }
+
+    .aula-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .aula-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- CABECERA ELEGANTE -->
+    <div class="d-flex align-items-center mb-4 bg-white p-3 border-radius-xl shadow-sm">
+        <div class="d-flex align-items-center">
+            <div class="icon icon-shape bg-gradient-info shadow-info text-center border-radius-md me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="material-symbols-rounded text-white opacity-10 text-xl" style="top: 0px;">grading</i>
+            </div>
+            <div>
+                <h5 class="font-weight-bolder text-dark mb-0">Gestión Global de Notas</h5>
+                <p class="text-sm text-secondary mb-0">Supervisión y edición maestra de calificaciones por aula.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACORDEÓN POR NIVELES -->
+    <div class="accordion" id="accordionNiveles">
+        {% for nivel, aulas in aulas_por_nivel.items %}
+        
+        <!-- 💥 REGLA DE NEGOCIO: DIR/COO ven todo. Los demás (Tutores) solo ven Secundaria -->
+        {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' or nivel == 'Secundaria' %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ nivel }}">
+                <!-- 💥 MAGIA VISUAL: Si el nivel es Secundaria, quitamos el 'collapsed' para que la flechita apunte hacia abajo -->
+                <button class="accordion-button {% if nivel != 'Secundaria' %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ nivel }}" aria-expanded="{% if nivel == 'Secundaria' %}true{% else %}false{% endif %}">
+                    <div class="d-flex align-items-center w-100 pe-3">
+                        <div class="rounded-pill me-3" style="width: 5px; height: 45px; background-color: {% if nivel == 'Inicial' %}#8b5cf6{% elif nivel == 'Primaria' %}#f57c00{% else %}#3b82f6{% endif %};"></div>
+                        <div class="icon icon-shape icon-sm shadow border-radius-md bg-gradient-dark text-center me-3 d-flex align-items-center justify-content-center">
+                            <i class="material-symbols-rounded text-white opacity-10" style="font-size: 18px; top: 0px;">domain</i>
+                        </div>
+                        <span class="text-lg font-weight-bolder">Nivel {{ nivel }}</span>
+                        
+                        <div class="ms-auto">
+                            <span class="badge" style="background-color: #f57c00;">{{ aulas|length }} Aulas</span>
+                        </div>
+                    </div>
+                </button>
+            </h2>
+            
+            <!-- 💥 MAGIA VISUAL: Si el nivel es Secundaria, agregamos 'show' para que amanezca desplegado -->
+            <div id="collapse{{ nivel }}" class="accordion-collapse collapse {% if nivel == 'Secundaria' %}show{% endif %}" data-bs-parent="#accordionNiveles">
+                <div class="accordion-body bg-light p-3 p-md-4">
+                    
+                    <div class="row">
+                        {% for aula in aulas %}
+                        <div class="col-xl-6 col-12 mb-4">
+                            <div class="card aula-card h-100 bg-white">
+                                
+                                <div class="card-header bg-gradient-dark py-3 px-4 d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <i class="material-symbols-rounded text-white me-2 opacity-8">meeting_room</i>
+                                        <h6 class="text-white mb-0 text-capitalize">{{ aula.grado }} "{{ aula.seccion }}"</h6>
+                                    </div>
+                                    <span class="badge bg-white text-dark py-1">{{ aula.cursos_asignados|length }} Cursos</span>
+                                </div>
+                                
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0 text-sm">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-4">Curso</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Docente Titular</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for asignacion in aula.cursos_asignados %}
+                                                <tr class="border-bottom">
+                                                    <td class="px-4 py-3">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="bg-gray-100 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                                <i class="material-symbols-rounded text-secondary text-sm">menu_book</i>
+                                                            </div>
+                                                            <span class="font-weight-bold text-dark">{{ asignacion.curso.nombre }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        {% if asignacion.personal %}
+                                                            <span class="badge bg-light text-dark border border-gray-300">
+                                                                <i class="material-symbols-rounded text-xxs align-middle me-1">person</i>{{ asignacion.personal.nombre_completo_corto }}
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-secondary border border-gray-200">Sin asignar</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="align-middle text-center py-3">
+                                                        <a href="{% url 'personal:lista_evaluaciones' asignacion.id %}?origen=global" class="btn btn-sm btn-outline-primary mb-0 me-1 py-1 px-2" title="Editar Notas">
+                                                            <i class="material-symbols-rounded text-xs">edit</i>
+                                                        </a>
+                                                        <a href="{% url 'personal:matriz_notas' asignacion.id %}?origen=global" class="btn btn-sm bg-gradient-dark mb-0 py-1 px-2" title="Ver Sábana">
+                                                            <i class="material-symbols-rounded text-xs">grid_on</i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-sm py-4 text-secondary">No hay cursos asignados en esta aula.</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endif %} <!-- Fin de la REGLA DE NEGOCIO -->
+        
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

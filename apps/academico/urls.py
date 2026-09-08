@@ -83,6 +83,8 @@ urlpatterns = [
     path('api/clustering-ia/', views.generar_clustering_ia_api, name='api_clustering_ia'),
     path('ajax/generar-recomendacion-ia/', views.generar_recomendacion_ajax, name='generar_recomendacion_ia'),
     
+    path('api/recomendacion-docente/', views.api_recomendacion_docente, name='api_recomendacion_docente'),
+    
     # ==========================================
     # 🕒 MÓDULO DE TIEMPOS Y CRONOGRAMA DINÁMICO
     # ==========================================

@@ -34,6 +34,9 @@
                                         Denominación</th>
                                     <th
                                         class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Tutor(a)</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                         Acciones</th>
                                 </tr>
                             </thead>
@@ -41,7 +44,10 @@
                                 {% for aula in aulas %}
                                 <tr>
                                     <td>
-                                        <h6 class="mb-0 text-sm ps-3">{{ aula.grado }}</h6>
+                                        <div class="d-flex align-items-center w-100 pe-3">
+                                            <div class="rounded-pill me-3" style="width: 5px; height: 45px; background-color: {% if aula.nivel == 'Inicial' %}#8b5cf6{% elif aula.nivel == 'Primaria' %}#f57c00{% else %}#3b82f6{% endif %};"></div>
+                                            <h6 class="mb-0 text-sm ps-3">{{ aula.grado }}</h6>
+                                        </div>
                                     </td>
                                     <td>
                                         <p class="text-xs font-weight-bold mb-0">{{ aula.nivel }}</p>
@@ -51,6 +57,8 @@
                                     </td>
                                     <td class="align-middle text-center"><span
                                             class="text-secondary text-xs">{{aula.denominacion|default:"-"}}</span></td>
+                                    <td class="align-middle text-center"><span
+                                            class="text-secondary text-xs">{{aula.tutor.nombre_completo_corto|default:"-"}}</span></td>
                                     <td class="align-middle text-center">
                                         <button type="button" onclick="abrirModalEditar('{{ aula.pk }}')"
                                             class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"

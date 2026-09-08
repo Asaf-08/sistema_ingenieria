@@ -27,7 +27,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
-from django.db.models import Count, Sum, Q
+from django.db.models import Avg, Count, Sum, Q
 from django.db.models.functions import Coalesce
 from django.contrib import messages
 from .servicios_ml import agrupar_estudiantes_kmeans # Ajusta tu importación
@@ -206,6 +206,7 @@ def obtener_periodo_data(request, pk):
         'id': periodo.id,
         'anio': periodo.anio,
         'activo': periodo.activo,
+        'bimestre_actual': periodo.bimestre_actual,
     })
 
 @require_POST
@@ -621,7 +622,8 @@ def mi_aula(request):
             matricula_id=m_id, 
             promedio_oficial=promedio_real, 
             curso_id=curso_seleccionado, 
-            bimestre_actual=bimestre_actual
+            bimestre_actual=bimestre_actual,
+            usar_llm=False,
         )
             
         if analisis_ia['color'] in conteo_estados:
@@ -646,6 +648,70 @@ def mi_aula(request):
         'bimestre_actual': bimestre_actual,
         'segment': 'mi_aula'
     })
+
+@login_required
+@require_POST
+def api_recomendacion_docente(request):
+    try:
+        data = json.loads(request.body)
+        matricula_id = data.get('matricula_id')
+        curso_id = data.get('curso_id')
+        
+        periodo = PeriodoLectivo.objects.filter(activo=True).first()
+        if not periodo:
+            return JsonResponse({'status': 'error', 'mensaje': 'No hay un periodo lectivo activo.'})
+            
+        bimestre_actual = periodo.bimestre_actual
+        
+        # 💥 1. CONTEXTO PARA LA IA (Promedio General o Curso Específico)
+        nombre_curso = "su promedio general de todos los cursos"
+        if curso_id and str(curso_id).isdigit():
+            curso_obj = Curso.objects.filter(id=int(curso_id)).first()
+            if curso_obj:
+                nombre_curso = f"el curso de {curso_obj.nombre}"
+        
+        notas_qs = Nota.objects.filter(
+            matricula_id=matricula_id, 
+            evaluacion__bimestre=bimestre_actual,
+            valor__isnull=False
+        )
+        
+        if curso_id and str(curso_id).isdigit():
+            notas_qs = notas_qs.filter(evaluacion__asignacion__curso_id=int(curso_id))
+            
+        promedio_dict = notas_qs.aggregate(prom=Avg('valor'))
+        promedio_oficial = round(promedio_dict['prom']) if promedio_dict['prom'] else 0
+        
+        # 2. Llamada al motor de análisis
+        resultado_ia = analizar_rendimiento_estudiante(
+            matricula_id=matricula_id,
+            promedio_oficial=promedio_oficial,
+            curso_id=int(curso_id) if curso_id and str(curso_id).isdigit() else None,
+            bimestre_actual=bimestre_actual,
+            usar_llm=True
+        )
+        
+        # 💥 3. FORMATEO HTML NATIVO (Evita bugs de expresiones regulares en JS)
+        analisis = resultado_ia.get('analisis_cualitativo', 'Sin análisis disponible.')
+        recomendaciones = resultado_ia.get('recomendaciones', [])
+        
+        # Inyectamos el contexto en el texto de respuesta
+        texto_html = f"<div class='mb-3'><strong>Contexto evaluado:</strong> Rendimiento en {nombre_curso}.</div>"
+        texto_html += f"<strong>Análisis Táctico:</strong><br>{analisis}<br><br>"
+        
+        if recomendaciones:
+            texto_html += "<strong>Acciones Sugeridas para el Docente:</strong><ul style='padding-left: 20px; margin-bottom: 0;'>"
+            for rec in recomendaciones:
+                texto_html += f"<li style='margin-bottom: 6px;'>{rec}</li>"
+            texto_html += "</ul>"
+                
+        return JsonResponse({
+            'status': 'success',
+            'diagnostico': texto_html
+        })
+        
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'mensaje': f'Error de IA: {str(e)}'})
 
 @login_required
 def generar_diagnostico_ajax(request):
@@ -917,29 +983,19 @@ def panel_cronograma(request):
 
     es_coordinador = personal_actual.cargo in ['COO', 'DIR'] or request.user.is_superuser
     
-    form_horario = HorarioClaseForm()
+    # 💥 Solo cargamos el formulario de eventos, ya no el de horarios
     form_evento = EventoCronogramaForm()
-
     hoy = localtime(now()).date()
-    dias_codigo = {0: 'LU', 1: 'MA', 2: 'MI', 3: 'JU', 4: 'VI', 5: 'SA', 6: 'DO'}
-    codigo_hoy = dias_codigo.get(hoy.weekday(), 'LU')
 
+    # 💥 Consultamos ÚNICAMENTE los eventos (agenda/hitos), ignorando clases
     if es_coordinador:
-        horarios = HorarioClase.objects.all().select_related('personal', 'aula', 'curso')
         eventos = EventoCronograma.objects.all()
     else:
-        horarios = HorarioClase.objects.filter(
-            personal=personal_actual, 
-            dia_semana=codigo_hoy
-        ).select_related('aula', 'curso').order_by('hora_inicio')
-        
         eventos = EventoCronograma.objects.filter(fecha_inicio__gte=hoy)
 
     return render(request, 'academico/panel_cronograma.html', {
         'es_coordinador': es_coordinador,
-        'horarios': horarios,
         'eventos': eventos,
-        'form_horario': form_horario,
         'form_evento': form_evento,
         'personal': personal_actual,
         'segment': 'cronograma'
@@ -947,14 +1003,20 @@ def panel_cronograma(request):
 
 @login_required
 def api_calendario_eventos(request):
-    """ Endpoint JSON para la Agenda Dinámica """
+    """ Endpoint JSON para la Agenda Dinámica (Exclusivo para Eventos) """
     personal_actual = obtener_personal_logueado(request)
     es_coordinador = personal_actual.cargo in ['COO', 'DIR'] or request.user.is_superuser
     eventos_fc = []
 
-    agenda = EventoCronograma.objects.all() if es_coordinador else EventoCronograma.objects.filter(fecha_fin__gte=localtime(now()).date())
+    # 💥 OPTIMIZACIÓN: Consulta directa y limpia, sin cargar datos innecesarios en memoria
+    if es_coordinador:
+        agenda = EventoCronograma.objects.all()
+    else:
+        # Los docentes solo ven los eventos desde la fecha actual hacia el futuro
+        agenda = EventoCronograma.objects.filter(fecha_fin__gte=localtime(now()).date())
     
     for e in agenda:
+        # Procesamiento ultra-rápido de fechas ISO-8601 para FullCalendar
         start_iso = f"{e.fecha_inicio.strftime('%Y-%m-%d')}T{e.hora_inicio.strftime('%H:%M:%S')}" if e.hora_inicio else e.fecha_inicio.strftime('%Y-%m-%d')
         
         if e.hora_fin:
@@ -985,23 +1047,7 @@ def api_calendario_eventos(request):
             }
         })
 
-    if not es_coordinador:
-        clases = HorarioClase.objects.filter(personal=personal_actual).select_related('aula', 'curso')
-        mapa_dias = {'DO': 0, 'LU': 1, 'MA': 2, 'MI': 3, 'JU': 4, 'VI': 5, 'SA': 6}
-        for c in clases:
-            eventos_fc.append({
-                'id': f'cls_{c.id}',
-                'title': f"{c.curso.nombre} ({c.aula.grado} '{c.aula.seccion}')",
-                'startTime': c.hora_inicio.strftime('%H:%M:%S'),
-                'endTime': c.hora_fin.strftime('%H:%M:%S'),
-                'daysOfWeek': [mapa_dias[c.dia_semana]],
-                'backgroundColor': '#17c1e8',
-                'borderColor': '#17c1e8',
-                'extendedProps': {
-                    'tipo': 'clase',
-                    'descripcion': f'Aula: {c.aula.grado} "{c.aula.seccion}"'
-                }
-            })
+    # 💥 ELIMINAMOS POR COMPLETO EL BLOQUE QUE INYECTABA "HorarioClase"
 
     return JsonResponse(eventos_fc, safe=False)
 

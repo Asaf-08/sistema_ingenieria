@@ -12,98 +12,179 @@
                     </div>
                 </div>
                 <div class="card-body px-0 pt-0 pb-2">
+                    <!-- BOTÓN NUEVO PERSONAL -->
                     <div class="d-flex justify-content-start px-4 mt-3 mb-3">
-                        <button type="button" class="btn bg-gradient-primary mb-0"
-                            onclick="abrirModalCrearPersonal()">
+                        <button type="button" class="btn bg-gradient-primary mb-0" onclick="abrirModalCrearPersonal()">
                             <i class="material-symbols-rounded align-middle text-sm me-1">add</i> Nuevo Personal
                         </button>
                     </div>
 
-                    <div class="table-responsive p-0 px-4">
-                        {% csrf_token %}
-                        <table class="table align-items-center mb-0" id="tabla-personal">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Nombre</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Cargo</th>
-                                    <th
-                                        class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
-                                        Tipo</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Contacto</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Estado</th>
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for personal in personal %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex px-3 py-1">
-                                            <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm">{{ personal.apellidos }}, {{personal.nombres}}
-                                                </h6>
-                                                <p class="text-xs text-secondary mb-0">DNI: {{ personal.dni }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ personal.get_cargo_display}}</p>
-                                    </td>
-                                    <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ personal.tipo_contrato}}</p>
-                                    </td>
-                                    <td class="align-middle text-center text-sm">
-                                        <p class="text-xs text-secondary mb-0">{{ personal.telefono|default:"-" }}</p>
-                                    </td>
-                                    <td class="align-middle text-center text-sm">
-                                        {% if personal.estado == 'Activo' %}
-                                        <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
-                                        {% else %}
-                                        <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <button onclick="abrirModalEditarPersonal('{{ personal.pk }}')"
-                                            class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
-                                            data-bs-toggle="tooltip" data-bs-title="Editar"
-                                            style="width: 35px; height: 35px; padding: 0;">
-                                            <i class="material-symbols-rounded text-white"
-                                                style="font-size: 18px;">edit</i>
-                                        </button>
-                                        <button type="button"
-                                            onclick="abrirModalEstado('{{ personal.pk }}', '{{ personal.estado }}')"
-                                            class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
-                                            data-bs-toggle="tooltip" data-bs-title="Cambiar Estado">
-                                            <i class="material-symbols-rounded text-white"
-                                                style="font-size: 18px;">published_with_changes</i>
-                                        </button>
-                                        <button
-                                            onclick="confirmarEliminarPersonal('{{ personal.pk }}', '{{ personal.nombres }} {{ personal.apellidos }}')"
-                                            class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center"
-                                            data-bs-toggle="tooltip" data-bs-title="Eliminar"
-                                            style="width: 35px; height: 35px; padding: 0;">
-                                            <i class="material-symbols-rounded text-white"
-                                                style="font-size: 18px;">delete</i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <!-- 💥 SISTEMA DE TABS -->
+                    <div class="px-4">
+                        <ul class="nav nav-tabs mb-3" id="personalTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active text-dark font-weight-bold" id="fijos-tab" data-bs-toggle="tab" data-bs-target="#fijos" type="button" role="tab" aria-selected="true">
+                                    <i class="material-symbols-rounded align-middle me-1 text-sm">badge</i> Personal Fijo
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link text-dark font-weight-bold" id="horas-tab" data-bs-toggle="tab" data-bs-target="#horas" type="button" role="tab" aria-selected="false">
+                                    <i class="material-symbols-rounded align-middle me-1 text-sm">schedule</i> Docentes Por Horas
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content px-4">
+                        <!-- ========================================== -->
+                        <!-- TAB 1: PERSONAL FIJO                       -->
+                        <!-- ========================================== -->
+                        <div class="tab-pane fade show active" id="fijos" role="tabpanel">
+                            <div class="table-responsive p-0">
+                                {% csrf_token %}
+                                <table class="table align-items-center mb-0 tabla-personal w-100">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nombre</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cargo</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Contacto</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for personal in fijos %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-3 py-1 flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">{{ personal.apellidos }}, {{ personal.nombres }}</h6>
+                                                    <p class="text-xs text-secondary mb-0">DNI: {{ personal.dni }}</p>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs font-weight-bold mb-0">{{ personal.get_cargo_display }}</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                <p class="text-xs text-secondary mb-0">{{ personal.telefono|default:"-" }}</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                {% if personal.estado == 'Activo' %}
+                                                    <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
+                                                {% else %}
+                                                    <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <!-- 💥 Botón Ver Detalles -->
+                                                <button onclick="verDetallesPersonal('{{ personal.pk }}', this)" 
+                                                        data-estado="{{ personal.estado }}"
+                                                        data-cargo="{{ personal.cargo }}"
+                                                        data-contrato="{{ personal.tipo_contrato }}"
+                                                        data-tutoria="{% for aula in personal.aulas_tutoradas.all %}{{ aula.grado }} '{{ aula.seccion }}'<br>{% empty %}<span class='text-secondary fw-normal'>Sin aula asignada</span>{% endfor %}"
+                                                        data-niveles="{% for aula in personal.aulas_tutoradas.all %}{{ aula.get_nivel_display }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}"
+                                                        class="btn btn-icon-only bg-gradient-white shadow-sm border rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" 
+                                                        data-bs-toggle="tooltip" data-bs-title="Ver Detalles" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-dark" style="font-size: 18px;">visibility</i>
+                                                </button>
+                                                <button onclick="abrirModalEditarPersonal('{{ personal.pk }}')" class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Editar" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">edit</i>
+                                                </button>
+                                                <button type="button" onclick="abrirModalEstado('{{ personal.pk }}', '{{ personal.estado }}')" class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Cambiar Estado" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">published_with_changes</i>
+                                                </button>
+                                                <button onclick="confirmarEliminarPersonal('{{ personal.pk }}', '{{ personal.nombres }} {{ personal.apellidos }}')" class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Eliminar" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">delete</i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ========================================== -->
+                        <!-- TAB 2: DOCENTES POR HORAS                  -->
+                        <!-- ========================================== -->
+                        <div class="tab-pane fade" id="horas" role="tabpanel">
+                            <div class="table-responsive p-0">
+                                <table class="table align-items-center mb-0 tabla-personal w-100">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nombre</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Curso(s)</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nivel(es)</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Contacto</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for personal in por_horas %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-3 py-1 flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">{{ personal.apellidos }}, {{ personal.nombres }}</h6>
+                                                    <p class="text-xs text-secondary mb-0">DNI: {{ personal.dni }}</p>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <!-- 💥 Truncación elegante para cursos -->
+                                                <p class="text-xs font-weight-bold mb-0 text-truncate" style="max-width: 220px;" data-bs-toggle="tooltip" title="{{ personal.cursos_lista }}">
+                                                    {{ personal.cursos_lista }}
+                                                </p>
+                                            </td>
+                                            <td>
+                                                <!-- 💥 Niveles -->
+                                                <p class="text-xs font-weight-bold mb-0 text-primary">{{ personal.niveles_lista }}</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                <p class="text-xs text-secondary mb-0">{{ personal.telefono|default:"-" }}</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                {% if personal.estado == 'Activo' %}
+                                                    <span class="badge badge-sm bg-gradient-success">ACTIVO</span>
+                                                {% else %}
+                                                    <span class="badge badge-sm bg-gradient-secondary">INACTIVO</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <!-- 💥 Botón Ver Detalles (El resto de botones son idénticos) -->
+                                                <button onclick="verDetallesPersonal('{{ personal.pk }}', this)" 
+                                                        data-estado="{{ personal.estado }}"
+                                                        data-cargo="{{ personal.cargo }}"
+                                                        data-contrato="{{ personal.tipo_contrato }}"
+                                                        data-cursos="{{ personal.cursos_lista }}" 
+                                                        data-niveles="{{ personal.niveles_lista }}"
+                                                        class="btn btn-icon-only bg-gradient-white shadow-sm border rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" 
+                                                        data-bs-toggle="tooltip" data-bs-title="Ver Detalles" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-dark" style="font-size: 18px;">visibility</i>
+                                                </button>
+                                                <button onclick="abrirModalEditarPersonal('{{ personal.pk }}')" class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Editar" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">edit</i>
+                                                </button>
+                                                <button type="button" onclick="abrirModalEstado('{{ personal.pk }}', '{{ personal.estado }}')" class="btn btn-icon-only bg-gradient-primary rounded-circle mb-0 me-1 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Cambiar Estado" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">published_with_changes</i>
+                                                </button>
+                                                <button onclick="confirmarEliminarPersonal('{{ personal.pk }}', '{{ personal.nombres }} {{ personal.apellidos }}')" class="btn btn-icon-only bg-gradient-danger rounded-circle mb-0 d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-title="Eliminar" style="width: 35px; height: 35px; padding: 0;">
+                                                    <i class="material-symbols-rounded text-white" style="font-size: 18px;">delete</i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock content %}
+
+{% block modales %}
 
 <div class="modal fade" id="modalPersonal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -216,7 +297,125 @@
         </div>
     </div>
 </div>
-{% endblock content %}
+
+<!-- ======================================================= -->
+<!-- MODAL DE VER DETALLES (Diseño Ejecutivo 2 Columnas)     -->
+<!-- ======================================================= -->
+<div class="modal fade" id="modalDetallesPersonal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-radius-xl shadow-lg">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white"><i class="material-symbols-rounded align-middle me-2">badge</i> Detalle del Personal</h5>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <!-- Encabezado Principal -->
+                <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                    <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="material-symbols-rounded text-white opacity-10 fs-3" style="top: 0px;">person</i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 font-weight-bolder text-dark" id="det_nombre_completo">-</h4>
+                        <span class="badge bg-gradient-warning mt-1" id="det_cargo">-</span>
+                        <span class="badge bg-gradient-primary mt-1 ms-1" id="det_contrato_badge">-</span>
+                        <!-- 💥 Insignia de Estado -->
+                        <span class="badge mt-1 ms-1" id="det_estado_badge">-</span>
+                    </div>
+                </div>
+
+                <!-- Columnas de Información -->
+                <div class="row">
+                    <!-- Columna Izquierda: Datos Personales -->
+                    <div class="col-md-6 mb-4 mb-md-0 border-md-end border-light pe-md-4">
+                        <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-3">Datos Personales y Contacto</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item px-0 border-0 d-flex align-items-center mb-2">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">badge</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Documento de Identidad</span>
+                                    <span class="text-sm font-weight-bold text-dark" id="det_dni">-</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item px-0 border-0 d-flex align-items-center mb-2">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">call</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Teléfono de Contacto</span>
+                                    <span class="text-sm font-weight-bold text-dark" id="det_telefono">-</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item px-0 border-0 d-flex align-items-center">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">mail</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Correo</span>
+                                    <span class="text-sm font-weight-bold text-dark text-wrap text-break" id="det_correo">-</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Columna Derecha: Datos Laborales y Académicos -->
+                    <div class="col-md-6 ps-md-4">
+                        <h6 class="text-uppercase text-secondary text-xs font-weight-bolder mb-3">Información Laboral</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item px-0 border-0 d-flex align-items-center mb-2">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">calendar_month</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Fecha de Ingreso</span>
+                                    <span class="text-sm font-weight-bold text-dark" id="det_ingreso">-</span>
+                                </div>
+                            </li>
+                            
+                            <!-- 💥 Caja Dinámica 1: Tutoría (Solo para Fijos Docentes) -->
+                            <li class="list-group-item px-0 border-0 d-flex align-items-start mb-2" id="box_tutoria" style="display:none;">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 mt-1 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">school</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Tutoría a Cargo</span>
+                                    <span class="text-sm font-weight-bold text-info" id="det_tutoria" style="line-height: 1.5;">-</span>
+                                </div>
+                            </li>
+
+                            <!-- 💥 Caja Dinámica 2: Cursos (Solo para Por Horas) -->
+                            <li class="list-group-item px-0 border-0 d-flex align-items-start mb-2" id="box_cursos" style="display:none;">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 mt-1 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">menu_book</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Curso(s)</span>
+                                    <!-- Aquí se apilarán uno encima de otro -->
+                                    <span class="text-sm font-weight-bold text-dark" id="det_cursos" style="line-height: 1.6;">-</span>
+                                </div>
+                            </li>
+
+                            <!-- 💥 Caja Dinámica 3: Niveles (Para todos los Docentes) -->
+                            <li class="list-group-item px-0 border-0 d-flex align-items-start mb-2" id="box_niveles" style="display:none;">
+                                <div class="icon icon-shape icon-sm bg-gray-100 text-center border-radius-md me-3 mt-1 d-flex align-items-center justify-content-center">
+                                    <i class="material-symbols-rounded text-dark text-sm">layers</i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-xs text-secondary mb-0">Nivel(es)</span>
+                                    <span class="text-sm font-weight-bold text-primary" id="det_niveles" style="line-height: 1.4;">-</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock modales %}
 
 {% block scripts %}
 <script src="{% static 'js/personal.js' %}"></script>

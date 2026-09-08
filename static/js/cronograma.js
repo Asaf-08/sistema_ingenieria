@@ -20,11 +20,9 @@ function inicializarCalendario() {
     let $calendarEl = $('#calendario-visual');
     if ($calendarEl.length === 0) return;
 
-    let esMovil = $(window).width() < 768;
-
     calendarGlobal = new FullCalendar.Calendar($calendarEl[0], {
         locale: 'es', 
-        initialView: esCoordinadorActivo ? 'dayGridMonth' : (esMovil ? 'listWeek' : 'timeGridWeek'),
+        initialView: 'dayGridMonth',
         buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', list: 'Agenda' },
         headerToolbar: {
             left: 'prev,next today',

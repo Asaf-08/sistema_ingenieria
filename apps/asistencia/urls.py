@@ -10,6 +10,8 @@ urlpatterns = [
     path('escaner/', views.escaner_asistencia, name='escaner'),
     path('generar-qr/<str:tipo>/<int:id_usuario>/', views.generar_qr, name='generar_qr'),
     
+    path('fotochecks/', views.panel_fotochecks, name='panel_fotochecks'),
+    
     # ==========================================
     # 📊 DASHBOARDS Y REPORTES ADMINISTRATIVOS
     # ==========================================

@@ -68,10 +68,16 @@
     <div class="col-12">
       <div class="card bg-gradient-dark shadow-dark">
         <div class="card-body p-3 d-flex align-items-center">
-          <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}" class="text-white me-3">
-            <i class="material-symbols-rounded text-3xl">arrow_back</i>
-          </a>
-          <div>
+            <!-- 💥 Lógica dinámica de retroceso hacia Lista de Evaluaciones -->
+            {% if request.GET.origen == 'global' %}
+            <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}?origen=global" class="text-white me-3">
+            {% else %}
+            <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}" class="text-white me-3">
+            {% endif %}
+              <i class="material-symbols-rounded text-3xl">arrow_back</i>
+            </a>
+            
+            <div>
             <h6 class="text-white mb-0 text-capitalize">{{ evaluacion.nombre }}</h6>
             <!-- 💥 Aquí está el nuevo texto de contexto sin la fecha -->
             <p class="text-xs text-white opacity-8 mb-0 font-weight-bold">
@@ -128,7 +134,7 @@
                 <div class="input-premium-wrapper d-flex align-items-center justify-content-center" style="width: 70px; height: 50px;">
                   <input type="number" 
                          id="input-nota-{{ nota.id }}"
-                         class="form-control text-center font-weight-bolder text-lg input-premium p-0 m-0 {% if registro_cerrado %}text-muted bg-transparent{% endif %}" 
+                         class="form-control text-center font-weight-bolder text-lg input-premium input-nota p-0 m-0 {% if registro_cerrado %}text-muted bg-transparent{% endif %}" 
                          min="0" max="20" step="1"
                          value="{% if nota.valor != None %}{{ nota.valor|floatformat:0 }}{% endif %}"
                          data-nota-id="{{ nota.id }}"

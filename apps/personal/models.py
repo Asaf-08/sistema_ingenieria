@@ -66,7 +66,34 @@ class Personal(models.Model):
     
     @property
     def nombre_completo_corto(self):
-        return f"{self.nombres.split()[0]} {self.apellidos.split()[0]}"
+        # 1. Obtenemos el primer nombre (casi siempre es la primera palabra)
+        primer_nombre = self.nombres.strip().split()[0] if self.nombres else ""
+        
+        # 2. Separamos los apellidos
+        apellidos_lista = self.apellidos.strip().split()
+        if not apellidos_lista:
+            return primer_nombre
+            
+        # 3. Lista de conectores clásicos en apellidos hispanos
+        conectores = ['de', 'del', 'la', 'las', 'los', 'san', 'santa', 'y', 'mac', 'mc']
+        
+        apellido_paterno = []
+        for palabra in apellidos_lista:
+            apellido_paterno.append(palabra)
+            # Si la palabra actual (en minúsculas) NO es un conector, 
+            # significa que ya llegamos al núcleo del primer apellido y cortamos ahí.
+            if palabra.lower() not in conectores:
+                break
+                
+        apellido_final = " ".join(apellido_paterno)
+        
+        # Retornamos el nombre y el primer apellido capitalizados correctamente
+        return f"{primer_nombre} {apellido_final}".title()
+    
+    @property
+    def es_tutor_secundaria(self):
+        """ Devuelve True si el personal es tutor de al menos un aula de Secundaria """
+        return self.aulas_tutoradas.filter(nivel='Secundaria').exists()
     
     class Meta:
         verbose_name = "Personal"

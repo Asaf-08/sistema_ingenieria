@@ -1,0 +1,195 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* =========================================
+       DISEÑO DE LA GRILLA EN WEB
+       ========================================= */
+    .grilla-fotochecks {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .fotocheck {
+        background: white;
+        border: 2px dashed #b0bec5;
+        border-radius: 12px;
+        padding: 20px 15px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        transition: 0.3s;
+    }
+
+    .ft-header {
+        background-image: linear-gradient(195deg, #ffc57f 0%, #FB8C00 100%);
+        color: white;
+        width: 100%;
+        padding: 6px 0;
+        border-radius: 6px;
+        font-weight: 900;
+        font-size: 13px;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+    }
+
+    .ft-qr-box {
+        border: 3px solid #f8f9fa;
+        border-radius: 12px;
+        padding: 8px;
+        background: white;
+        margin-bottom: 10px;
+    }
+
+    .ft-qr-box img {
+        width: 130px;
+        height: 130px;
+        object-fit: contain;
+    }
+
+    .ft-nombre { font-size: 14px; font-weight: 800; line-height: 1.2; margin: 5px 0; text-transform: uppercase; color: #414141; }
+    .ft-dni { font-size: 11px; color: #414141; margin-bottom: 8px; font-weight: bold; }
+    .ft-aula { font-size: 12px; background: #f8f9fa; color: #414141; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+
+    /* =========================================
+       MAGIA DE IMPRESIÓN (A4 VERTICAL)
+       ========================================= */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        /* 💥 DESTRUCCIÓN DEL SCROLL FALSO DE LA PLANTILLA (PerfectScrollbar) */
+        .ps__rail-x, 
+        .ps__rail-y, 
+        .ps__scrollbar-x-rail, 
+        .ps__scrollbar-y-rail {
+            display: none !important;
+            opacity: 0 !important;
+        }
+        
+        /* 💥 DESTRUCCIÓN DE SCROLL Y HOJAS EN BLANCO: Quitamos márgenes inferiores residuales */
+        html, body, .g-sidenav-show, .main-content, .container-fluid, .row, .card, #areaImpresion, .grilla-fotochecks { 
+            background: transparent !important; 
+            height: auto !important; 
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important; 
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+            border: none !important;
+        }
+        
+        /* Ocultar elementos de la interfaz */
+        .sidenav, .navbar, .no-print, footer, .fixed-plugin, .fixed-bottom, .mobile-bottom-nav { 
+            display: none !important; 
+        }
+        
+        .main-content, .container-fluid, #areaImpresion { 
+            display: block !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+        }
+        
+        /* Configuración de la cuadrícula de fotochecks */
+        .grilla-fotochecks {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 5mm !important;
+            justify-content: center !important;
+        }
+        
+        .fotocheck { 
+            width: 52mm !important; /* Entran 3 columnas en papel A4 */
+            box-shadow: none !important; 
+            border: 1px dashed #999 !important; 
+            padding: 1mm 1mm !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        
+        /* Forza a Chrome a imprimir los fondos de color (el gradiente azul) */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <!-- 💥 PANEL SUPERIOR -->
+    <div class="d-flex align-items-center justify-content-between mb-4 no-print">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'academico:lista_matriculas' %}" class="text-dark me-3 transition-hover" title="Volver a Matrículas">
+                <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
+            </a>
+            <div>
+                <h4 class="font-weight-black text-dark mb-0">🪪 Generador de Carnets QR</h4>
+                <p class="text-sm text-secondary mb-0">Imprima los fotochecks de asistencia de los estudiantes.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💥 CONTROLES DE BÚSQUEDA -->
+    <div class="card shadow-sm mb-4 no-print border-radius-lg">
+        <div class="card-body px-4">
+            <form method="GET" class="d-flex flex-column flex-md-row gap-3 align-items-md-end w-100">
+                <div class="flex-grow-1">
+                    <label class="text-xs font-weight-bold text-secondary mb-1">Seleccionar Aula:</label>
+                    <select name="aula_id" class="form-select border px-3 py-2 w-100" onchange="this.form.submit()">
+                        <option value="">-- Seleccione un nivel y aula --</option>
+                        {% for aula in aulas %}
+                            <!-- Se formatea limpio y directo -->
+                            <option value="{{ aula.id }}" {% if aula_seleccionada.id == aula.id %}selected{% endif %}>
+                                {{ aula.get_nivel_display }} - {{ aula.grado }} "{{ aula.seccion }}"
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="d-flex flex-wrap gap-2">
+                    {% if aula_seleccionada and matriculas %}
+                    <button type="button" class="btn bg-gradient-dark mb-0 d-flex align-items-center justify-content-center" onclick="window.print()">
+                        <i class="material-symbols-rounded text-sm me-1">print</i> Imprimir Carnets
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 💥 ÁREA DE IMPRESIÓN (Aquí se renderizan los QR al vuelo) -->
+    <div id="areaImpresion">
+        {% if aula_seleccionada %}
+            <div class="grilla-fotochecks">
+                {% for matricula in matriculas %}
+                <div class="fotocheck">
+                    <div class="ft-header">CARNET ESTUDIANTE</div>
+                    <div class="ft-qr-box">
+                        <!-- Tu generador actual dibuja el QR -->
+                        <img loading="lazy" src="{% url 'asistencia:generar_qr' 'EST' matricula.estudiante.id %}" alt="QR">
+                    </div>
+                    <div class="ft-nombre">
+                        <!-- 💥 Llamamos a la nueva propiedad para imprimir solo el 1er nombre -->
+                        {{ matricula.estudiante.primer_nombre }}<br>
+                        {{ matricula.estudiante.apellidos }}
+                    </div>
+                    <div class="ft-dni">DNI: {{ matricula.estudiante.dni }}</div>
+                    <div class="ft-aula">{{ aula_seleccionada.grado }} "{{ aula_seleccionada.seccion }}"</div>
+                </div>
+                {% empty %}
+                <div class="w-100 text-center py-5 no-print">
+                    <div class="alert alert-light mb-0">No hay alumnos matriculados en esta aula.</div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ function abrirModalEditarPeriodo(id) {
         $('#periodo_id').val(data.id);
         $('#id_anio').val(data.anio);
         $('#id_activo').prop('checked', data.activo);
+        $('#id_bimestre_actual').val(data.bimestre_actual);
         $('#modalTituloPeriodo').text('Editar Periodo');
         $('#modalHeaderPeriodo').removeClass('bg-gradient-primary').addClass('bg-gradient-info');
         $('#modalPeriodo').modal('show');

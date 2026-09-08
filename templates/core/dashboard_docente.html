@@ -211,6 +211,67 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       💥 PANEL DE SUPERVISIÓN EXCLUSIVO PARA TUTORES DE SECUNDARIA
+       ============================================================ -->
+  {% if es_tutor_secundaria %}
+  <div class="row mt-4 mb-4">
+    <div class="col-12 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <h6 class="text-dark font-weight-bold mb-0">
+        <i class="material-symbols-rounded align-middle me-2 text-warning">radar</i>Panel de Supervisión
+      </h6>
+      
+      <!-- 💥 SELECTOR DINÁMICO DE AULAS -->
+      {% if aulas_tutoria|length > 1 %}
+      <select id="select-graficos-aula" class="form-control px-3 py-1 bg-white shadow-sm font-weight-bold text-dark w-100 w-md-auto" style="max-width: 300px;">
+        {% for aula in aulas_tutoria %}
+          <option value="{{ aula.id }}">{{ aula.grado }} "{{ aula.seccion }}" - {{ aula.nivel }}</option>
+        {% endfor %}
+      </select>
+      {% elif aulas_tutoria|length == 1 %}
+        <!-- Si tiene un sola aula, mostramos texto pero inyectamos el valor oculto para JS -->
+        <input type="hidden" id="select-graficos-aula" value="{{ aulas_tutoria.0.id }}">
+        <span class="badge bg-white text-dark border shadow-sm px-3 py-2 text-md">{{ aulas_tutoria.0.grado }} "{{ aulas_tutoria.0.seccion }}"</span>
+      {% endif %}
+    </div>
+    
+    <div class="col-lg-5 mb-4 mb-lg-0">
+      <div class="card shadow-sm h-100 card-hover border">
+        <div class="card-header pb-0 bg-transparent">
+          <h6 class="text-dark mb-0">Mapa de Riesgo</h6>
+          <p class="text-xs text-secondary">Distribución de alumnos por rendimiento general</p>
+        </div>
+        <div class="card-body p-3 text-center d-flex flex-column justify-content-center align-items-center">
+          <div class="chart w-100" style="max-height: 250px;">
+            <canvas id="chart-mapa-riesgo" class="chart-canvas" height="250"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-7">
+      <div class="card shadow-sm h-100 card-hover border">
+        <div class="card-header pb-0 bg-transparent">
+          <h6 class="text-dark mb-0">Cursos Críticos</h6>
+          <p class="text-xs text-secondary">Cursos con el promedio más bajo (Top 5)</p>
+        </div>
+        <div class="card-body p-3">
+          <div class="chart w-100">
+            <canvas id="chart-cursos-criticos" class="chart-canvas" height="250"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor JSON Maestro -->
+  <script id="data-graficos-tutor" type="application/json">
+    {{ graficos_tutor_json|safe }}
+  </script>
+  {% endif %}
+
+  <!-- 💥 OCULTAMOS ESTA SECCIÓN SI ES TUTOR DE SECUNDARIA -->
+  {% if not es_tutor_secundaria %}
   <div class="row mt-2">
     <div class="col-lg-4 mb-0">
       <!-- 💥 CONTENEDOR MAESTRO: En PC hereda el 100% de la fila. En móvil asegura 420px de altura mínima -->
@@ -301,6 +362,7 @@
     </div>
 
   </div>
+  {% endif %}
 
 </div>
 {% endblock content %}

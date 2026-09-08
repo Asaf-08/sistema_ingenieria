@@ -59,7 +59,7 @@ function registrarEventosDashboard() {
     // EVENTOS PARA GEMINI IA
     // =============================================================
     
-    // 1. Botón principal de Diagnóstico IA (Solucionado Bug de Evento AJAX)
+    // 💥 1. CORRECCIÓN DEL CACHÉ PARA PAPÁS (Diagnóstico IA)
     $(document).on('click', '.btn-diagnostico', function (e) {
         e.preventDefault();
         const btn = $(this);
@@ -67,17 +67,18 @@ function registrarEventosDashboard() {
         const nombreAlumno = btn.data('nombre');
         const urlEndPoint = btn.data('url');
 
-        // 💥 NUEVO: Siempre leer el selector actual en el momento del clic
-        const selector = $('#select-curso-aula');
-        const cursoId = selector.val() || '';
+        // Estandarización estricta de la llave de caché
+        const cursoId = $('#select-curso-aula').val() || 'general';
         
-        // Limpiamos los emojis para inyectar el texto en el footer
-        const contextoTexto = selector.find(':selected').text().replace('📊', '').replace('📘', '').trim();
+        const contextoTexto = $('#select-curso-aula').find(':selected').text().replace('📊', '').replace('📘', '').trim();
         $('#contexto-curso-modal-diag').html(`<i class="material-symbols-rounded text-sm align-middle me-1">school</i> Evaluando: ${contextoTexto}`);
 
         if (!matriculaId) return;
 
-        const claveCache = 'diagnostico_ia_alumno_' + matriculaId + '_curso_' + (cursoId || 'general');
+        // Dentro de: $(document).on('click', '.btn-diagnostico', function (e) { ...
+        // Cambia la variable claveCache por esta:
+        const promedio = btn.data('promedio');
+        const claveCache = `diagnostico_ia_alumno_${matriculaId}_curso_${cursoId}_prom_${promedio}`;
         const diagnosticoGuardado = localStorage.getItem(claveCache);
 
         if (diagnosticoGuardado) {
@@ -85,18 +86,22 @@ function registrarEventosDashboard() {
             renderizarRespuestaExitosa(diagnosticoGuardado, btn, matriculaId, cursoId);
         } else {
             prepararModalCarga(nombreAlumno);
+            // Pasamos cursoId limpio para que la caché se guarde bien
             solicitarDiagnosticoBackend(matriculaId, cursoId, nombreAlumno, urlEndPoint, btn);
         }
     });
 
-    // 2. Botón de "Generar otra versión"
+    // 💥 2. CORRECCIÓN EN EL BOTÓN REGENERAR
     $(document).on('click', '#btnRegenerarIA', function(e) {
         e.preventDefault();
         const btnOriginal = $(this).data('btn-referencia');
         const matriculaId = btnOriginal.data('matricula-id');
-        const cursoId = btnOriginal.data('curso-id') || 'general'; 
         
-        localStorage.removeItem('diagnostico_ia_alumno_' + matriculaId + '_curso_' + cursoId);
+        // Debe leer el selector actual, igual que la función principal
+        const cursoId = $('#select-curso-aula').val() || 'general'; 
+        
+        const promedio = btnOriginal.data('promedio');
+        localStorage.removeItem(`diagnostico_ia_alumno_${matriculaId}_curso_${cursoId}_prom_${promedio}`);
         prepararModalCarga(btnOriginal.data('nombre'));
         solicitarDiagnosticoBackend(matriculaId, cursoId, btnOriginal.data('nombre'), btnOriginal.data('url'), btnOriginal);
     });
@@ -106,6 +111,38 @@ function registrarEventosDashboard() {
         e.preventDefault();
         const btn = $(this);
         const textoLimpio = document.getElementById('textoDiagnostico').innerText;
+
+        navigator.clipboard.writeText(textoLimpio).then(() => {
+            const htmlOriginal = btn.html();
+            btn.html('<i class="material-symbols-rounded align-middle me-1 text-sm">check</i> ¡Copiado!');
+            btn.removeClass('btn-outline-info').addClass('btn-success text-white');
+            setTimeout(() => {
+                btn.html(htmlOriginal);
+                btn.removeClass('btn-success text-white').addClass('btn-outline-info');
+            }, 2000);
+        }).catch(err => alert('Error al copiar el texto.'));
+    });
+
+    // 💥 EVENTO: REGENERAR VERSIÓN DOCENTE
+    $(document).on('click', '#btnRegenerarDocenteIA', function(e) {
+        e.preventDefault();
+        const btnOriginal = $(this).data('btn-referencia');
+        const matriculaId = btnOriginal.data('matricula-id');
+        const promedio = btnOriginal.data('promedio');
+        const cursoId = $('#select-curso-aula').val() || 'general'; 
+        
+        // Destruimos el caché específico de esta nota
+        localStorage.removeItem(`recomendacion_docente_${matriculaId}_curso_${cursoId}_prom_${promedio}`);
+        
+        // Simulamos un clic en el semáforo para que cargue desde cero
+        btnOriginal.click(); 
+    });
+
+    // 💥 EVENTO: COPIAR VERSIÓN DOCENTE
+    $(document).on('click', '#btnCopiarDocenteIA', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const textoLimpio = document.getElementById('textoRecomendacion').innerText;
 
         navigator.clipboard.writeText(textoLimpio).then(() => {
             const htmlOriginal = btn.html();
@@ -202,6 +239,83 @@ function registrarEventosDashboard() {
             btn.attr('href', btn.data('base-url') + '&asignacion_id=' + asignacionInicial);
         }
     }
+
+
+    // =============================================================
+    // EVENTOS PARA RECOMENDACIONES AL DOCENTE (Semáforo)
+    // =============================================================
+    
+    $(document).on('click', '.btn-recomendacion-docente', function (e) {
+        e.preventDefault();
+        const btn = $(this);
+        const matriculaId = btn.data('matricula-id');
+        const nombreAlumno = btn.data('nombre');
+        const urlEndPoint = btn.data('url');
+        const promedio = btn.data('promedio'); // 💥 Capturamos el promedio actual
+
+        const cursoId = $('#select-curso-aula').val() || 'general';
+        const contextoTexto = $('#select-curso-aula').find(':selected').text().replace('📊', '').replace('📘', '').trim();
+        $('#contexto-curso-modal-docente').html(`<i class="material-symbols-rounded text-sm align-middle me-1">school</i> Evaluando: ${contextoTexto}`);
+
+        if (!matriculaId) return;
+
+        // 💥 CACHÉ INTELIGENTE: La llave incluye el promedio. Si el alumno mejora (ej. de 10 a 12),
+        // la llave cambia, forzando al sistema a pedir una nueva recomendación a Gemini.
+        const claveCache = `recomendacion_docente_${matriculaId}_curso_${cursoId}_prom_${promedio}`;
+        const recomendacionGuardada = localStorage.getItem(claveCache);
+
+        $('#nombreDocenteModal').text(nombreAlumno);
+        $('#modalRecomendacionDocente').modal('show');
+
+        if (recomendacionGuardada) {
+            renderizarRecomendacionDocente(recomendacionGuardada, btn);
+        } else {
+            $('#contenidoRecomendacion').html(`
+                <div class="text-center py-4">
+                    <div class="spinner-border text-info mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <h6 class="text-dark font-weight-bold">Analizando historial del alumno...</h6>
+                    <p class="text-sm text-secondary">Generando tips tácticos para el docente.</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: urlEndPoint,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ matricula_id: matriculaId, curso_id: cursoId, nombre_alumno: nombreAlumno }), 
+                success: function (response) {
+                    if (response.status === 'success') {
+                        localStorage.setItem(claveCache, response.diagnostico);
+                        renderizarRecomendacionDocente(response.diagnostico, btn);
+                    } else {
+                        $('#contenidoRecomendacion').html(`<div class="alert alert-danger text-white">${response.mensaje}</div>`);
+                    }
+                },
+                error: function () {
+                    $('#contenidoRecomendacion').html(`<div class="alert alert-danger text-white">Fallo de conexión con el servidor IA.</div>`);
+                }
+            });
+        }
+    });
+}
+
+// 💥 NUEVO: Se agregan los botones de Copiar y Regenerar al Modal Docente
+function renderizarRecomendacionDocente(htmlTexto, btnOriginal) {
+    $('#contenidoRecomendacion').html(`
+        <div class="alert alert-light text-dark border-left-info border-4 p-3 shadow-xs mb-3" id="textoRecomendacion" style="font-size: 0.95rem; line-height: 1.6; text-align: justify; background-image: linear-gradient(to bottom, #ffffff, #ffffff)!important;">
+            ${htmlTexto}
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-sm btn-outline-info mb-0 me-2" id="btnCopiarDocenteIA">
+                <i class="material-symbols-rounded align-middle me-1 text-sm">content_copy</i> Copiar texto
+            </button>
+            <button class="btn btn-sm btn-outline-secondary mb-0" id="btnRegenerarDocenteIA">
+                <i class="material-symbols-rounded align-middle me-1 text-sm">refresh</i> Generar otra versión
+            </button>
+        </div>
+    `);
+    // Guardamos el botón original para poder vaciar el caché si piden regenerar
+    $('#btnRegenerarDocenteIA').data('btn-referencia', btnOriginal);
 }
 
 // =========================================================================

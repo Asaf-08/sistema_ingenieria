@@ -29,7 +29,6 @@ from django.contrib.auth import update_session_auth_hash
 import os
 from django.conf import settings
 from openpyxl.drawing.image import Image as OpenpyxlImage
-from django.contrib.auth.views import LoginView
 
 
 def obtener_personal_logueado(request):
@@ -46,35 +45,33 @@ def raiz_redireccion(request):
         return redirect('personal:enrutador_principal')
     return redirect('login')
 
+from django.contrib.auth.decorators import login_required
+
+@login_required
 def lista_personal(request):
-    personal = Personal.objects.all()
-    form = PersonalForm()
-    return render(request, 'academico/lista_personal.html', {'personal': personal, 'form': form})
-
-class LoginPersonalizadoView(LoginView):
-    """
-    Vista maestra de autenticación. 
-    Intercepta el formulario para configurar la duración de la sesión.
-    """
-    template_name = 'registration/login.html'
-    redirect_authenticated_user = True
-
-    def form_valid(self, form):
-        # 1. Hacemos que Django loguee al usuario normalmente
-        response = super().form_valid(form)
+    # 1. Personal Fijo (Traemos sus aulas tutoradas en la misma consulta)
+    fijos = Personal.objects.filter(tipo_contrato='Fijo').prefetch_related('aulas_tutoradas')
+    
+    # 2. Personal Por Horas (Traemos sus cursos y aulas asignadas de golpe)
+    por_horas = Personal.objects.filter(tipo_contrato='Por Horas').prefetch_related(
+        'asignaciones__curso', 'asignaciones__aula'
+    )
+    
+    # 3. Procesamiento en memoria de los Cursos y Niveles (Evita lógica compleja en HTML)
+    for p in por_horas:
+        # Usamos 'set' para eliminar duplicados automáticamente
+        cursos = set(asignacion.curso.nombre for asignacion in p.asignaciones.all())
+        niveles = set(asignacion.aula.get_nivel_display() for asignacion in p.asignaciones.all())
         
-        # 2. Leemos si el switch "Mantener sesión iniciada" llegó marcado
-        remember_me = self.request.POST.get('remember_me', None)
+        p.cursos_lista = ", ".join(cursos) if cursos else "-"
+        p.niveles_lista = ", ".join(niveles) if niveles else "-"
 
-        if remember_me == 'on':
-            # Si marcó la casilla: La sesión durará 2 semanas (1209600 segundos)
-            # Esto sobrevive aunque apague la PC o el celular
-            self.request.session.set_expiry(1209600)
-        else:
-            # 💥 Si NO la marcó: La sesión se destruye automáticamente al cerrar la pestaña/navegador
-            self.request.session.set_expiry(0)
-
-        return response
+    form = PersonalForm()
+    return render(request, 'academico/lista_personal.html', {
+        'fijos': fijos,
+        'por_horas': por_horas,
+        'form': form
+    })
 
 def guardar_personal_ajax(request):
     data = {}
@@ -164,7 +161,14 @@ def mis_cursos(request):
 
 @login_required
 def lista_evaluaciones(request, asignacion_id):
-    asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
+    # CÓDIGO NUEVO CON LLAVE MAESTRA:
+    perfil = request.user.perfil_personal
+    if perfil.cargo in ['COO', 'DIR'] or perfil.es_tutor_secundaria:
+        # Si es coordinadora o director o tutor de secundaria, puede ver CUALQUIER asignación
+        asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
+    else:
+        # Si es docente, solo ve las suyas
+        asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id, personal=perfil)
     
     # 1. Candados de cierres
     cierres_db = CierreRegistroBimestral.objects.filter(asignacion=asignacion)
@@ -642,6 +646,50 @@ def matriz_actitudinal(request, aula_id, bimestre):
         'matriculas': matriculas
     })
 
+from django.shortcuts import render, redirect
+from django.db.models import Prefetch
+
+@login_required
+def gestion_global_notas(request):
+    """ Vista para Coordinación, Dirección y Tutores de Secundaria """
+    
+    perfil = request.user.perfil_personal
+    
+    # 1. Seguridad de Acceso
+    if perfil.cargo not in ['COO', 'DIR'] and not perfil.es_tutor_secundaria:
+        return redirect('core:home') # O a una página de error 403
+        
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+    
+    cursos_prefetch = Prefetch(
+        'asignaciones',
+        queryset=AsignacionAcademica.objects.filter(periodo=periodo_actual).select_related('curso', 'personal'),
+        to_attr='cursos_asignados'
+    )
+    
+    # 2. Consulta Base de Aulas
+    aulas = Aula.objects.filter(
+        asignaciones__periodo=periodo_actual
+    ).distinct().prefetch_related(cursos_prefetch).order_by('nivel', 'grado', 'seccion')
+    
+    # 💥 3. EL CANDADO DE SEGURIDAD PARA TUTORES:
+    if perfil.cargo not in ['COO', 'DIR']:
+        # Si llega aquí, es porque es tutor de secundaria. 
+        # Filtramos estrictamente para que solo reciba las aulas a su cargo.
+        aulas = aulas.filter(tutor=perfil)
+    
+    # 4. Agrupamos por nivel en Python
+    aulas_por_nivel = {}
+    for aula in aulas:
+        if aula.nivel not in aulas_por_nivel:
+            aulas_por_nivel[aula.nivel] = []
+        aulas_por_nivel[aula.nivel].append(aula)
+
+    return render(request, 'personal/gestion_global_notas.html', {
+        'aulas_por_nivel': aulas_por_nivel,
+        'periodo': periodo_actual,
+    })
+
 @login_required
 def reporte_agenda_semanal(request, aula_id):
     aula = get_object_or_404(Aula, id=aula_id)
@@ -1062,10 +1110,18 @@ def auditoria_academica_admin(request):
             'temas_json': json.dumps(temas_dict), # Magia pura para el Frontend
             'tiene_simulacro': tiene_simulacro,
         })
+    
+    # 💥 HISTORIAL DE NOTAS: Viajamos por las foráneas de tus modelos exactos
+    historial_cambios = Nota.history.select_related(
+        'history_user', 
+        'matricula__estudiante', 
+        'evaluacion__asignacion__curso'
+    ).order_by('-history_date')[:50]
 
     return render(request, 'personal/auditoria_academica.html', {
         'lista_auditoria': lista_auditoria,
         'bimestre_seleccionado': bimestre_seleccionado,
         'opciones_bimestres': opciones_bimestres,
         'matriz_cumplimiento': matriz_cumplimiento,
+        'historial_cambios': historial_cambios,
     })

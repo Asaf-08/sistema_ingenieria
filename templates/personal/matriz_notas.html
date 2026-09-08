@@ -5,14 +5,21 @@
 <div class="container-fluid py-4 vista-matriz">
   
   <div class="d-flex align-items-center mb-4">
-      <a href="{% url 'personal:mis_cursos' %}" class="text-dark me-3 transition-hover" title="Volver a mis cursos">
-          <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
-      </a>
-      <div>
-          <h4 class="font-weight-black text-dark mb-0">📊 Sábana de Notas: {{ asignacion.curso.nombre }}</h4>
-          <p class="text-sm text-secondary mb-0">Aula: {{ asignacion.aula.grado }} "{{ asignacion.aula.seccion }}" | Bimestre: {{ bimestre }}</p>
-      </div>
-  </div>
+      
+    <!-- 💥 Lógica dinámica de retroceso -->
+    {% if request.GET.origen == 'global' %}
+    <a href="{% url 'personal:gestion_global_notas' %}" class="text-dark me-3 transition-hover" title="Volver a Gestión Global">
+    {% else %}
+    <a href="{% url 'personal:mis_cursos' %}" class="text-dark me-3 transition-hover" title="Volver a mis cursos">
+    {% endif %}
+        <i class="material-symbols-rounded" style="font-size: 36px;">arrow_back</i>
+    </a>
+    
+    <div>
+        <h4 class="font-weight-black text-dark mb-0">📊 Sábana de Notas: {{ asignacion.curso.nombre }}</h4>
+        <p class="text-sm text-secondary mb-0">Aula: {{ asignacion.aula.grado }} "{{ asignacion.aula.seccion }}" | Bimestre: {{ bimestre }}</p>
+    </div>
+</div>
 
   <div class="row">
     <div class="col-12">

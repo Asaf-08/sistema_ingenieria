@@ -131,6 +131,13 @@ class Estudiante(models.Model):
     def __str__(self):
         return f"{self.apellidos}, {self.nombres}"
     
+    @property
+    def primer_nombre(self):
+        """ Devuelve únicamente la primera palabra del campo nombres """
+        if self.nombres:
+            return self.nombres.strip().split()[0]
+        return ""
+    
 class Curso(models.Model):
     # 💥 NUEVO: Opciones de Nivel
     NIVELES = [
@@ -458,7 +465,7 @@ class HorarioClase(models.Model):
     curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='horarios')
     periodo = models.ForeignKey('PeriodoLectivo', on_delete=models.CASCADE, related_name='horarios')
     # NUEVO CAMPO DE COLOR
-    color = models.CharField(max_length=7, default='#17c1e8', verbose_name="Color de Bloque")
+    color = models.CharField(max_length=7, default="#f57905", verbose_name="Color de Bloque")
     dia_semana = models.CharField(max_length=2, choices=DIAS_SEMANA, db_index=True) # 💥
     hora_inicio = models.TimeField(db_index=True) # 💥
     hora_fin = models.TimeField(db_index=True) # 💥

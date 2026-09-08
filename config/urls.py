@@ -7,7 +7,7 @@ from apps.personal import views as personal_views
 from apps.core import views as core_views  # Evitamos colisión de nombres de 'views'
 from django.shortcuts import redirect, render
 from django.conf.urls import handler404
-from apps.personal.views import LoginPersonalizadoView
+from apps.core.views import LoginPersonalizadoView
 
 urlpatterns = [
     path('admin/', admin.site.urls),

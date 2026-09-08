@@ -189,4 +189,19 @@
         </div>
     </div>
 </div>
+
+<!-- CONTENEDOR OCULTO PARA LOS MENSAJES DE DJANGO -->
+{% if messages %}
+    <div id="django-messages" class="d-none">
+        {% for message in messages %}
+            <span class="system-message" data-type="{{ message.tags }}" data-text="{{ message }}"></span>
+        {% endfor %}
+    </div>
+{% endif %}
+
 {% endblock content %}
+
+{% block scripts %}
+    <!-- Asegúrate de tener jQuery cargado en tu base.html antes de esto -->
+    <script src="{% static 'js/perfil.js' %}"></script>
+{% endblock scripts %}

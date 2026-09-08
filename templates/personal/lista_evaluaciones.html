@@ -80,9 +80,16 @@
     <div class="col-12">
       <div class="card bg-gradient-info shadow-info">
         <div class="card-body p-3 d-flex align-items-center">
-          <a href="{% url 'personal:mis_cursos' %}" class="text-white me-3">
+          
+          <!-- 💥 Lógica dinámica de retroceso -->
+          {% if request.GET.origen == 'global' %}
+          <a href="{% url 'personal:gestion_global_notas' %}" class="text-white me-3" title="Volver a Gestión Global">
+          {% else %}
+          <a href="{% url 'personal:mis_cursos' %}" class="text-white me-3" title="Volver a mis cursos">
+          {% endif %}
             <i class="material-symbols-rounded text-3xl">arrow_back</i>
           </a>
+          
           <div>
             <h5 class="text-white mb-0">{{ asignacion.curso.nombre }}</h5>
             <p class="text-sm text-white opacity-8 mb-0">
@@ -145,7 +152,7 @@
               <ul class="list-group list-group-flush border-radius-lg lista-evaluaciones">
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key and ev.tipo == 'DESAFIO' %}
-                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
+                  <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
                     <div class="d-flex align-items-center">
                       <div class="icon icon-shape icon-sm bg-gradient-primary shadow text-center border-radius-md me-3">
                         <i class="material-symbols-rounded text-white" style="font-size: 16px;">assignment</i>
@@ -170,7 +177,7 @@
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key %}
                     {% if ev.tipo == 'CUADERNO' or ev.tipo == 'LIBRO' %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
                       <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">menu_book</i>
@@ -198,7 +205,7 @@
                     
                     <!-- Mostrar Exámenes Normales -->
                     {% if ev.tipo == 'MENSUAL' or ev.tipo == 'BIMESTRAL' %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
                       <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm bg-gradient-danger shadow text-center border-radius-md me-3">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">grade</i>
@@ -212,7 +219,7 @@
                     
                     <!-- 💥 Mostrar Simulacros SOLO si es el tutor -->
                     {% elif ev.tipo == 'SIMULACRO' and request.user.perfil_personal == asignacion.aula.tutor %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}">
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
                       <div class="d-flex align-items-center">
                         <div class="icon icon-shape icon-sm bg-gradient-success shadow text-center border-radius-md me-3">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">workspace_premium</i>

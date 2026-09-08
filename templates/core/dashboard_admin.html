@@ -1,7 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
-{% block title %} Panel de Inicio {% endblock title %}
+{% block title %} Inicio {% endblock title %}
 
 {% block extrastyle %}
 <style>
@@ -283,33 +283,40 @@
     <div class="col-lg-6 col-md-6">
       <div class="card shadow-sm h-100 border card-hover">
         <div class="card-header pb-0 bg-transparent">
-          <h6 class="text-warning mb-0"><i class="material-symbols-rounded text-warning align-middle me-2">emoji_events</i>Cuadro de Honor Institucional</h6>
-          <p class="text-sm text-secondary mb-0 mt-1">Top estudiantes con mayor promedio acumulado.</p>
+          <h6 class="text-warning mb-0"><i class="material-symbols-rounded text-warning align-middle me-2">emoji_events</i>Orden de Mérito Institucional</h6>
+          <p class="text-sm text-secondary mb-0 mt-1">Top 5 estudiantes con mayor puntaje acumulado general.</p>
         </div>
         <div class="card-body p-3">
           <ul class="list-group">
             {% for alumno in mejores_alumnos %}
-            <li class="list-group-item border-0 d-flex justify-content-between align-items-center ps-0 mb-2 border-radius-lg">
+            <!-- 💥 Efecto Hover Oculto: title muestra el grado/sección sutilmente -->
+            <li class="list-group-item border-0 d-flex justify-content-between align-items-center ps-0 mb-2 border-radius-lg transition-hover" 
+              title="Aula: {{ alumno.aula.grado }} '{{ alumno.aula.seccion }}' ({{ alumno.aula.get_nivel_display }})" 
+              style="cursor: pointer;">
+              
               <div class="d-flex align-items-center w-75">
-                <div class="icon icon-shape icon-sm me-3 bg-gradient-warning shadow text-center">
+                <div class="icon icon-shape icon-sm me-3 bg-gradient-warning shadow text-center flex-shrink-0">
                   <span class="text-white font-weight-bold text-sm">{{ forloop.counter }}</span>
                 </div>
                 <div class="d-flex flex-column w-100">
-                  <h6 class="mb-1 text-dark text-sm">{{ alumno.apellidos }}, {{ alumno.nombres }}</h6>
+                  <h6 class="mb-1 text-dark text-sm text-truncate">{{ alumno.estudiante.apellidos }}, {{ alumno.estudiante.nombres }}</h6>
                   <div class="d-flex align-items-center w-100">
                     <div class="progress w-100" style="height: 6px;">
-                      <div class="progress-bar bg-gradient-info" role="progressbar" style="width: {% widthratio alumno.promedio_general 20 100 %}%;"></div>
+                      <!-- Se asume 800 como tope (4 bimestres x ~200 pts), ajusta si tu malla vale más puntos -->
+                      <div class="progress-bar bg-gradient-info" role="progressbar" style="width: {% widthratio alumno.puntaje_total_exacto 800 100 %}%;"></div>
                     </div>
                   </div>
                 </div>
               </div>
+              
+              <!-- 💥 Llama al atributo inyectado desde Python -->
               <div class="d-flex align-items-center text-md font-weight-bold text-info ms-3">
-                {{ alumno.promedio_general|floatformat:1 }}
+                {{ alumno.puntaje_total_exacto|floatformat:0 }} <span class="text-xs ms-1 text-secondary font-weight-normal">pts</span>
               </div>
             </li>
             {% empty %}
             <div class="text-center py-4">
-              <p class="text-sm text-secondary">Aún no hay calificaciones registradas.</p>
+              <p class="text-sm text-secondary">Aún no hay calificaciones consolidadas en este periodo.</p>
             </div>
             {% endfor %}
           </ul>

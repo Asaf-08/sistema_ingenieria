@@ -67,3 +67,36 @@ function abrirHistorialMateriales(asignacionId) {
         }
     });
 }
+
+function verDetalleAuditoria(button) {
+    // 1. Extraer todos los datos del botón que fue clickeado
+    const accion = button.getAttribute('data-accion');
+    const color = button.getAttribute('data-color');
+    
+    // 2. Pintar el Badge de la cabecera
+    const badge = document.getElementById('aud-badge');
+    badge.className = `badge bg-gradient-${color} px-3 py-2 text-sm`;
+    badge.innerHTML = accion;
+
+    // 3. Llenar los textos
+    document.getElementById('aud-fecha').innerText = button.getAttribute('data-fecha');
+    document.getElementById('aud-estudiante').innerText = button.getAttribute('data-estudiante');
+    document.getElementById('aud-curso').innerText = button.getAttribute('data-curso');
+    document.getElementById('aud-aula').innerText = button.getAttribute('data-aula');
+    
+    // Evaluacion compuesta
+    document.getElementById('aud-evaluacion').innerText = button.getAttribute('data-evaluacion');
+    document.getElementById('aud-tipo-bim').innerText = `${button.getAttribute('data-tipo')} | ${button.getAttribute('data-bimestre')}`;
+    
+    // Las Notas
+    document.getElementById('aud-ant').innerText = button.getAttribute('data-ant');
+    document.getElementById('aud-nva').innerText = button.getAttribute('data-nva');
+    
+    // Responsabilidades
+    document.getElementById('aud-responsable').innerText = button.getAttribute('data-responsable');
+    document.getElementById('aud-titular').innerText = button.getAttribute('data-titular');
+
+    // 4. Mostrar el modal de Bootstrap
+    var modal = new bootstrap.Modal(document.getElementById('modalDetalleAuditoria'));
+    modal.show();
+}

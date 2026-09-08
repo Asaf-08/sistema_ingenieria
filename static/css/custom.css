@@ -370,7 +370,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 
 .fc-theme-standard td, .fc-theme-standard th { border-color: var(--fc-border-color) !important; }
 .fc { font-family: var(--bs-body-font-family); }
-.fc .fc-toolbar-title { font-weight: 800; font-size: 1.25rem !important; text-transform: capitalize; color: #344767; }
+.fc .fc-toolbar-title { font-weight: 800; font-size: 1.25rem !important; text-transform: capitalize; color: #414141; }
 
 /* Botones FC */
 .fc-button {
@@ -392,12 +392,12 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 .fc-col-header-cell.fc-day-today { background-color: #fb8c00 !important; }
 .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #ffffff !important; }
 .fc-list-event { background-color: #fff !important; }
-.fc-list-event-title text-dark-agenda, .fc-list-event-title span { color: #344767 !important; font-weight: 700 !important; }
+.fc-list-event-title text-dark-agenda, .fc-list-event-title span { color: #414141 !important; font-weight: 700 !important; }
 .fc-list-day-cushion { background-color: #f0f2f5 !important; }
 
 /* Horarios Maestro y Editor */
 #calendario-horario .fc-col-header-cell-cushion, #calendar-editor-aula .fc-col-header-cell-cushion { 
-    font-size: 1rem; font-weight: 800; text-transform: uppercase; color: #344767; padding: 12px !important; 
+    font-size: 1rem; font-weight: 800; text-transform: uppercase; color: #414141; padding: 12px !important; 
 }
 #calendario-horario .fc-timegrid-slot-label-cushion, #calendar-editor-aula .fc-timegrid-slot-label-cushion { 
     font-weight: 700; color: #7b809a; font-size: 0.8rem; padding-top: 10px !important;
@@ -567,7 +567,7 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
     padding: 10px 15px;
     background-color: #ffffff;
     font-weight: 500;
-    color: #334155;
+    color: #414141;
     transition: all 0.2s ease;
 }
 .modern-select:focus {

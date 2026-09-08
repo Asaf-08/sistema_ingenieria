@@ -103,6 +103,17 @@
           <span class="nav-link-text ms-1">Mis Cursos</span>
         </a>
       </li>
+
+      <!-- 💥 NUEVA OPCIÓN: GESTIÓN GLOBAL DE NOTAS -->
+      {% if request.user.perfil_personal.es_tutor_secundaria %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'gestion_global_notas' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:gestion_global_notas' %}">
+          <i class="material-symbols-rounded opacity-5">grading</i>
+          <span class="nav-link-text ms-1">Gestión de Notas</span>
+        </a>
+      </li>
+      {% endif %}
+
       {% if request.user.perfil_personal.aulas_tutoradas.all %}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'mi_aula' %} active {% else %} text-dark {% endif %}" href="{% url 'academico:mi_aula' %}">
@@ -125,7 +136,7 @@
       </li>
       {% endif %}
 
-      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' or request.user.perfil_personal.cargo == 'ASI'%}
+      {% if request.user.perfil_personal.cargo == 'DIR' or request.user.perfil_personal.cargo == 'COO' or request.user.perfil_personal.cargo == 'ASI' or request.user.perfil_personal.cargo == 'SEC'%}
       <li class="nav-item mt-3">
         <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-8">Estructura Académica</h6>
       </li>
@@ -218,6 +229,14 @@
         <a class="nav-link {% if request.resolver_match.url_name == 'auditoria_academica' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:auditoria_academica' %}">
           <i class="material-symbols-rounded opacity-5">fact_check</i>
           <span class="nav-link-text ms-1">Auditoría Académica</span>
+        </a>
+      </li>
+      
+      <!-- 💥 NUEVA OPCIÓN: GESTIÓN GLOBAL DE NOTAS -->
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'gestion_global_notas' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:gestion_global_notas' %}">
+          <i class="material-symbols-rounded opacity-5">grading</i>
+          <span class="nav-link-text ms-1">Gestión Global Notas</span>
         </a>
       </li>
 
