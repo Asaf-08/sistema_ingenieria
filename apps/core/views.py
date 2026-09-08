@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Count, Avg, Q, Sum
 from datetime import timedelta
 from django.core.cache import cache
 
