@@ -58,10 +58,20 @@ $(document).ready(function() {
               inputElement.val(valorString);
           }
 
+          // 💥 CAPTURAMOS EL CONTENEDOR Y LA FILA ENTERA PARA EL EFECTO VISUAL
+          let wrapper = inputElement.closest('.input-premium-wrapper');
+          let fila = $('#fila-nota-' + notaId);
+
           if (valorString !== '' && (Number(valorString) < 0 || Number(valorString) > 20)) {
               Swal.fire({ icon: 'warning', title: 'Nota inválida', text: 'La calificación debe estar entre 0 y 20.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
               inputElement.val('');
               inputElement.addClass('border-danger');
+              
+              // Disparamos el error rojo
+              wrapper.addClass('wrapper-error');
+              fila.addClass('fila-error');
+              setTimeout(() => { wrapper.removeClass('wrapper-error'); fila.removeClass('fila-error'); }, 2000);
+              
               return;
           }
 
@@ -92,11 +102,25 @@ $(document).ready(function() {
               if (data.status === 'ok' || data.success) {
                   // Éxito: Borde Verde
                   inputElement.removeClass('border-info border-warning').addClass('border-success');
+                  
+                  // 💥 NUEVO EFECTO: PINTAMOS DE VERDE LA FILA TEMPORALMENTE
+                  wrapper.addClass('wrapper-success');
+                  fila.addClass('fila-success');
+                  setTimeout(() => {
+                      wrapper.removeClass('wrapper-success');
+                      fila.removeClass('fila-success');
+                  }, 1500);
+
                   // Si esta nota estaba pendiente en el celular, la borramos porque ya subió
                   eliminarDeMemoriaLocal(notaId);
               } else {
                   inputElement.removeClass('border-info').addClass('border-danger');
                   Swal.fire({ icon: 'error', title: 'Atención', text: escapeHTML(data.message), toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                  
+                  // 💥 ERROR: PINTAMOS DE ROJO LA FILA TEMPORALMENTE
+                  wrapper.addClass('wrapper-error');
+                  fila.addClass('fila-error');
+                  setTimeout(() => { wrapper.removeClass('wrapper-error'); fila.removeClass('fila-error'); }, 2000);
               }
           } catch (error) {
               // Si falla porque el internet se cortó un segundo después de hacer clic

@@ -47,17 +47,47 @@
     border: 1px solid rgba(0,0,0,0.09);
   }
   
+/* Contenedor del input con estilo Neumórfico suave */
+  .input-premium-wrapper {
+    background: #f4f6f8;
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.09);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
   .input-premium {
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
     color: #000000 !important;
     transition: background 0.2s ease;
+    width: 100% !important;   /* 💥 Ocupa todo el ancho */
+    height: 100% !important;  /* 💥 Ocupa todo el alto */
+    text-align: center;
   }
-  .input-premium:focus {
-    background: #ffffff !important;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(255, 136, 0, 0.4) !important;
+  
+  /* 💥 Clases de respuesta visual temporal para la fila o el wrapper */
+  .fila-success {
+    background-color: rgba(76, 175, 80, 0.15) !important;
+    transition: background-color 0.3s ease;
+  }
+  .wrapper-success {
+    background-color: #d4edda !important;
+    border-color: #c3e6cb !important;
+  }
+
+  .fila-error {
+    background-color: rgba(245, 57, 57, 0.15) !important;
+    transition: background-color 0.3s ease;
+  }
+  .wrapper-error {
+    background-color: #f8d7da !important;
+    border-color: #f5c6cb !important;
   }
 </style>
 
@@ -111,11 +141,14 @@
         <div class="card-body p-0">
           <ul class="list-group list-group-flush border-radius-2xl">
             {% for nota in notas %}
-            <li class="list-group-item px-3 py-3 border-bottom border-light">
+            <li class="list-group-item px-3 py-3 border-bottom border-light d-flex justify-content-between align-items-stretch" id="fila-nota-{{ nota.id }}">
               
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <!-- Avatar y Nombres -->
-                <div class="d-flex align-items-center" style="width: 75%;">
+              <!-- 💥 LADO IZQUIERDO: Información del alumno y Chips agrupados -->
+              <!-- Agregamos justify-content-center para que flote en el medio verticalmente -->
+              <div class="d-flex flex-column justify-content-center flex-grow-1 me-3 overflow-hidden">
+                
+                <!-- Avatar y Nombres (Le quitamos el mb-3) -->
+                <div class="d-flex align-items-center">
                   <div class="avatar avatar-sm bg-gradient-primary text-white rounded-circle shadow-sm me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
                     <span class="text-sm font-weight-bolder">{{ nota.matricula.estudiante.apellidos|make_list|first }}</span>
                   </div>
@@ -124,32 +157,30 @@
                     <h6 class="mb-0 text-sm font-weight-bold text-dark text-truncate" style="max-width: 220px; letter-spacing: -0.2px;">
                       {{ nota.matricula.estudiante.apellidos }}
                     </h6>
-                    <span class="text-xs text-secondary text-truncate font-weight-medium" style="max-width: 220px;">
+                    <span class="text-sm text-secondary text-truncate font-weight-medium" style="max-width: 220px;">
                       {{ nota.matricula.estudiante.nombres }}
                     </span>
                   </div>
                 </div>
-                
-                <!-- Input Neumórfico -->
-                <div class="input-premium-wrapper d-flex align-items-center justify-content-center" style="width: 70px; height: 50px;">
-                  <input type="number" 
-                         id="input-nota-{{ nota.id }}"
-                         class="form-control text-center font-weight-bolder text-lg input-premium input-nota p-0 m-0 {% if registro_cerrado %}text-muted bg-transparent{% endif %}" 
-                         min="0" max="20" step="1"
-                         value="{% if nota.valor != None %}{{ nota.valor|floatformat:0 }}{% endif %}"
-                         data-nota-id="{{ nota.id }}"
-                         placeholder="-"
-                         {% if registro_cerrado %}disabled{% endif %}>
-                </div>
+
+                <!-- NOTAS RÁPIDAS (Chips) - Le agregamos mt-3 (margin-top) por si están presentes -->
+                {% comment %} <div class="d-flex gap-2 ms-5 mt-3 pb-1 overflow-auto hide-scrollbar" style="white-space: nowrap;">
+                  <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="10">10</span>
+                  <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="15">15</span>
+                  <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="20">20</span>
+                </div> {% endcomment %}
               </div>
 
-              <!-- NOTAS RÁPIDAS (Chips) con scroll horizontal -->
-              <div class="d-flex gap-2 ms-5 pb-2 overflow-auto hide-scrollbar" style="white-space: nowrap;">
-                <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="05">05</span>
-                <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="08">08</span>
-                <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="10">10</span>
-                <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="15">15</span>
-                <span class="badge rounded-pill cursor-pointer btn-nota-rapida chip-nota py-2 px-3 shadow-none" data-id="{{ nota.id }}" data-val="20">20</span>
+              <!-- 💥 LADO DERECHO: Input Neumórfico estirado (hereda el height gracias a align-items-stretch) -->
+              <div class="input-premium-wrapper d-flex align-items-center justify-content-center flex-shrink-0" style="width: 90px; min-height: 90px;">
+                <input type="number" 
+                       id="input-nota-{{ nota.id }}"
+                       class="form-control text-center font-weight-bolder text-lg input-premium input-nota p-0 m-0 w-100 h-100 {% if registro_cerrado %}text-muted bg-transparent{% endif %}" 
+                       min="0" max="20" step="1"
+                       value="{% if nota.valor != None %}{{ nota.valor|floatformat:0 }}{% endif %}"
+                       data-nota-id="{{ nota.id }}"
+                       placeholder="-"
+                       {% if registro_cerrado %}disabled{% endif %}>
               </div>
 
             </li>

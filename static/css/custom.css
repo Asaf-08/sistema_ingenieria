@@ -713,4 +713,14 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
     }
 }
 
+/* ==========================================================================
+     💥 FIX: ESPACIO PARA BOTTOM NAVIGATION BAR EN MÓVILES
+     ========================================================================== */
+  @media (max-width: 767.98px) {
+    /* Le da un colchón de 80px al final de la página principal para que el contenido no quede oculto */
+    .main-content {
+      padding-bottom: 85px !important; 
+    }
+  }
+
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
