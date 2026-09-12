@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'debug_toolbar',  # 💥 Añadido para auditoría de rendimiento
     'storages', # 💥 Nueva: Para hablar con AWS
     'simple_history',
+    'django_extensions',
 
     'apps.core',
     'apps.academico',

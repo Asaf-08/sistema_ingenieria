@@ -116,4 +116,55 @@ $(document).ready(function () {
             console.error("Error al procesar y dibujar los gráficos del Dashboard Admin:", error);
         }
     }
+
+    // ==============================================================
+      // 💥 ASISTENTE DE COORDINACIÓN (GEMINI IA)
+      // ==============================================================
+      const $btnConsultarAdmin = $('#btn-consultar-admin');
+      const $promptAdmin = $('#ia-prompt-admin');
+      const $contenedorResultadoAdmin = $('#ia-resultado-admin-contenedor');
+      const $textoAdminGenerado = $('#ia-texto-admin-generado');
+
+      if ($btnConsultarAdmin.length) {
+          $btnConsultarAdmin.on('click', async function() {
+              const consultaTexto = $promptAdmin.val().trim();
+
+              if (!consultaTexto) {
+                  Swal.fire({ icon: 'warning', title: 'Falta información', text: 'Escribe tu pregunta.' });
+                  return;
+              }
+
+              const originalText = $btnConsultarAdmin.html();
+              $btnConsultarAdmin.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Buscando...');
+              $contenedorResultadoAdmin.addClass('d-none');
+              $textoAdminGenerado.empty();
+
+              try {
+                  const params = new URLSearchParams();
+                  params.append('consulta', consultaTexto);
+
+                  const response = await fetch('/academico/ia/consultar-coordinacion/', {
+                      method: 'POST',
+                      headers: { 
+                          'X-Requested-With': 'XMLHttpRequest', 
+                          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                      },
+                      body: params
+                  });
+
+                  const data = await response.json();
+
+                  if (data.status === 'success' || data.success) {
+                      $textoAdminGenerado.text(data.respuesta);
+                      $contenedorResultadoAdmin.removeClass('d-none');
+                  } else {
+                      Swal.fire('Error', data.message || 'La IA no pudo procesar la consulta.', 'error');
+                  }
+              } catch (error) {
+                  Swal.fire('Error de conexión', 'No se pudo contactar con el motor de IA.', 'error');
+              } finally {
+                  $btnConsultarAdmin.prop('disabled', false).html(originalText);
+              }
+          });
+      }
 });

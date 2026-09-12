@@ -279,6 +279,55 @@
 
 <input type="hidden" id="csrfTokenIA" value="{{ csrf_token }}">
 
+<!-- ==========================================================================
+     💥 BOTÓN FLOTANTE: ASISTENTE ANALÍTICO IA
+     ========================================================================== -->
+<button class="btn bg-gradient-dark position-fixed z-index-sticky shadow-lg d-flex align-items-center justify-content-center p-0" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modalConsultaIA" 
+        style="bottom: 110px; right: 20px; width: 50px; height: 50px; border-radius: 50%;">
+  <i class="material-symbols-rounded text-white text-3xl">auto_awesome</i>
+</button>
+
+<!-- ==========================================================================
+     💥 MODAL: CONSULTOR DE DATOS CON GEMINI
+     ========================================================================== -->
+<div class="modal fade" id="modalConsultaIA" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-radius-xl">
+      <div class="modal-header bg-gradient-dark p-3">
+        <h5 class="modal-title text-white font-weight-bolder d-flex align-items-center">
+          <i class="material-symbols-rounded me-2 text-warning">psychology</i>
+          Asistente Académico IA
+        </h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body p-4 bg-gray-50">
+        <!-- Input Natural del Docente -->
+        <div class="form-group mb-4">
+          <label class="font-weight-bold text-dark text-sm">¿Qué necesitas saber sobre tu aula?</label>
+          <textarea id="ia-prompt-libre" class="form-control border-2 p-3 text-md" rows="3" placeholder="Ej: ¿Cómo va Juan Pérez en el curso de Religión? o ¿Quiénes son los alumnos con más faltas?"></textarea>
+        </div>
+
+        <!-- Resultado Generado -->
+        <div id="ia-resultado-contenedor" class="d-none mt-3">
+          <label class="font-weight-bold text-info text-sm d-flex align-items-center">
+            <i class="material-symbols-rounded me-1 text-md">analytics</i> Análisis de IA
+          </label>
+          <div class="p-3 bg-white border border-info rounded-3 text-dark text-sm" id="ia-texto-generado" style="white-space: pre-wrap;"></div>
+        </div>
+      </div>
+      
+      <div class="modal-footer border-0 p-3 bg-white d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" id="btn-consultar-ia" class="btn bg-gradient-info mb-0 px-4">
+          <i class="material-symbols-rounded text-sm align-middle me-1">search_insights</i> Consultar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock content %}
 
 {% block modales %}

@@ -1,9 +1,20 @@
 from decimal import ROUND_HALF_UP, Decimal
 import json
 import os
+from django.db.models import Count, Q, Avg
+from django.http import JsonResponse
+from django.utils import timezone
 from google import genai
 import numpy as np
 from dotenv import load_dotenv
+from django.shortcuts import get_object_or_404
+
+from apps.academico.models import AsignacionAcademica, Aula, CatalogoMaterial, CierreRegistroBimestral, EntregaSimulacro, Estudiante, Evaluacion, Matricula, Nota, PeriodoLectivo, SolicitudImpresion
+from apps.asistencia.models import AsistenciaEstudiante
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+
+from apps.personal.models import Personal
 
 # Carga las variables del archivo .env
 load_dotenv()
@@ -210,3 +221,316 @@ def generar_4_recomendaciones_ia(nombre_alumno, notas_dict):
             "Mantén el compromiso con las normas de convivencia del aula y el respeto a tus tutores.",
             "Sigue cumpliendo con la entrega oportuna de tus cuadernos y tareas asignadas."
         ]
+
+@login_required
+def consultar_aula_ia(request):
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        consulta_docente = request.POST.get('consulta', '')
+        user_personal = getattr(request.user, 'perfil_personal', None)
+        
+        if not consulta_docente or not user_personal:
+            return JsonResponse({'status': 'error', 'message': 'Datos incompletos.'})
+            
+        try:
+            # 1. RECOPILACIÓN MASIVA DE DATOS DEL AULA
+            aula_tutoria = Aula.objects.filter(tutor=user_personal).first() 
+            if not aula_tutoria:
+                return JsonResponse({'status': 'error', 'message': 'No tienes un aula de tutoría asignada para analizar.'})
+
+            periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+            bimestre_actual = periodo_actual.bimestre_actual if periodo_actual else 'I'
+
+            matriculas = Matricula.objects.filter(
+                aula=aula_tutoria, 
+                estudiante__estado='Activo', 
+                periodo=periodo_actual
+            ).select_related('estudiante')
+            
+            # Le indicamos a Gemini cuál es el bimestre en curso
+            contexto_datos = f"DATOS DEL AULA {aula_tutoria.grado} {aula_tutoria.seccion} {aula_tutoria.nivel} (BIMESTRE ACTUAL EN CURSO: {bimestre_actual}):\n"
+            
+            for mat in matriculas:
+                nombre_completo = f"{mat.estudiante.nombres} {mat.estudiante.apellidos}"
+                
+                # 💥 CORRECCIÓN: Agrupamos las notas por Curso Y por Bimestre
+                notas_cursos = mat.notas.values(
+                    'evaluacion__asignacion__curso__nombre', 
+                    'evaluacion__bimestre'
+                ).annotate(
+                    promedio=Avg('valor')
+                ).order_by('evaluacion__bimestre')
+                
+                # Formateamos para que Gemini lea: "Álgebra (Bimestre I): 16.8, Álgebra (Bimestre II): 14.5"
+                detalle_notas = ", ".join([
+                    f"{n['evaluacion__asignacion__curso__nombre']} (Bim. {n['evaluacion__bimestre']}): {round(float(n['promedio']),1)}" 
+                    for n in notas_cursos if n['promedio']
+                ])
+                
+                if not detalle_notas:
+                    detalle_notas = "Sin notas registradas aún"
+                
+                contexto_datos += f"- Alumno: {nombre_completo} | Notas: {detalle_notas}\n"
+
+            # 2. EL PROMPT MAESTRO (Actualizado con consciencia temporal)
+            prompt = f"""
+            Eres el Asistente Académico de Inteligencia Artificial del sistema escolar.
+            Tu objetivo es responder a la consulta del docente analizando ÚNICAMENTE la siguiente base de datos del salón.
+            
+            {contexto_datos}
+            
+            CONSULTA DEL DOCENTE:
+            "{consulta_docente}"
+            
+            REGLAS:
+            1. Sé directo, claro y profesional. Es un reporte para el consumo interno del profesor.
+            2. 💥 IMPORTANTE: Presta mucha atención al bimestre que solicita el docente. Si te pregunta por "este bimestre" o "el bimestre actual", busca el BIMESTRE ACTUAL EN CURSO indicado arriba y revisa solo las notas de ese periodo.
+            3. Si el alumno no tiene notas en el bimestre solicitado para ese curso, dilo claramente (Ej: "Aún no tiene notas registradas en este bimestre"). No asumas promedios de bimestres anteriores como si fueran del actual.
+            4. No uses formato Markdown complejo (evita asteriscos, negritas o tablas), usa texto claro con saltos de línea normales.
+            """
+            
+            # 2. EL PROMPT MAESTRO (LENGUAJE NATURAL Y CONVERSACIONAL)
+            # prompt = f"""
+            # Eres el Asistente Académico de Inteligencia Artificial del sistema escolar, actuando como un colega empático y analítico para el docente.
+            # Tu objetivo es responder a la consulta del profesor analizando ÚNICAMENTE la siguiente base de datos del salón.
+            
+            # BASE DE DATOS DEL SALÓN:
+            # {contexto_datos}
+            
+            # CONSULTA DEL DOCENTE:
+            # "{consulta_docente}"
+            
+            # REGLAS ESTRICTAS DE RESPUESTA:
+            # 1. Responde siempre en LENGUAJE NATURAL, fluido y conversacional. NUNCA devuelvas listas rígidas o estructuradas tipo "Alumno: X, Curso: Y, Nota: Z".
+            # 2. Integra los datos en párrafos redactados. (Ejemplo ideal: "Emily Chupillon tiene un excelente desempeño en Herramientas Informáticas, manteniendo un promedio general de 17.0 hasta el momento.")
+            # 3. Si preguntan algo que no está en los datos provistos, indica amablemente que no tienes esa información a la mano.
+            # 4. Al final de tu respuesta, INCLUYE SIEMPRE UNA PREGUNTA DE SEGUIMIENTO para invitar al docente a profundizar. (Ejemplo: "¿Te gustaría saber cómo le va en otros cursos?", "¿Quieres que revisemos a los alumnos con promedios más bajos en esta materia?" o "¿Deseas conocer más detalles sobre alguna evaluación en específico?").
+            # 5. No uses formato Markdown complejo (evita asteriscos, negritas o tablas), usa texto limpio con saltos de línea normales.
+            # """
+            
+            try:
+                respuesta = client.models.generate_content(
+                    model=MODELO_IA,
+                    contents=prompt
+                )
+                texto_ia = respuesta.text
+            except Exception:
+                texto_ia = "Actualmente el sistema está experimentando alta demanda. Por favor, revise las notas cuantitativas del estudiante para determinar su progreso en este bimestre."
+
+            return JsonResponse({'status': 'success', 'respuesta': texto_ia})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Error procesando los datos: {str(e)}'})
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})
+
+@login_required
+def consultar_coordinacion_ia(request):
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        consulta_admin = request.POST.get('consulta', '')
+        user_personal = getattr(request.user, 'perfil_personal', None)
+        
+        if not consulta_admin or not user_personal:
+            return JsonResponse({'status': 'error', 'message': 'Datos incompletos.'})
+            
+        if user_personal.cargo not in ['DIR', 'COO']:
+            return JsonResponse({'status': 'error', 'message': 'No tienes permisos de coordinación.'})
+
+        try:
+            hoy = timezone.now().date()
+            
+            # 1. PERIODO Y BIMESTRE ACTUAL
+            periodo = PeriodoLectivo.objects.filter(activo=True).first()
+            bimestre = periodo.bimestre_actual if periodo else 'I'
+
+            # 2. EXTRACCIÓN DE DATOS DE AUDITORÍA (Rápido y en memoria)
+            asignaciones = AsignacionAcademica.objects.filter(
+                periodo=periodo
+            ).select_related('personal', 'curso', 'aula')
+            
+            cierres = set(CierreRegistroBimestral.objects.filter(
+                bimestre=bimestre, asignacion__periodo=periodo, cerrado=True
+            ).values_list('asignacion_id', flat=True))
+            
+            asign_con_eval = set(Evaluacion.objects.filter(
+                bimestre=bimestre, asignacion__periodo=periodo
+            ).values_list('asignacion_id', flat=True))
+            
+            solicitudes = set(SolicitudImpresion.objects.filter(
+                asignacion__periodo=periodo
+            ).values_list('asignacion_id', flat=True))
+            
+            entregas_simulacro = set(EntregaSimulacro.objects.filter(
+                finalizado=True
+            ).values_list('curso_id', 'docente_id'))
+
+            # 3. 💥 MAPEO GRANULAR DE NOTAS POR DOCENTE Y CURSO
+            auditoria_docentes = {}
+            docentes_falta_materiales = set()
+            total_docentes = Personal.objects.filter(cargo='DOC', estado='Activo').count()
+
+            for asig in asignaciones:
+                nombre_docente = f"{asig.personal.nombres} {asig.personal.apellidos}"
+                # Formateamos el curso para que la IA entienda de qué aula es
+                detalle_curso = f"{asig.curso.nombre} ({asig.aula.grado} {asig.aula.seccion})"
+                
+                # Inicializamos la estructura del docente si no existe
+                if nombre_docente not in auditoria_docentes:
+                    auditoria_docentes[nombre_docente] = {
+                        'completados': [], 
+                        'en_progreso': [], 
+                        'sin_iniciar': []
+                    }
+                
+                # Clasificamos el estado exacto de ESE curso en particular
+                if asig.id in cierres:
+                    auditoria_docentes[nombre_docente]['completados'].append(detalle_curso)
+                elif asig.id in asign_con_eval:
+                    auditoria_docentes[nombre_docente]['en_progreso'].append(detalle_curso)
+                else:
+                    auditoria_docentes[nombre_docente]['sin_iniciar'].append(detalle_curso)
+
+                # Auditoría de Cumplimiento (Materiales y Simulacros)
+                tiene_solicitud = asig.id in solicitudes
+                tiene_simulacro = (asig.curso_id, asig.personal_id) in entregas_simulacro
+                if not (tiene_solicitud and tiene_simulacro):
+                    docentes_falta_materiales.add(nombre_docente)
+
+            # 4. CONVERSIÓN A TEXTO PARA GEMINI
+            texto_auditoria = f"--- ESTADO DE REGISTRO DE NOTAS (BIMESTRE {bimestre} | Total Docentes: {total_docentes}) ---\n"
+            for docente, estados in auditoria_docentes.items():
+                texto_auditoria += f"👨‍🏫 {docente}:\n"
+                if estados['completados']:
+                    texto_auditoria += f"   ✅ Cerrados/Entregados: {', '.join(estados['completados'])}\n"
+                if estados['en_progreso']:
+                    texto_auditoria += f"   ⚠️ En Progreso (con evaluaciones creadas): {', '.join(estados['en_progreso'])}\n"
+                if estados['sin_iniciar']:
+                    texto_auditoria += f"   🚨 Sin Iniciar (vacío absoluto): {', '.join(estados['sin_iniciar'])}\n"
+
+            texto_auditoria += f"\n--- MATERIALES Y SIMULACROS PENDIENTES ---\n"
+            texto_auditoria += f"Docentes con deudas de materiales: {', '.join(docentes_falta_materiales) if docentes_falta_materiales else 'Ninguno'}\n"
+
+            # 5. POBLACIÓN Y ASISTENCIA DIARIA
+            total_est = Estudiante.objects.filter(estado='Activo').count()
+            faltas_hoy = AsistenciaEstudiante.objects.filter(
+                fecha=hoy, estado='F', estudiante__matricula__periodo__activo=True
+            ).values(
+                'estudiante__matricula__aula__grado', 
+                'estudiante__matricula__aula__seccion',
+                'estudiante__matricula__aula__nivel'
+            ).annotate(total_faltas=Count('id')).order_by('-total_faltas')
+            
+            texto_asistencia = f"--- ASISTENCIA HOY ({hoy.strftime('%d/%m/%Y')}) ---\n"
+            texto_asistencia += f"Total de estudiantes activos: {total_est}\n"
+            if faltas_hoy:
+                aulas_con_faltas = ", ".join([f"{f['estudiante__matricula__aula__grado']} {f['estudiante__matricula__aula__seccion']} {f['estudiante__matricula__aula__nivel']} ({f['total_faltas']} faltas)" for f in faltas_hoy])
+                texto_asistencia += f"Inasistencias por aula: {aulas_con_faltas}\n"
+            else:
+                texto_asistencia += "Inasistencias por aula: 0 faltas registradas.\n"
+
+            # 6. LOGÍSTICA
+            alertas_inv = CatalogoMaterial.objects.filter(
+                Q(inventarios_aula__mal_estado__gt=0) | Q(inventarios_aula__se_requiere__gt=0), activo=True
+            ).distinct().count()
+            texto_operaciones = f"--- LOGÍSTICA ---\nMateriales de aula con alertas de reposición: {alertas_inv}\n"
+
+            # 7. PROMPT MAESTRO
+            contexto_general = f"{texto_auditoria}\n\n{texto_asistencia}\n\n{texto_operaciones}"
+
+            prompt = f"""
+            Eres el Asistente Analítico de Dirección del colegio.
+            Responde la consulta del coordinador basándote ÚNICAMENTE en este mapa de auditoría en tiempo real:
+
+            {contexto_general}
+
+            CONSULTA:
+            "{consulta_admin}"
+
+            REGLAS ESTRICTAS:
+            1. Actúa como un consultor de datos ejecutivo.
+            2. Si te preguntan quiénes han subido notas, revisa los campos 'Cerrados/Entregados' y 'En Progreso'. Si un profesor avanzó en algunos cursos pero en otros no, detalla exactamente en cuáles sí y en cuáles no.
+            3. Si te preguntan por un profesor en específico, detalla el estado de cada uno de sus cursos.
+            4. Si te preguntan cuántos faltan, cuenta a los que tienen cursos en la categoría 'Sin Iniciar' y nómbralos junto a sus cursos pendientes.
+            5. Presenta la información en texto plano claro, sin asteriscos de Markdown ni negritas complejas. Usa saltos de línea y viñetas simples (-).
+            """
+
+            # 8. LLAMADA A LA IA
+            try:
+                respuesta = client.models.generate_content(
+                    model=MODELO_IA,
+                    contents=prompt
+                )
+                texto_ia = respuesta.text
+            except Exception:
+                texto_ia = "El motor de análisis directivo está experimentando alta demanda. Revise el panel de auditoría."
+
+            return JsonResponse({'status': 'success', 'respuesta': texto_ia})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Error en la auditoría de datos: {str(e)}'})
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})
+
+@login_required
+def procesar_ingreso_notas_ia(request):
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        texto_docente = request.POST.get('texto_docente', '')
+        evaluacion_id = request.POST.get('evaluacion_id')
+        
+        if not texto_docente or not evaluacion_id:
+            return JsonResponse({'status': 'error', 'message': 'Faltan datos.'})
+            
+        try:
+            evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id)
+            notas_db = Nota.objects.filter(evaluacion=evaluacion).select_related('matricula__estudiante')
+            
+            # 1. ARMAMOS EL MAPA ESTRICTO PARA LA IA
+            # Formato: [ID de Nota] - Nombre Completo del Alumno
+            mapa_alumnos = ""
+            for n in notas_db:
+                nombre = f"{n.matricula.estudiante.nombres} {n.matricula.estudiante.apellidos}"
+                mapa_alumnos += f"[ID: {n.id}] - {nombre}\n"
+                
+            # 2. EL PROMPT MAESTRO (Data Structure LLM)
+            prompt = f"""
+            Eres un procesador lógico estricto. Tu única tarea es extraer asignaciones de notas numéricas (o acciones de borrado) de un texto libre y cruzarlas con una lista oficial de alumnos.
+
+            LISTA OFICIAL DEL SALÓN (Solo puedes asignar o borrar notas a estos IDs):
+            {mapa_alumnos}
+
+            TEXTO DEL PROFESOR:
+            "{texto_docente}"
+
+            REGLAS DE PROCESAMIENTO:
+            1. Identifica a los alumnos mencionados y asígnales la nota numérica indicada.
+            2. 💥 REGLA DE BORRADO: Si el profesor indica "borrar", "eliminar", "quitar" o "limpiar" las notas de un alumno (o de todos los alumnos), debes asignar obligatoriamente el valor "" (un string vacío) a esos IDs.
+            3. Si el profesor dice "a todos los demás ponles X" o "borra a todos", aplica la instrucción a todos los IDs de la lista que no fueron exceptuados.
+            4. CONTROL DE AMBIGÜEDAD: Si el profesor menciona solo un nombre (ej. "Juan") y hay más de una persona con ese nombre, NO le asignes nota a ninguno. En su lugar, agrega una advertencia en el campo "ambiguedades".
+            5. DEVUELVE ÚNICAMENTE UN JSON VÁLIDO CON ESTA ESTRUCTURA EXACTA (sin comillas triples de Markdown ni la palabra 'json'):
+            {{
+                "notas": [
+                    {{"nota_id": 12, "valor": 15}},
+                    {{"nota_id": 15, "valor": ""}}
+                ],
+                "ambiguedades": []
+            }}
+            """
+
+            # 3. LLAMADA AL MODELO (Flash-Lite es perfecto y rápido para JSON)
+            respuesta = client.models.generate_content(
+                model=MODELO_IA,
+                contents=prompt
+            )
+            
+            # Limpieza por si Gemini añade formato markdown ```json
+            texto_ia = respuesta.text.strip()
+            if texto_ia.startswith("```json"):
+                texto_ia = texto_ia[7:]
+            if texto_ia.endswith("```"):
+                texto_ia = texto_ia[:-3]
+            
+            return JsonResponse({'status': 'success', 'ia_json': texto_ia.strip()})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Error procesando notas: {str(e)}'})
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})

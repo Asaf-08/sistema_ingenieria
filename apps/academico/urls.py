@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import servicios_ia
 
 app_name = 'academico'
 
@@ -84,6 +85,10 @@ urlpatterns = [
     path('ajax/generar-recomendacion-ia/', views.generar_recomendacion_ajax, name='generar_recomendacion_ia'),
     
     path('api/recomendacion-docente/', views.api_recomendacion_docente, name='api_recomendacion_docente'),
+    
+    path('ia/consultar-aula/', servicios_ia.consultar_aula_ia, name='ia_consultar_aula'),
+    path('ia/consultar-coordinacion/', servicios_ia.consultar_coordinacion_ia, name='ia_consultar_coordinacion'),
+    path('ia/procesar-ingreso-notas/', servicios_ia.procesar_ingreso_notas_ia, name='ia_procesar_ingreso_notas'),
     
     # ==========================================
     # 🕒 MÓDULO DE TIEMPOS Y CRONOGRAMA DINÁMICO

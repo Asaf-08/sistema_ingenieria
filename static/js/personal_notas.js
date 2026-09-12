@@ -250,4 +250,146 @@ $(document).ready(function() {
 
         guardarNotaBD(notaId, valorSeleccionado, inputElement);
       });
+
+      // ==============================================================
+      // 💥 MATA-EXCEL: VOZ A TEXTO + PROCESAMIENTO IA
+      // ==============================================================
+      const $btnProcesarNotas = $('#btn-procesar-notas-ia');
+      const $promptNotas = $('#ia-prompt-notas');
+      const $btnDictar = $('#btn-dictar-notas');
+      const $indicadorGrabacion = $('#ia-indicador-grabacion');
+      
+      // 1. LÓGICA DEL MICRÓFONO (Web Speech API)
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition = null;
+
+      if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.continuous = false; // Se detiene al hacer pausa larga
+          recognition.lang = 'es-PE';     // Acento peruano para mayor precisión
+          recognition.interimResults = false;
+
+          recognition.onstart = function() {
+              $btnDictar.removeClass('btn-outline-primary').addClass('btn-primary text-white');
+              $indicadorGrabacion.removeClass('d-none').addClass('d-flex');
+          };
+
+        //   recognition.onresult = function(event) {
+        //       const transcripcion = event.results[0][0].transcript;
+        //       const textoActual = $promptNotas.val();
+        //       // Añade lo dictado al texto que ya estaba, con un espacio
+        //       $promptNotas.val(textoActual + (textoActual ? ' ' : '') + transcripcion + '. ');
+        //   };
+
+          recognition.onresult = function(event) {
+              const transcripcion = event.results[0][0].transcript;
+              // 💥 CORRECCIÓN: Reemplaza todo el contenido del input por el nuevo dictado
+              $promptNotas.val(transcripcion + '.');
+          };
+
+          recognition.onerror = function(event) {
+              console.error('Error de micrófono: ', event.error);
+              Swal.fire('Error', 'No se pudo acceder al micrófono.', 'error');
+          };
+
+          recognition.onend = function() {
+              $btnDictar.removeClass('btn-primary text-white').addClass('btn-outline-primary');
+              $indicadorGrabacion.removeClass('d-flex').addClass('d-none');
+          };
+
+          $btnDictar.on('click', function() {
+              recognition.start();
+          });
+      } else {
+          $btnDictar.hide(); // Si el navegador es muy antiguo, ocultamos el botón
+      }
+
+      // 2. LÓGICA DE PROCESAMIENTO CON GEMINI
+      if ($btnProcesarNotas.length) {
+          $btnProcesarNotas.on('click', async function() {
+              const texto = $promptNotas.val().trim();
+              const evaluacionId = $(this).attr('data-evaluacion-id');
+
+              if (!texto) {
+                  Swal.fire({ icon: 'warning', title: 'Vacío', text: 'Escribe o dicta las notas a procesar.' });
+                  return;
+              }
+
+              const originalHtml = $(this).html();
+              $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
+
+              try {
+                  const params = new URLSearchParams();
+                  params.append('texto_docente', texto);
+                  params.append('evaluacion_id', evaluacionId);
+
+                  const response = await fetch('/academico/ia/procesar-ingreso-notas/', {
+                      method: 'POST',
+                      headers: {
+                          'X-Requested-With': 'XMLHttpRequest',
+                          'X-CSRFToken': $('#csrfToken').val()
+                      },
+                      body: params
+                  });
+
+                  const data = await response.json();
+
+                  if (data.status === 'success') {
+                      const iaResult = JSON.parse(data.ia_json);
+                      let asignadas = 0;
+
+                      // 1. Rellenar inputs y forzar guardado DIRECTO
+                      if (iaResult.notas && iaResult.notas.length > 0) {
+                          iaResult.notas.forEach(item => {
+                              const $inputElement = $(`#input-nota-${item.nota_id}`);
+                              
+                              if ($inputElement.length) {
+                                  // Asignamos el valor visualmente
+                                  $inputElement.val(item.valor);
+                                  
+                                  // 💥 MAGIA: Llamamos directamente a tu función maestra
+                                  // Le pasamos el ID, el valor, y el elemento jQuery tal como lo exige tu función
+                                  guardarNotaBD(item.nota_id, item.valor, $inputElement);
+                                  
+                                  asignadas++;
+                              }
+                          });
+                      }
+
+                      // 2. Manejo de Ambigüedades
+                      if (iaResult.ambiguedades && iaResult.ambiguedades.length > 0) {
+                          let textoAmbiguedad = iaResult.ambiguedades.join('<br><br>');
+                          Swal.fire({
+                              icon: 'warning',
+                              title: `Asignadas: ${asignadas}. Alertas detectadas:`,
+                              html: `<div class="text-start text-sm">${textoAmbiguedad}</div>`,
+                              confirmButtonText: 'Entendido'
+                          });
+                      } else {
+                          // Todo 100% perfecto
+                          $('#modalIngresoIA').modal('hide');
+                          $promptNotas.val('');
+                          
+                          const Toast = Swal.mixin({
+                              toast: true,
+                              position: 'bottom-end',
+                              showConfirmButton: false,
+                              timer: 3000,
+                              timerProgressBar: true
+                          });
+                          Toast.fire({
+                              icon: 'success',
+                              title: `Éxito: ${asignadas} notas procesadas y guardadas.`
+                          });
+                      }
+                  } else {
+                      Swal.fire('Error', data.message || 'La IA no pudo procesar las notas.', 'error');
+                  }
+              } catch (error) {
+                  Swal.fire('Error de conexión', 'No se pudo contactar al motor de IA.', 'error');
+              } finally {
+                  $(this).prop('disabled', false).html(originalHtml);
+              }
+          });
+      }
 });

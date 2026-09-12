@@ -7,6 +7,59 @@
 $(document).ready(function () {
     incializarTablaPredictiva('#tablaPredictiva', 'Buscar alumno por DNI o Apellidos...');
     registrarEventosDashboard();
+
+    // ==============================================================
+      // 💥 ASISTENTE ACADÉMICO LIBRE (GEMINI IA)
+      // ==============================================================
+      const $btnConsultar = $('#btn-consultar-ia');
+      const $promptLibre = $('#ia-prompt-libre');
+      const $contenedorResultado = $('#ia-resultado-contenedor');
+      const $textoGenerado = $('#ia-texto-generado');
+
+      if ($btnConsultar.length) {
+          $btnConsultar.on('click', async function() {
+              const consultaTexto = $promptLibre.val().trim();
+
+              if (!consultaTexto) {
+                  Swal.fire({ icon: 'warning', title: 'Falta información', text: 'Escribe tu pregunta para la IA.' });
+                  return;
+              }
+
+              // Bloquear botón y mostrar spinner
+              const originalText = $btnConsultar.html();
+              $btnConsultar.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Analizando...');
+              $contenedorResultado.addClass('d-none');
+              $textoGenerado.empty();
+
+              try {
+                  const params = new URLSearchParams();
+                  params.append('consulta', consultaTexto);
+
+                  const response = await fetch('/academico/ia/consultar-aula/', {
+                      method: 'POST',
+                      headers: { 
+                          'X-Requested-With': 'XMLHttpRequest', 
+                          // 💥 CAMBIO AQUÍ: Leemos el token nativo de Django
+                          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                      },
+                      body: params
+                  });
+
+                  const data = await response.json();
+
+                  if (data.status === 'success' || data.success) {
+                      $textoGenerado.text(data.respuesta);
+                      $contenedorResultado.removeClass('d-none');
+                  } else {
+                      Swal.fire('Error', data.message || 'La IA no pudo procesar la consulta.', 'error');
+                  }
+              } catch (error) {
+                  Swal.fire('Error de conexión', 'No se pudo contactar con el motor de IA.', 'error');
+              } finally {
+                  $btnConsultar.prop('disabled', false).html(originalText);
+              }
+          });
+      }
 });
 
 function incializarTablaPredictiva() {
