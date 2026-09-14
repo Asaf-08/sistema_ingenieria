@@ -114,7 +114,6 @@ STATICFILES_DIRS = [
 
 # 💥 NUEVO: Rutas de producción para Railway
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # =========================================================
 # CONFIGURACIÓN DE ARCHIVOS MULTIMEDIA (LOCAL VS AWS S3)
@@ -132,12 +131,28 @@ if USE_S3:
     AWS_DEFAULT_ACL = None 
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     
-    # Le decimos a Django que mande los subidas (media) a S3
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    # 💥 CORRECCIÓN 2: Sintaxis moderna para Django 4.2 / 5.0+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 else:
     # 💥 Entorno Local (Tu PC / XAMPP)
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Opcional pero MUY recomendado para permitir iframes del mismo dominio
 X_FRAME_OPTIONS = 'SAMEORIGIN'

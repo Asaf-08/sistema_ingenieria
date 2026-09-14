@@ -289,7 +289,7 @@ function confirmarEliminacion(btn) {
         title: '¿Estás seguro?',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#e91e63',
+        confirmButtonColor: '#FB8C00',
         cancelButtonColor: '#adb5bd',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
