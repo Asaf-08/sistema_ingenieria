@@ -94,29 +94,41 @@ async function enviarMateriales(e) {
 
     try {
         const endpoint = form.action || window.location.href;
-        const response = await fetch(endpoint, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const data = await response.json();
+        const response = await fetch(endpoint, { 
+            method: 'POST', 
+            body: formData, 
+            headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+        });
+        
+        // 💥 NUEVO: Verificamos si la respuesta realmente es JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            const data = await response.json();
 
-        if (data.success) {
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Materiales enviados', showConfirmButton: false, timer: 3000 });
-
-            insertarFilaEnDataTable(data.registro);
-
-            form.reset();
-            document.getElementById('secciones-container').innerHTML = '';
-            Object.keys(fileStore).forEach(k => delete fileStore[k]);
-            seccionCounter = 0;
-            crearNuevaSeccion();
-            
+            if (data.success) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Materiales enviados', showConfirmButton: false, timer: 3000 });
+                insertarFilaEnDataTable(data.registro);
+                form.reset();
+                document.getElementById('secciones-container').innerHTML = '';
+                Object.keys(fileStore).forEach(k => delete fileStore[k]);
+                seccionCounter = 0;
+                crearNuevaSeccion();
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No permitido',
+                    text: data.mensaje || 'Ocurrió un problema al enviar los archivos.',
+                    confirmButtonColor: '#3a4149'
+                });
+            }
         } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No permitido',
-                text: data.mensaje || 'Ocurrió un problema al enviar los archivos.',
-                confirmButtonColor: '#3a4149'
-            });
+            // Si el servidor explotó y devolvió HTML (Error 500)
+            const textError = await response.text();
+            console.error("ERROR CRÍTICO DEL SERVIDOR:", textError);
+            Swal.fire('Error 500', 'Fallo al guardar en la nube. Revisa los logs de Railway.', 'error');
         }
     } catch (error) {
+        console.error("Error de red:", error);
         Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
     }
 }
