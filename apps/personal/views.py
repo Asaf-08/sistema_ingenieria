@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.contrib import messages
 from django import forms
 
+from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import redirect, render, get_object_or_404
 import gspread
@@ -406,25 +407,33 @@ def centro_materiales(request):
                         'mensaje': f'El archivo "{f.name}" no está permitido. Por favor, suba únicamente Imágenes, PDFs o documentos Word.'
                     })
 
-        # 3. Si todo está limpio, procedemos a crear los registros en la base de datos
-        solicitud = SolicitudImpresion.objects.create(
-            personal=personal_actual, 
-            asignacion=asignacion,
-            bimestre=periodo_actual.bimestre_actual,
-            tema=tema,
-            instrucciones=instrucciones
-        )
-        
-        tipos_enviados = []
-        
-        for i in range(total_secciones):
-            tipo = request.POST.get(f'tipo_{i}')
-            archivos = request.FILES.getlist(f'archivos_{i}')
-            tipo_display = dict(ArchivoMaterial.TIPOS).get(tipo, tipo)
-            
-            for f in archivos:
-                ArchivoMaterial.objects.create(solicitud=solicitud, tipo=tipo, archivo=f)
-                tipos_enviados.append(tipo_display)
+        # 3. GUARDADO BLINDADO CON TRANSACCIÓN ATÓMICA
+        try:
+            with transaction.atomic():
+                solicitud = SolicitudImpresion.objects.create(
+                    personal=personal_actual, 
+                    asignacion=asignacion,
+                    bimestre=periodo_actual.bimestre_actual,
+                    tema=tema,
+                    instrucciones=instrucciones
+                )
+
+                tipos_enviados = []
+                for i in range(total_secciones):
+                    tipo = request.POST.get(f'tipo_{i}')
+                    archivos = request.FILES.getlist(f'archivos_{i}')
+                    tipo_display = dict(ArchivoMaterial.TIPOS).get(tipo, tipo)
+
+                    for f in archivos:
+                        ArchivoMaterial.objects.create(solicitud=solicitud, tipo=tipo, archivo=f)
+                        tipos_enviados.append(tipo_display)
+
+        except Exception as e:
+            # Si AWS falla, la transacción se revierte y evitamos el "registro fantasma"
+            return JsonResponse({
+                'success': False,
+                'mensaje': f'Error de conexión con el servidor en la nube: {str(e)}'
+            })
         
         contador_tipos = Counter(tipos_enviados)
         materiales_resumen = [{"tipo": t, "cant": c} for t, c in contador_tipos.items()]
