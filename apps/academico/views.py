@@ -542,14 +542,19 @@ def obtener_archivos_solicitud(request, solicitud_id):
     archivos_data = []
     
     for arc in solicitud.archivos.all():
+        # 1. Extraemos el nombre original con guiones bajos
+        nombre_crudo = arc.archivo.name.split('/')[-1]
+        
+        # 2. 💥 Reemplazamos los guiones bajos por espacios para la vista del usuario
+        nombre_limpio = nombre_crudo.replace('_', ' ')
+        
         archivos_data.append({
-            'nombre': arc.archivo.name.split('/')[-1], # Solo el nombre del archivo
+            'nombre': nombre_limpio, 
             'tipo': arc.get_tipo_display(),
             'url': arc.archivo.url
         })
         
     return JsonResponse({'archivos': archivos_data})
-
 @login_required
 @never_cache
 def mi_aula(request):
