@@ -356,9 +356,10 @@ function abrirModalArchivosPersonal(btn) {
                     <a href="${arc.url}" target="_blank" class="btn btn-outline-info btn-sm mb-0 px-3" title="Ver archivo">
                         <i class="material-symbols-rounded text-md align-middle">visibility</i> Ver
                     </a>
-                    <a href="${arc.url}" class="btn bg-gradient-info btn-sm mb-0 px-3" download title="Descargar archivo">
+                    // 1. Reemplaza este fragmento dentro del innerHTML de tu función abrirModalArchivosPersonal:
+                    <button type="button" onclick="forzarDescarga('${arc.url}', '${escapeHTML(arc.nombre)}')" class="btn bg-gradient-info btn-sm mb-0 px-3" title="Descargar archivo">
                         <i class="material-symbols-rounded text-md align-middle">download</i>
-                    </a>
+                    </button>
                 </div>
             `;
             lista.appendChild(li);
@@ -367,6 +368,31 @@ function abrirModalArchivosPersonal(btn) {
     .catch(err => {
         lista.innerHTML = '<li class="list-group-item text-center text-danger">Error al cargar archivos</li>';
     });
+}
+
+// 2. Agrega esta nueva función en cualquier lugar de tu archivo JS:
+function forzarDescarga(url, nombreArchivo) {
+    // Mostramos un mensajito de carga porque descargar un PDF pesado puede tomar 1 o 2 segundos
+    Swal.fire({ toast: true, position: 'top-end', title: 'Descargando archivo...', showConfirmButton: false, timerProgressBar: true, didOpen: () => Swal.showLoading() });
+
+    fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+            const urlBlob = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = urlBlob;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(urlBlob);
+            Swal.close();
+        })
+        .catch(error => {
+            Swal.close();
+            // Si algo falla, el fallback es abrirlo en otra pestaña para que el profe use el "Guardar como"
+            window.open(url, '_blank');
+        });
 }
 
 // ========================================================
