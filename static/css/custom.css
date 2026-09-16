@@ -490,8 +490,11 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
     transition: none !important;
 }
 
-
-
+/* 💥 4. Centrado perfecto para el menú desplegable */
+.dropdown-menu-center {
+    left: auto !important;
+    right: -75% !important;
+}
 
 /* ==========================================
     UX PREMIUM: CARGA ACADEMICA DE DOCENTES

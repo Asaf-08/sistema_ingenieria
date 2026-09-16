@@ -356,15 +356,41 @@ class SolicitudImpresion(models.Model):
         # Solo se puede borrar/editar si la asistente aún no lo ha tocado
         return self.estado == 'PENDIENTE'
 
-    def obtener_total_alumnos(self):
-        """Calcula cuántos alumnos matriculados hay en el aula de esta solicitud"""
-        from apps.academico.models import Matricula # Evita errores de importación circular
-        total = Matricula.objects.filter(
-            aula=self.asignacion.aula,
-            periodo=self.asignacion.periodo
-        ).count()
+    def obtener_desglose_copias(self):
+        """Calcula el desglose real por aula con nombres cortos (Ej: 4 años "A")"""
+        from apps.academico.models import Matricula, AsignacionAcademica
         
-        return total
+        asignaciones = AsignacionAcademica.objects.filter(
+            personal=self.asignacion.personal,
+            curso=self.asignacion.curso,
+            periodo=self.asignacion.periodo
+        ).select_related('aula')
+        
+        desglose = []
+        total = 0
+        
+        for asig in asignaciones:
+            cantidad = Matricula.objects.filter(aula=asig.aula, periodo=asig.periodo).count()
+            if cantidad > 0:
+                # 💥 TRUCO: Formateamos el nombre corto. 
+                # Si tu campo se llama distinto, solo cambia 'grado' o 'seccion'
+                try:
+                    # Si es un campo choices, intentamos obtener el nombre bonito
+                    grado_str = asig.aula.get_grado_display() if hasattr(asig.aula, 'get_grado_display') else asig.aula.grado
+                    nombre_corto = f'{grado_str} "{asig.aula.seccion}"'
+                except AttributeError:
+                    # Fallback por si acaso
+                    nombre_corto = str(asig.aula)
+
+                desglose.append({'aula': nombre_corto, 'cantidad': cantidad})
+                total += cantidad
+                
+        return {'total': total, 'detalle': desglose}
+
+    def obtener_detalle_str(self):
+        """Genera un string simple de lectura rápida para el JavaScript (Ej: '1ro A:20|2do A:15')"""
+        desglose = self.obtener_desglose_copias()['detalle']
+        return "|".join([f"{d['aula']}:{d['cantidad']}" for d in desglose])
 
 class ArchivoMaterial(models.Model):
     TIPOS = [

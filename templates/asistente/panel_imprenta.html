@@ -10,6 +10,24 @@
     .bg-orange { background-image: linear-gradient(195deg, #fb8c00 0%, #ffb74d 100%) !important; }
     .bg-green { background-image: linear-gradient(195deg, #43a047 0%, #66bb6a 100%) !important; }
     .text-orange { color: #fb8c00 !important; }
+
+    /* 💥 1. LIBERACIÓN TOTAL: Quitamos las restricciones de DataTables */
+    .table-responsive,
+    .dataTables_wrapper,
+    .dataTables_wrapper .row,
+    .dataTables_wrapper [class*="col-"] {
+        overflow: visible !important;
+    }
+
+    /* 💥 2. CORRECCIÓN VISUAL: Evitamos que el dropdown estire el ancho de la celda */
+    #tabla-imprenta td {
+        position: static !important;
+    }
+
+    /* 💥 3. Ocultamos el triangulito roto que inyecta Material Dashboard */
+    .dropdown-menu::before {
+        display: none !important;
+    }
 </style>
 {% endblock %}
 
@@ -72,7 +90,23 @@
                   </td>
 
                   <td class="text-center">
-                    <span class="badge bg-light text-dark border shadow-none">{{ sol.obtener_total_alumnos }}</span>
+                    {% with copias_data=sol.obtener_desglose_copias %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm badge bg-light text-dark border shadow-none mb-0 px-3 d-flex align-items-center justify-content-center mx-auto" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="font-weight-bold text-dark fs-6">{{ copias_data.total }}</span>
+                            <i class="material-symbols-rounded text-md ms-1 text-dark">keyboard_arrow_down</i>
+                        </button>
+                        
+                        <ul class="dropdown-menu px-3 py-2 shadow-lg border">
+                            {% for item in copias_data.detalle %}
+                            <li class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-dark me-4 font-weight-bold">{{ item.aula }}</span>
+                                <span class="text-info font-weight-bold">{{ item.cantidad }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endwith %}
                   </td>
 
                   <td class="text-center">
@@ -88,7 +122,8 @@
                   <td class="text-center">
                         <button class="btn btn-link text-info pr-5 mb-0" 
                                 data-id="{{ sol.id }}" 
-                                data-copias="{{ sol.obtener_total_alumnos }}"
+                                data-copias="{{ sol.obtener_desglose_copias.total }}"
+                                data-detalle="{{ sol.obtener_detalle_str }}"
                                 onclick="abrirModalArchivos(this)" 
                                 title="Ver e Imprimir">
                             <i class="material-symbols-rounded text-lg">print</i>
@@ -117,9 +152,9 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header bg-gradient-dark">
-        <h5 class="modal-title text-white">
+        <h5 class="modal-title text-white d-flex align-items-center">
             Archivos a Imprimir 
-            <span id="modal-badge-copias" class="badge bg-white text-dark ms-2 shadow-sm fs-6">0 Copias</span>
+            <span id="modal-badge-copias-container" class="ms-3"></span>
         </h5>
         <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close">
         </button>

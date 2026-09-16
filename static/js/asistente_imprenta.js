@@ -86,16 +86,43 @@ function verInstrucciones(btnElement) {
 
 function abrirModalArchivos(btnElement) {
     const solicitudId = btnElement.getAttribute('data-id');
+    const copiasTotal = btnElement.getAttribute('data-copias');
+    const detalleStr = btnElement.getAttribute('data-detalle'); 
 
-    const copias = btnElement.getAttribute('data-copias'); // Capturamos las copias
+    // 1. 💥 Construimos el Dropdown Limpio (Sin títulos ni totales)
+    let dropdownItems = '';
     
-    // Inyectamos las copias en el título del modal
-    document.getElementById('modal-badge-copias').innerText = `${copias} Copias`;
+    if (detalleStr) {
+        const aulas = detalleStr.split('|');
+        aulas.forEach(item => {
+            if (item) {
+                const partes = item.split(':'); 
+                dropdownItems += `
+                <li class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-dark me-4 font-weight-bold">${partes[0]}</span>
+                    <span class="text-info font-weight-bold">${partes[1]}</span>
+                </li>`;
+            }
+        });
+    }
+
+    // 2. Lo inyectamos visualmente (Alineación natural y flecha corregida)
+    document.getElementById('modal-badge-copias-container').innerHTML = `
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-sm bg-white text-dark shadow-sm mb-0 px-3 d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="false">
+                <span class="font-weight-bold fs-6">${copiasTotal}</span>
+                <i class="material-symbols-rounded text-md ms-1 text-dark">keyboard_arrow_down</i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-center px-3 py-2 shadow-lg mt-1 border">
+                ${dropdownItems}
+            </ul>
+        </div>
+    `;
 
     const modal = new bootstrap.Modal(document.getElementById('modalArchivos'));
     const lista = document.getElementById('lista-archivos-modal');
-
-    // Muestra un cargando mientras trae los datos
+    
+    // ... AQUÍ CONTINÚA TU CÓDIGO ORIGINAL ...
     lista.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-info"></div></div>';
     modal.show();
 
