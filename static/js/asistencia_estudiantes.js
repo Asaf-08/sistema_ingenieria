@@ -96,13 +96,29 @@ $(document).ready(function () {
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
 
+// 💥 NUEVO: Truco para permitir DESMARCAR los radio buttons
+$(document).on('click', '.radio-asistencia', function(e) {
+    // Si ya estaba marcado y le vuelven a hacer clic, lo desmarcamos
+    if ($(this).data('waschecked') === true) {
+        $(this).prop('checked', false);
+        $(this).data('waschecked', false);
+        $(this).trigger('change');
+    } else {
+        // Limpiamos los demás hermanos y marcamos este
+        $(this).closest('tr').find('.radio-asistencia').data('waschecked', false);
+        $(this).data('waschecked', true);
+    }
+});
+
 // 1. DESBLOQUEAR LA TABLA (Modo Edición)
 function habilitarModoEdicion() {
-    $('.radio-asistencia').prop('disabled', false); // Quitamos el candado a los checks
-    $('#btn-habilitar-edicion').addClass('d-none'); // Ocultamos este botón
-    $('#btn-guardar-matriz, #btn-cancelar-edicion').removeClass('d-none'); // Mostramos los de guardar
+    $('.radio-asistencia').prop('disabled', false);
+    $('#btn-habilitar-edicion').addClass('d-none');
+    $('#btn-guardar-matriz, #btn-cancelar-edicion').removeClass('d-none');
     
-    mostrarNotificacion('info', 'Modo edición activado. Puede marcar las casillas.');
+    // Al habilitar, le decimos a JS cuáles ya estaban marcados desde la BD
+    $('.radio-asistencia:checked').data('waschecked', true);
+    mostrarNotificacion('info', 'Modo edición activado. Puede marcar o desmarcar las casillas.');
 }
 
 // 2. ATRAER JUSTIFICACIONES (Cuando hacen clic en la 'J')
@@ -139,26 +155,17 @@ function guardarMatrizAsistencia() {
     let registros = [];
     let fechaMatriz = $('#fecha_filtro_matriz').val();
 
-    // Recorremos todas las filas buscando qué check está marcado
-    // Nota: Usamos DataTable().$ para atrapar incluso a los alumnos en otras páginas
     $('#tabla-matriz-estudiantes').DataTable().$('.fila-estudiante').each(function() {
         let est_id = $(this).data('estudiante-id');
-        let estadoChecked = $(this).find('input[type="radio"]:checked').val();
-        let justificacion = $(this).find('.justificacion-text').val();
+        let estadoChecked = $(this).find('input[type="radio"]:checked').val() || ''; 
+        let justificacion = $(this).find('.justificacion-text').val() || '';
 
-        if (estadoChecked) {
-            registros.push({
-                estudiante_id: est_id,
-                estado: estadoChecked,
-                justificacion: justificacion
-            });
-        }
+        registros.push({
+            estudiante_id: est_id,
+            estado: estadoChecked,
+            justificacion: justificacion
+        });
     });
-
-    if(registros.length === 0) {
-        Swal.fire('Atención', 'No ha marcado la asistencia de ningún alumno.', 'warning');
-        return;
-    }
 
     Swal.fire({ title: 'Guardando Asistencia...', didOpen: () => { Swal.showLoading(); }});
 
@@ -170,16 +177,20 @@ function guardarMatrizAsistencia() {
         headers: { 'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val() },
         success: function (response) {
             if (response.success) {
-                Swal.close();
-                // Usamos SessionStorage para recargar la página y que salga la notificación verde
                 sessionStorage.setItem('asistenciaGuardada', 'true');
                 location.reload();
             } else {
                 Swal.fire('Error', response.mensaje, 'error');
             }
         },
-        error: function () {
-            Swal.fire('Error de Red', 'Problema al conectar con el servidor.', 'error');
+        // 💥 EL ESCUDO: Si Django devuelve Error 500, detenemos la carga infinita
+        error: function (xhr) {
+            console.error("Detalle del Error:", xhr.responseText);
+            Swal.fire(
+                'Error 500', 
+                'El servidor rebotó la petición. Probablemente falta importar "PeriodoLectivo" o "datetime" en tu views.py.', 
+                'error'
+            );
         }
     });
 }

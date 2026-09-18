@@ -241,12 +241,14 @@ def registrar_asistencia_api(request):
         fecha_hoy = ahora.date()
         hora_actual = ahora.time()
         
-        # Hora límite de ingreso
         HORA_LIMITE = datetime.time(8, 0)
         estado_calculado = 'P' if hora_actual <= HORA_LIMITE else 'T'
 
-        # 💥 ACEPTAMOS TANTO 'DOC' (Docentes antiguos) COMO 'PER' (Personal nuevo)
-        if tipo_usuario == 'DOC' or tipo_usuario == 'PER':
+        # 💥 CAPTURAMOS EL BIMESTRE ACTUAL PARA LA BASE DE DATOS
+        periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+        bimestre = periodo_actual.bimestre_actual if periodo_actual else 'I'
+
+        if tipo_usuario in ['DOC', 'PER']:
             personal = Personal.objects.filter(id=id_usuario).first()
             if not personal:
                 return JsonResponse({'status': 'error', 'mensaje': 'Personal no encontrado.'}, status=404)
@@ -254,7 +256,7 @@ def registrar_asistencia_api(request):
             asistencia, created = AsistenciaPersonal.objects.get_or_create(
                 personal=personal, 
                 fecha=fecha_hoy,
-                defaults={'estado': estado_calculado, 'hora_entrada': hora_actual}
+                defaults={'estado': estado_calculado, 'hora_entrada': hora_actual, 'bimestre': bimestre}
             )
 
             if created:
@@ -266,7 +268,8 @@ def registrar_asistencia_api(request):
                 mensaje = f"Salida registrada: {personal.nombres}"
                 tipo_registro = 'Salida'
             else:
-                return JsonResponse({'status': 'error', 'mensaje': 'El personal ya registró entrada y salida hoy.'}, status=400)
+                # 💥 Retornamos 200 pero con status warning para que SweetAlert lo trate con amabilidad
+                return JsonResponse({'status': 'warning', 'mensaje': 'El personal ya registró entrada y salida hoy.'})
             
         elif tipo_usuario == 'EST':
             estudiante = Estudiante.objects.filter(id=id_usuario).first()
@@ -276,14 +279,15 @@ def registrar_asistencia_api(request):
             asistencia, created = AsistenciaEstudiante.objects.get_or_create(
                 estudiante=estudiante, 
                 fecha=fecha_hoy,
-                defaults={'estado': estado_calculado, 'hora_registro': hora_actual}
+                defaults={'estado': estado_calculado, 'hora_registro': hora_actual, 'bimestre': bimestre}
             )
             
             if created:
                 mensaje = f"Asistencia registrada: {estudiante.nombres}"
                 tipo_registro = 'Ingreso'
             else:
-                return JsonResponse({'status': 'error', 'mensaje': 'El estudiante ya registró su asistencia hoy.'}, status=400)
+                # 💥 Retornamos warning para no romper la interfaz
+                return JsonResponse({'status': 'warning', 'mensaje': 'El estudiante ya registró su asistencia hoy.'})
 
         else:
             return JsonResponse({'status': 'error', 'mensaje': 'Formato de QR desconocido.'}, status=400)
@@ -291,7 +295,6 @@ def registrar_asistencia_api(request):
         return JsonResponse({'status': 'success', 'mensaje': mensaje, 'tipo': tipo_registro, 'hora': hora_actual.strftime("%I:%M %p")})
 
     except Exception as e:
-        print(f"Error en escáner: {str(e)}") 
         return JsonResponse({'status': 'error', 'mensaje': f"Error interno: {str(e)}"}, status=500)
 
 @require_POST
@@ -374,24 +377,31 @@ def guardar_asistencia_masiva_api(request):
         registros = data.get('registros', [])
         
         fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        hora_actual = localtime(now()).time()
+
+        # Capturamos el bimestre activo
+        periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
+        bimestre = periodo_actual.bimestre_actual if periodo_actual else 'I'
 
         for reg in registros:
             est_id = reg.get('estudiante_id')
             estado = reg.get('estado')
             justificacion = reg.get('justificacion', '')
 
-            if estado: # Si hay un check marcado
+            if estado: 
+                # 💥 SE ELIMINÓ hora_registro. Al ser manual, la BD lo dejará en NULL automáticamente.
                 asistencia, created = AsistenciaEstudiante.objects.get_or_create(
                     estudiante_id=est_id,
                     fecha=fecha_obj,
-                    defaults={'estado': estado, 'hora_registro': hora_actual, 'justificacion': justificacion}
+                    defaults={'estado': estado, 'justificacion': justificacion, 'bimestre': bimestre}
                 )
                 if not created:
                     asistencia.estado = estado
                     if justificacion:
                         asistencia.justificacion = justificacion
                     asistencia.save()
+            else:
+                # Si lo desmarcaron, se elimina el registro
+                AsistenciaEstudiante.objects.filter(estudiante_id=est_id, fecha=fecha_obj).delete()
 
         return JsonResponse({'success': True, 'mensaje': 'Matriz de asistencia guardada con éxito.'})
     except Exception as e:

@@ -8,9 +8,17 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card shadow-sm">
-                <div class="card-header bg-gradient-info text-white text-center pb-0">
+                <!-- 💥 CABECERA CON BOTÓN FLOTANTE "X" -->
+                <div class="card-header bg-gradient-info text-white text-center pb-0 position-relative">
                     <h5 class="text-white mb-0">Control de Asistencia</h5>
                     <p class="text-sm mb-3 text-white">Enfoca el código QR en el recuadro</p>
+                    
+                    <!-- Botón X (Oculto por defecto) -->
+                    <button id="btn-detener-camara" class="btn btn-sm btn-icon-only bg-white text-danger position-absolute d-none shadow-sm" 
+                            style="top: 15px; right: 15px; width: 35px; height: 35px; border-radius: 50%; padding: 0;" 
+                            title="Apagar Cámara">
+                        <i class="material-symbols-rounded" style="font-size: 20px; line-height: 1.5;">mode_off_on</i>
+                    </button>
                 </div>
                 
                 <div class="card-body p-0 text-center">
@@ -19,8 +27,9 @@
                     </div>
                     
                     <div class="p-3">
-                        <button id="btn-iniciar-camara" class="btn bg-gradient-success w-100">
-                            <i class="material-symbols-rounded align-middle me-1">photo_camera</i> Activar Cámara
+                        <!-- 💥 BOTÓN ESTILO APP MÓVIL NATIVA -->
+                        <button id="btn-iniciar-camara" class="btn bg-gradient-success w-100 btn-lg py-3 mt-2 shadow-lg rounded-pill text-md font-weight-bold">
+                            <i class="material-symbols-rounded align-middle me-2" style="font-size: 26px;">photo_camera</i> Activar Cámara
                         </button>
 
                         <button id="btn-reiniciar" class="btn bg-gradient-primary w-100 btn-lg py-3 d-none mt-3 shadow-lg rounded-pill text-md">
