@@ -126,11 +126,12 @@
            </div>
            <div>
               {% if b.cerrado %}
-                  <button class="btn btn-sm bg-gradient-warning mb-0 btn-toggle-cierre" data-bimestre="{{ b.key }}" data-accion="abrir">
+                  <!-- 💥 Añadido data-asignacion="{{ asignacion.id }}" -->
+                  <button class="btn btn-sm bg-gradient-warning mb-0 btn-toggle-cierre" data-asignacion="{{ asignacion.id }}" data-bimestre="{{ b.key }}" data-accion="abrir">
                      <i class="material-symbols-rounded text-sm align-middle me-1">lock_open</i> Reabrir Registro
                   </button>
               {% else %}
-                  <button class="btn btn-sm bg-gradient-success mb-0 btn-toggle-cierre" data-bimestre="{{ b.key }}" data-accion="cerrar">
+                  <button class="btn btn-sm bg-gradient-success mb-0 btn-toggle-cierre" data-asignacion="{{ asignacion.id }}" data-bimestre="{{ b.key }}" data-accion="cerrar">
                      <i class="material-symbols-rounded text-sm align-middle me-1">lock</i> Finalizar y Enviar a Coordinación
                   </button>
               {% endif %}

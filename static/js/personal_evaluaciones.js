@@ -57,8 +57,8 @@ $(document).on('click', '.btn-toggle-cierre', function() {
     let btn = $(this);
     let bimestre = btn.data('bimestre');
     let accion = btn.data('accion');
-    // Capturamos el ID de la asignación desde el input oculto que ya tienes en el modal
-    let asignacion_id = $('input[name="asignacion_id"]').val(); 
+    // 💥 Lo capturamos directamente del botón pulsado. ¡100% seguro!
+    let asignacion_id = btn.data('asignacion'); 
 
     Swal.fire({
         title: accion === 'cerrar' ? '¿Finalizar Bimestre?' : '¿Reabrir Registro?',
@@ -75,14 +75,13 @@ $(document).on('click', '.btn-toggle-cierre', function() {
             Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading(); }});
             
             $.ajax({
-                // Asegúrate de que esta URL coincida con la que pusiste en tu urls.py
                 url: '/personal/notas/toggle-cierre/', 
                 type: 'POST',
                 data: {
                     'asignacion_id': asignacion_id,
                     'bimestre': bimestre,
                     'accion': accion,
-                    'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
+                    'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val() || $('[name=csrfmiddlewaretoken]').val()
                 },
                 success: function(response) {
                     if (response.success) {
@@ -93,8 +92,12 @@ $(document).on('click', '.btn-toggle-cierre', function() {
                         Swal.fire('Error', response.mensaje, 'error');
                     }
                 },
-                error: function() {
-                    Swal.fire('Error de Red', 'No se pudo conectar con el servidor.', 'error');
+                // 💥 Ahora el JS leerá el error real de Django
+                error: function(xhr) {
+                    let msg = (xhr.responseJSON && xhr.responseJSON.mensaje) 
+                              ? xhr.responseJSON.mensaje 
+                              : 'Error interno del servidor. Revisa los logs de Railway.';
+                    Swal.fire('Error Crítico', msg, 'error');
                 }
             });
         }

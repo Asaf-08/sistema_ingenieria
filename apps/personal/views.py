@@ -306,26 +306,35 @@ def guardar_nota_ajax(request):
 
 @require_POST
 def toggle_cierre_registro_ajax(request):
-    asignacion_id = request.POST.get('asignacion_id')
-    bimestre = request.POST.get('bimestre')
-    accion = request.POST.get('accion') # 'cerrar' o 'abrir'
-    
-    asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
-    
-    cierre, created = CierreRegistroBimestral.objects.get_or_create(
-        asignacion=asignacion, bimestre=bimestre
-    )
-    
-    if accion == 'cerrar':
-        cierre.cerrado = True
-        cierre.fecha_cierre = timezone.now()
-        mensaje = f"Registro del Bimestre {bimestre} cerrado y enviado a Coordinación."
-    else:
-        cierre.cerrado = False
-        mensaje = f"Registro del Bimestre {bimestre} reabierto. Ya puede editar notas."
+    try:
+        asignacion_id = request.POST.get('asignacion_id')
+        bimestre = request.POST.get('bimestre')
+        accion = request.POST.get('accion') # 'cerrar' o 'abrir'
         
-    cierre.save()
-    return JsonResponse({'success': True, 'mensaje': mensaje})
+        if not asignacion_id:
+            return JsonResponse({'success': False, 'mensaje': 'No se detectó el ID del curso.'}, status=400)
+
+        asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
+        
+        cierre, created = CierreRegistroBimestral.objects.get_or_create(
+            asignacion=asignacion, bimestre=bimestre
+        )
+        
+        if accion == 'cerrar':
+            cierre.cerrado = True
+            cierre.fecha_cierre = timezone.now()
+            mensaje = f"Registro del Bimestre {bimestre} finalizado correctamente."
+        else:
+            cierre.cerrado = False
+            mensaje = f"Registro del Bimestre {bimestre} reabierto. Ya puede editar notas."
+            
+        cierre.save()
+        return JsonResponse({'success': True, 'mensaje': mensaje})
+        
+    except Exception as e:
+        # 💥 Si algo falla, se lo enviamos limpio a JavaScript
+        return JsonResponse({'success': False, 'mensaje': f'Error de servidor: {str(e)}'}, status=500)
+
 
 def material_upload(request, asignacion_id):
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
