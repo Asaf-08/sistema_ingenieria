@@ -140,6 +140,7 @@ function abrirModalArchivos(btnElement) {
             data.archivos.forEach(arc => {
                 const li = document.createElement('li');
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
+                // (Fragmento dentro del data.archivos.forEach)
                 li.innerHTML = `
                 <div class="text-truncate" style="max-width: 60%;">
                     <h6 class="mb-0 text-sm"><i class="material-symbols-rounded text-info text-sm align-middle">description</i> ${arc.nombre}</h6>
@@ -149,9 +150,11 @@ function abrirModalArchivos(btnElement) {
                     <button class="btn btn-outline-dark btn-sm mb-0" onclick="imprimirArchivo('${arc.url}')" title="Abrir para imprimir">
                         <i class="material-symbols-rounded text-md align-middle">print</i> Imprimir
                     </button>
-                    <a href="${arc.url}" class="btn bg-gradient-info btn-sm mb-0" download title="Descargar PDF/Word">
+                    
+                    <!-- 💥 Cambiamos la etiqueta <a> por este <button> -->
+                    <button class="btn bg-gradient-info btn-sm mb-0" onclick="forzarDescarga('${arc.url}', '${arc.nombre}')" title="Descargar PDF/Word">
                         <i class="material-symbols-rounded text-md align-middle">download</i>
-                    </a>
+                    </button>
                 </div>
             `;
                 lista.appendChild(li);
@@ -165,4 +168,98 @@ function abrirModalArchivos(btnElement) {
 function imprimirArchivo(url) {
     // Abre el archivo en una nueva pestaña. Si es PDF, el navegador mostrará su propio botón de imprimir.
     window.open(url, '_blank');
+}
+
+function forzarDescarga(url, nombreArchivo) {
+    // 1. Mostramos una alerta de carga para archivos pesados
+    Swal.fire({ 
+        toast: true, 
+        position: 'top-end', 
+        title: 'Descargando archivo...', 
+        showConfirmButton: false, 
+        timerProgressBar: true, 
+        didOpen: () => Swal.showLoading() 
+    });
+
+    // 2. Traemos el archivo desde Amazon S3
+    fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+            // 3. Lo empaquetamos y forzamos la descarga local
+            const urlBlob = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = urlBlob;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(urlBlob);
+            Swal.close();
+        })
+        .catch(error => {
+            Swal.close();
+            // Plan B: Si la red falla o el archivo es muy masivo, lo abre en otra pestaña
+            window.open(url, '_blank');
+        });
+}
+
+// ========================================================
+// 💥 DESCARGA MASIVA Y EMPAQUETADO ZIP EN EL CLIENTE
+// ========================================================
+async function descargarPaqueteZIP(solicitudId, nombreCarpeta) {
+    // 1. Mostrar pantalla de carga amigable
+    Swal.fire({ 
+        title: 'Empaquetando archivos...', 
+        text: 'Descargando desde la nube',
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+    });
+
+    try {
+        // 2. Pedimos al servidor la lista de archivos (reutilizamos tu API existente)
+        const response = await fetch(`/academico/obtener-archivos/${solicitudId}/`);
+        const data = await response.json();
+
+        if (!data.archivos || data.archivos.length === 0) {
+            Swal.fire('Atención', 'Esta solicitud no tiene archivos adjuntos.', 'warning');
+            return;
+        }
+
+        // 3. Inicializamos el empaquetador ZIP
+        const zip = new JSZip();
+        // Creamos la carpeta virtual adentro del ZIP con el nombre exacto que pediste
+        const carpetaVirtual = zip.folder(nombreCarpeta);
+
+        // 4. Descargamos todos los archivos en paralelo desde AWS S3
+        const promesasDescarga = data.archivos.map(async (arc) => {
+            const fileResp = await fetch(arc.url);
+            const blob = await fileResp.blob();
+            // Guardamos el archivo dentro de la carpeta virtual
+            carpetaVirtual.file(arc.nombre, blob);
+        });
+
+        // Esperamos a que todos los archivos terminen de descargarse
+        await Promise.all(promesasDescarga);
+
+        Swal.update({ title: 'Generando archivo final...' });
+
+        // 5. Generamos el ZIP y forzamos su descarga
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const urlBlob = window.URL.createObjectURL(zipBlob);
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = urlBlob;
+        a.download = `${nombreCarpeta}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        
+        window.URL.revokeObjectURL(urlBlob);
+
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Descarga completada', showConfirmButton: false, timer: 2500 });
+        
+    } catch (error) {
+        console.error("Error al crear el ZIP:", error);
+        Swal.fire('Error', 'Ocurrió un problema al empaquetar los archivos. Revisa tu conexión.', 'error');
+    }
 }

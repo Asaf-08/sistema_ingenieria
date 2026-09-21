@@ -120,7 +120,7 @@
                   </td>
 
                   <td class="text-center">
-                        <button class="btn btn-link text-info pr-5 mb-0" 
+                        <button class="btn btn-link text-info pr-3 mb-0" 
                                 data-id="{{ sol.id }}" 
                                 data-copias="{{ sol.obtener_desglose_copias.total }}"
                                 data-detalle="{{ sol.obtener_detalle_str }}"
@@ -128,11 +128,19 @@
                                 title="Ver e Imprimir">
                             <i class="material-symbols-rounded text-lg">print</i>
                         </button>
-                        
+
                         <button class="btn btn-link text-secondary p-0 mb-0" 
                                 data-nota="{{ sol.instrucciones|default:'Sin notas adicionales' }}" 
-                                onclick="verInstrucciones(this)">
+                                onclick="verInstrucciones(this)"
+                                title="Ver Notas">
                             <i class="material-symbols-rounded text-lg">info</i>
+                        </button>
+
+                        <!-- 💥 NUEVO BOTÓN: Descargar Todo (ZIP) -->
+                        <button class="btn btn-link text-dark pr-3 mb-0" 
+                                onclick="descargarPaqueteZIP('{{ sol.id }}', '{{ sol.get_tema_display }} - {{ sol.asignacion.curso.nombre }} - {{ sol.asignacion.curso.get_nivel_exclusivo_display }}')"
+                                title="Descargar todos los archivos">
+                            <i class="material-symbols-rounded text-lg">download</i>
                         </button>
                   </td>
                 </tr>
@@ -169,6 +177,8 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- 💥 1. Añadimos JSZip para crear carpetas comprimidas en el navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script src="{% static 'js/asistente_imprenta.js' %}"></script>
 {% endblock %}
