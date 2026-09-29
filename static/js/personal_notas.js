@@ -18,6 +18,44 @@ $(document).ready(function() {
       actualizarBotonSincronizacion();
       restaurarValoresOffline(); // 💥 NUEVA FUNCIÓN: Pinta las notas guardadas en el celular
 
+      // ==========================================================
+      // 💥 BUSCADOR EN TIEMPO REAL (Estilo WhatsApp con X)
+      // ==========================================================
+      const $buscador = $('#buscador-alumnos');
+      const $btnLimpiar = $('#btn-limpiar-buscador');
+
+      $buscador.on('keyup input', function() {
+          let texto = $(this).val().toLowerCase();
+
+          // Mostrar u ocultar la X dependiendo si hay texto
+          if (texto.length > 0) {
+              $btnLimpiar.removeClass('d-none');
+          } else {
+              $btnLimpiar.addClass('d-none');
+          }
+
+          // Filtro de alumnos
+          $('li[id^="fila-nota-"]').each(function() {
+              let apellidos = $(this).find('h6').text().toLowerCase();
+              let nombres = $(this).find('span.text-secondary').text().toLowerCase();
+              let nombreCompleto = apellidos + " " + nombres;
+
+              if (nombreCompleto.includes(texto)) {
+                  $(this).removeClass('d-none').addClass('d-flex');
+              } else {
+                  $(this).removeClass('d-flex').addClass('d-none');
+              }
+          });
+      });
+
+      // 💥 Acción de limpiar al presionar la X
+      $btnLimpiar.on('click', function() {
+          $buscador.val('');                // Borra el texto
+          $(this).addClass('d-none');       // Oculta la X
+          $buscador.trigger('keyup');       // Restaura toda la lista de alumnos
+          $buscador.focus();                // Devuelve el teclado al usuario
+      });
+
       // 💥 LÓGICA PARA RECUPERAR LO QUE SE QUEDÓ EN EL CELULAR
       function restaurarValoresOffline() {
           let pendientes = JSON.parse(localStorage.getItem('notas_pendientes_tesis')) || {};
@@ -212,10 +250,9 @@ $(document).ready(function() {
           actualizarBotonSincronizacion();
 
           if (errores === 0) {
-            // 💥 Cambiado a notificación flotante (Toast)
+            // 💥 Asumo que 'mostrarNotificacionExito' vive en tu archivo main.js, ¡déjalo así, es correcto!
             mostrarNotificacionExito('¡Sincronización Completa! Notas a salvo en el servidor.');
             } else {
-                // El error sí lo dejamos como modal porque requiere atención del usuario
                 Swal.fire('Advertencia', `Se subieron algunas notas, pero ${errores} fallaron. Intenta presionar el botón de nuevo.`, 'warning');
             }
       }
@@ -254,10 +291,10 @@ $(document).ready(function() {
       // ==============================================================
       // 💥 MATA-EXCEL: VOZ A TEXTO + PROCESAMIENTO IA
       // ==============================================================
-      const $btnProcesarNotas = $('#btn-procesar-notas-ia');
-      const $promptNotas = $('#ia-prompt-notas');
-      const $btnDictar = $('#btn-dictar-notas');
-      const $indicadorGrabacion = $('#ia-indicador-grabacion');
+      const $btnProcesarNotas =$('#btn-procesar-notas-ia');
+      const $promptNotas =$('#ia-prompt-notas');
+      const $btnDictar =$('#btn-dictar-notas');
+      const $indicadorGrabacion =$('#ia-indicador-grabacion');
       
       // 1. LÓGICA DEL MICRÓFONO (Web Speech API)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -270,8 +307,13 @@ $(document).ready(function() {
           recognition.interimResults = false;
 
           recognition.onstart = function() {
-              $btnDictar.removeClass('btn-outline-primary').addClass('btn-primary text-white');
-              $indicadorGrabacion.removeClass('d-none').addClass('d-flex');
+              $btnDictar.removeClass('btn-outline-primary').addClass('btn-primary text-white');$indicadorGrabacion.removeClass('d-none').addClass('d-flex');
+          };
+
+          recognition.onresult = function(event) {
+              const transcripcion = event.results[0][0].transcript;
+              // 💥 CORRECCIÓN: Reemplaza todo el contenido del input por el nuevo dictado
+              $promptNotas.val(transcripcion + '.');
           };
 
         //   recognition.onresult = function(event) {
@@ -281,20 +323,13 @@ $(document).ready(function() {
         //       $promptNotas.val(textoActual + (textoActual ? ' ' : '') + transcripcion + '. ');
         //   };
 
-          recognition.onresult = function(event) {
-              const transcripcion = event.results[0][0].transcript;
-              // 💥 CORRECCIÓN: Reemplaza todo el contenido del input por el nuevo dictado
-              $promptNotas.val(transcripcion + '.');
-          };
-
           recognition.onerror = function(event) {
               console.error('Error de micrófono: ', event.error);
               Swal.fire('Error', 'No se pudo acceder al micrófono.', 'error');
           };
 
           recognition.onend = function() {
-              $btnDictar.removeClass('btn-primary text-white').addClass('btn-outline-primary');
-              $indicadorGrabacion.removeClass('d-flex').addClass('d-none');
+              $btnDictar.removeClass('btn-primary text-white').addClass('btn-outline-primary');$indicadorGrabacion.removeClass('d-flex').addClass('d-none');
           };
 
           $btnDictar.on('click', function() {
@@ -305,8 +340,7 @@ $(document).ready(function() {
       }
 
       // 2. LÓGICA DE PROCESAMIENTO CON GEMINI
-      if ($btnProcesarNotas.length) {
-          $btnProcesarNotas.on('click', async function() {
+      if ($btnProcesarNotas.length) {$btnProcesarNotas.on('click', async function() {
               const texto = $promptNotas.val().trim();
               const evaluacionId = $(this).attr('data-evaluacion-id');
 
@@ -315,8 +349,7 @@ $(document).ready(function() {
                   return;
               }
 
-              const originalHtml = $(this).html();
-              $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
+              const originalHtml = $(this).html();$(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
 
               try {
                   const params = new URLSearchParams();
@@ -341,7 +374,7 @@ $(document).ready(function() {
                       // 1. Rellenar inputs y forzar guardado DIRECTO
                       if (iaResult.notas && iaResult.notas.length > 0) {
                           iaResult.notas.forEach(item => {
-                              const $inputElement = $(`#input-nota-${item.nota_id}`);
+                              const $inputElement =$(`#input-nota-${item.nota_id}`);
                               
                               if ($inputElement.length) {
                                   // Asignamos el valor visualmente

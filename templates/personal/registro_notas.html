@@ -89,34 +89,51 @@
     background-color: #f8d7da !important;
     border-color: #f5c6cb !important;
   }
+
+  /* 💥 1. Ocultar el Navbar Global solo en móviles para ganar espacio de trabajo */
+  @media (max-width: 767.98px) {
+    #navbarBlur {
+      display: none !important;
+    }
+  }
 </style>
 
 <div class="container-fluid py-4">
 
-<!-- Cabecera Original con el texto actualizado -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card bg-gradient-dark shadow-dark">
-        <div class="card-body p-3 d-flex align-items-center">
-            <!-- 💥 Lógica dinámica de retroceso hacia Lista de Evaluaciones -->
-            {% if request.GET.origen == 'global' %}
-            <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}?origen=global" class="text-white me-3">
-            {% else %}
-            <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}" class="text-white me-3">
-            {% endif %}
-              <i class="material-symbols-rounded text-3xl">arrow_back</i>
-            </a>
-            
-            <div>
+  <!-- 💥 2. ZONA ANCLADA: Cabecera + Buscador (Estilo WhatsApp) -->
+  <div class="position-sticky z-index-sticky pt-3 pb-1 mb-2" style="top: 0; background-color: #f8f9fa;">
+    
+    <!-- Cabecera Negra Original -->
+    <div class="card bg-gradient-dark shadow-dark mb-3 border-radius-xl">
+      <div class="card-body p-3 d-flex align-items-center">
+          {% if request.GET.origen == 'global' %}
+          <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}?origen=global" class="text-white me-3">
+          {% else %}
+          <a href="{% url 'personal:lista_evaluaciones' evaluacion.asignacion.id %}" class="text-white me-3">
+          {% endif %}
+            <i class="material-symbols-rounded text-3xl">arrow_back</i>
+          </a>
+          <div>
             <h6 class="text-white mb-0 text-capitalize">{{ evaluacion.nombre }}</h6>
-            <!-- 💥 Aquí está el nuevo texto de contexto sin la fecha -->
             <p class="text-xs text-white opacity-8 mb-0 font-weight-bold">
               {{ evaluacion.asignacion.curso.nombre }} <span class="mx-1">|</span> {{ evaluacion.asignacion.aula }}
             </p>
           </div>
-        </div>
       </div>
     </div>
+
+    <!-- 💥 Buscador Estilo WhatsApp con Botón X -->
+    <div class="d-flex align-items-center w-100 position-relative" style="background-color: #f0f2f5; border-radius: 24px; padding: 6px 16px;">
+      <!-- Ícono gris oscuro -->
+      <i class="material-symbols-rounded me-2" style="color: #54656f; font-size: 22px;">search</i>
+      
+      <!-- Input transparente -->
+      <input type="text" id="buscador-alumnos" class="form-control bg-transparent text-dark shadow-none p-0 m-0 text-sm font-weight-medium w-100" placeholder="Buscar estudiante..." style="border: none !important; box-shadow: none !important; padding-right: 30px !important;">
+      
+      <!-- 💥 Botón X para limpiar (Oculto inicialmente) -->
+      <i id="btn-limpiar-buscador" class="material-symbols-rounded position-absolute cursor-pointer d-none" style="right: 16px; color: #54656f; font-size: 20px;">close</i>
+    </div>
+
   </div>
   
   <!-- Barra de Sincronización y Tips -->
@@ -201,7 +218,7 @@
 <button class="btn bg-gradient-primary position-fixed z-index-sticky shadow-lg d-flex align-items-center justify-content-center p-0" 
         data-bs-toggle="modal" 
         data-bs-target="#modalIngresoIA" 
-        style="bottom: 40px; right: 20px; width: 60px; height: 60px; border-radius: 50%;">
+        style="bottom: 95px; right: 20px; width: 60px; height: 60px; border-radius: 50%;">
   <i class="material-symbols-rounded text-white text-3xl">mic</i>
 </button>
 {% endif %}
