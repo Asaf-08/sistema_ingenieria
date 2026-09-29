@@ -307,7 +307,8 @@ $(document).ready(function() {
           recognition.interimResults = false;
 
           recognition.onstart = function() {
-              $btnDictar.removeClass('btn-outline-primary').addClass('btn-primary text-white');$indicadorGrabacion.removeClass('d-none').addClass('d-flex');
+              $btnDictar.removeClass('btn-outline-ia').addClass('btn-ia-grabando');
+              $indicadorGrabacion.removeClass('d-none').addClass('d-flex');
           };
 
           recognition.onresult = function(event) {
@@ -329,7 +330,8 @@ $(document).ready(function() {
           };
 
           recognition.onend = function() {
-              $btnDictar.removeClass('btn-primary text-white').addClass('btn-outline-primary');$indicadorGrabacion.removeClass('d-flex').addClass('d-none');
+              $btnDictar.removeClass('btn-ia-grabando').addClass('btn-outline-ia');
+              $indicadorGrabacion.removeClass('d-flex').addClass('d-none');
           };
 
           $btnDictar.on('click', function() {

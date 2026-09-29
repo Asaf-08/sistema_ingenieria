@@ -717,3 +717,92 @@ body.g-sidenav-hidden .sidenav:not(:hover) .navbar-brand-img { margin-right: 0 !
 }
 
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+/* =========================================
+   ✨ ESTILOS PREMIUM IA (EFECTO GLOW NEÓN EXACTO)
+   ========================================= */
+
+/* Contenedor principal del botón */
+.btn-ia-premium {
+  position: relative;
+  /* 💥 Magia: El primer color pinta el centro oscuro, el segundo pinta el borde */
+  background: linear-gradient(#161616, #161616) padding-box,
+              linear-gradient(180deg, #ff00ff 0%, #00e5ff 100%) border-box;
+  
+  border: 3px solid transparent !important; /* El borde debe ser transparente para que brille el degradado */
+  border-radius: 50% !important;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  cursor: pointer;
+  
+  /* Resplandor exterior (Glow magenta y cyan) */
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), 0 0 20px rgba(0, 229, 255, 0.4);
+}
+
+/* Interacción táctil */
+.btn-ia-premium:active {
+  transform: scale(0.92);
+}
+
+/* Degradado inyectado directamente en la fuente del ícono */
+.icon-gradient-ia {
+  background: linear-gradient(180deg, #ff00ff 0%, #00e5ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  line-height: 1; /* Previene recortes en el borde del ícono */
+}
+
+/* =========================================
+   ✨ ESTILOS COMPLEMENTARIOS MODAL IA
+   ========================================= */
+
+/* Fondo degradado sólido (Para Cabecera y Botón Procesar) */
+.bg-gradient-ia-solid {
+  background: linear-gradient(165deg, #ff00ff 0%, #00e5ff 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* Botón Outline para el Micrófono (Fondo NEGRO, borde degradado) */
+.btn-outline-ia {
+  background: linear-gradient(#121212, #121212) padding-box,
+              linear-gradient(135deg, #ff00ff 0%, #00e5ff 100%) border-box !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease;
+}
+
+/* Efecto de texto e ícono degradado para el botón Outline */
+.btn-outline-ia .texto-degradado-ia {
+  background: linear-gradient(135deg, #ff00ff 0%, #00e5ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Estado ACTIVO del botón (Cuando la IA está escuchando) */
+.btn-ia-grabando {
+  background: linear-gradient(135deg, #ff00ff 0%, #00e5ff 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid transparent !important;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), 0 0 20px rgba(0, 229, 255, 0.4);
+  animation: pulse-ia 1.5s infinite;
+}
+
+/* Cuando graba, el ícono interior debe volverse blanco sólido */
+.btn-ia-grabando .texto-degradado-ia {
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+  color: #ffffff;
+}
+
+@keyframes pulse-ia {
+  0% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(255, 0, 255, 0.3); }
+}
