@@ -178,15 +178,35 @@
                 {% for ev in evaluaciones %}
                   {% if ev.bimestre == b.key %}
                     {% if ev.tipo == 'CUADERNO' or ev.tipo == 'LIBRO' %}
-                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
-                      <div class="d-flex align-items-center">
-                        <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3">
+                    <li class="list-group-item p-3 border-bottom clickable-row evaluacion-item position-relative {% if b.cerrado %}opacity-6{% endif %}" data-url="{% url 'personal:registro_notas' ev.id %}{% if request.GET.origen == 'global' %}?origen=global{% endif %}">
+                      
+                      <!-- 💥 Añadido w-100 para usar todo el espacio -->
+                      <div class="d-flex align-items-center w-100">
+                        <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3 flex-shrink-0">
                           <i class="material-symbols-rounded text-white" style="font-size: 16px;">menu_book</i>
                         </div>
-                        <div>
+                        <div class="flex-grow-1 text-start">
                           <h6 class="mb-0 text-sm font-weight-bold">{{ ev.nombre }}</h6>
                           <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | Revisión Documentaria</span>
                         </div>
+
+                        <!-- 💥 MENÚ 3 PUNTITOS: Solo aparece en 'Cuaderno' si el registro está abierto -->
+                        {% if ev.tipo == 'CUADERNO' and not b.cerrado %}
+                        <div class="dropdown ms-auto" onclick="event.stopPropagation();">
+                          <button class="btn btn-link text-secondary mb-0 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones">
+                            <i class="material-symbols-rounded text-lg">more_vert</i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end shadow-lg border py-2">
+                            <li>
+                              <a class="dropdown-item d-flex align-items-center text-dark font-weight-bold btn-duplicar-notas" href="javascript:;" data-evaluacion-id="{{ ev.id }}">
+                                <i class="material-symbols-rounded text-info me-2 text-md">content_copy</i> 
+                                Duplicar notas a Libro
+                              </a>
+                            </li>
+                          </ul>
+                        </div>
+                        {% endif %}
+
                       </div>
                     </li>
                     {% endif %}
