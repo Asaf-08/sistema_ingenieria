@@ -190,13 +190,16 @@
                           <span class="text-xs text-secondary">{{ ev.get_bimestre_display }} | Revisión Documentaria</span>
                         </div>
 
-                        <!-- 💥 MENÚ 3 PUNTITOS: Solo aparece en 'Cuaderno' si el registro está abierto -->
+                        <!-- 💥 MENÚ 3 PUNTITOS: Ajuste de propagación de eventos -->
                         {% if ev.tipo == 'CUADERNO' and not b.cerrado %}
-                        <div class="dropdown ms-auto" onclick="event.stopPropagation();">
-                          <button class="btn btn-link text-secondary mb-0 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones">
+                        <div class="dropdown ms-auto">
+                          
+                          <!-- 💥 El bloqueo de clic va SOLO en el botón que abre el menú -->
+                          <button class="btn btn-link text-secondary mb-0 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones" onclick="event.stopPropagation();">
                             <i class="material-symbols-rounded text-lg">more_vert</i>
                           </button>
-                          <ul class="dropdown-menu dropdown-menu-end shadow-lg border py-2">
+                          
+                          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-2">
                             <li>
                               <a class="dropdown-item d-flex align-items-center text-dark font-weight-bold btn-duplicar-notas" href="javascript:;" data-evaluacion-id="{{ ev.id }}">
                                 <i class="material-symbols-rounded text-info me-2 text-md">content_copy</i> 
