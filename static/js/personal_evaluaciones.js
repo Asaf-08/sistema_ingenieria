@@ -14,6 +14,59 @@ $(document).ready(function() {
             window.location.href = url;
         }
     });
+
+    // Escuchador dinámico para el botón de duplicar
+    $(document).on('click', '.btn-duplicar-notas', function(e) {
+        e.preventDefault();
+        // Detenemos la redirección de la fila padre
+        e.stopPropagation(); 
+        
+        let evaluacionId = $(this).data('evaluacion-id');
+        let csrfToken = $('input[name="csrfmiddlewaretoken"]').val() || $('meta[name="csrf-token"]').attr('content');
+        
+        Swal.fire({
+            title: '¿Duplicar notas al Libro?',
+            text: "Se copiarán idénticamente todas las notas de este Cuaderno hacia el Libro. Si ya tenías notas en el libro, se sobrescribirán.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#17a2b8',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, duplicar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Clonando notas...', didOpen: () => { Swal.showLoading(); }});
+                
+                let formData = new FormData();
+                formData.append('evaluacion_id', evaluacionId);
+                formData.append('csrfmiddlewaretoken', csrfToken);
+
+                // 💥 RECUERDA: Ajustar esta URL a la que pongas en tu urls.py
+                fetch('/personal/evaluaciones/duplicar-cuaderno/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Magia realizada!',
+                            text: data.mensaje,
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('No se pudo duplicar', data.mensaje, 'error');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Error de Red', 'Problema al conectar con el servidor.', 'error');
+                });
+            }
+        });
+    });
 });
 
 // 2. Lógica del Modal

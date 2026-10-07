@@ -335,6 +335,54 @@ def toggle_cierre_registro_ajax(request):
         # 💥 Si algo falla, se lo enviamos limpio a JavaScript
         return JsonResponse({'success': False, 'mensaje': f'Error de servidor: {str(e)}'}, status=500)
 
+@require_POST
+def duplicar_notas_cuaderno_ajax(request):
+    evaluacion_id = request.POST.get('evaluacion_id')
+    
+    try:
+        # 1. Obtenemos el Cuaderno de origen
+        origen = get_object_or_404(Evaluacion, id=evaluacion_id, tipo='CUADERNO')
+        
+        # 2. Seguridad: Verificamos que el candado no esté cerrado
+        cierre = CierreRegistroBimestral.objects.filter(asignacion=origen.asignacion, bimestre=origen.bimestre).first()
+        if cierre and cierre.cerrado:
+            return JsonResponse({'success': False, 'mensaje': 'El registro de este bimestre está cerrado.'})
+        
+        # 3. Inteligencia: Calculamos el nombre del destino (Reemplaza "Cuaderno" por "Libro")
+        nombre_destino = origen.nombre.replace('Cuaderno', 'Libro')
+        
+        destino = Evaluacion.objects.filter(
+            asignacion=origen.asignacion, 
+            bimestre=origen.bimestre, 
+            nombre=nombre_destino
+        ).first()
+        
+        if not destino:
+            return JsonResponse({'success': False, 'mensaje': f'No se encontró la evaluación destino: {nombre_destino}.'})
+        
+        # 4. Duplicación Masiva y Optimizada
+        notas_origen = Nota.objects.filter(evaluacion=origen)
+        notas_destino = Nota.objects.filter(evaluacion=destino)
+        
+        # Creamos un diccionario rápido para emparejar por alumno (matricula_id)
+        dict_destino = {nd.matricula_id: nd for nd in notas_destino}
+        
+        notas_a_actualizar = []
+        for no in notas_origen:
+            nd = dict_destino.get(no.matricula_id)
+            # Solo actualizamos si el alumno existe en destino y la nota es diferente
+            if nd and nd.valor != no.valor:
+                nd.valor = no.valor
+                notas_a_actualizar.append(nd)
+        
+        # Guardamos todas las notas de golpe (Bulk Update para no saturar la BD)
+        if notas_a_actualizar:
+            Nota.objects.bulk_update(notas_a_actualizar, ['valor'])
+            
+        return JsonResponse({'success': True, 'mensaje': f'Notas duplicadas exitosamente a {nombre_destino}.'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': f'Error de servidor: {str(e)}'})
 
 def material_upload(request, asignacion_id):
     asignacion = get_object_or_404(AsignacionAcademica, id=asignacion_id)
