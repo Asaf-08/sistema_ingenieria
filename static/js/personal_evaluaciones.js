@@ -118,7 +118,7 @@ $('.btn-duplicar-notas').on('click', function(e) {
         text: "Se copiarán idénticamente todas las notas de este Cuaderno hacia el Libro. Si ya tenías notas en el libro, se sobrescribirán.",
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#17a2b8',
+        confirmButtonColor: '#FB8C00',
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, duplicar',
         cancelButtonText: 'Cancelar'
@@ -141,7 +141,7 @@ $('.btn-duplicar-notas').on('click', function(e) {
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: '¡Magia realizada!',
+                        title: '¡Éxito!',
                         text: data.mensaje,
                         timer: 2500,
                         showConfirmButton: false

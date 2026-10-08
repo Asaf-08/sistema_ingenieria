@@ -153,6 +153,7 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     fill_promedios = PatternFill(start_color="FDE9D9", end_color="FDE9D9", fill_type="solid") 
     
     font_titulo = Font(name="Arial", size=14, bold=True)
+    font_titulo_showcard = Font(name="Showcard Gothic", size=14, bold=False)
     font_blanca = Font(name="Arial", size=9, bold=True, color="FFFFFF")
     font_negra_bold = Font(name="Arial", size=9, bold=True)
     font_normal = Font(name="Arial", size=9)
@@ -171,7 +172,7 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     ws.row_dimensions[2].height = 35
     ws.merge_cells("A2:W2")
     ws["A2"] = f"INVENTARIO DE GANANCIAS Y PÉRDIDAS DE APRENDIZAJES {asignacion.periodo.anio}"
-    ws["A2"].font, ws["A2"].alignment = font_titulo, align_centro
+    ws["A2"].font, ws["A2"].alignment = font_titulo_showcard, align_centro
     
     for col in range(1, 24):
         ws.cell(row=2, column=col).border = borde_grueso_outer
@@ -273,10 +274,14 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
             celda = ws.cell(row=fila_actual, column=col_idx)
             celda.border = borde_fino
             
-            # 💥 LA MAGIA: Las columnas E(5), H(8), Q(17), R(18), S(19), V(22), W(23)
-            if col_idx in [5, 8, 17, 18, 19, 22, 23]:
+            # 💥 Modificación: Sacamos 18 (R) y 19 (S) de la lista de negritas
+            if col_idx in [5, 8, 17, 22, 23]:
                 celda.fill = fill_promedios
-                celda.font = font_negra_bold  # Aplicamos la negrita aquí
+                celda.font = font_negra_bold
+            # 💥 Pero si es R o S, le damos el fondo naranja pero sin negrita
+            elif col_idx in [18, 19]:
+                celda.fill = fill_promedios
+                celda.font = font_normal
             else:
                 celda.font = font_normal      # Fuente normal para el resto
 
@@ -352,6 +357,36 @@ def exportar_matriz_oficial_excel(request, asignacion_id):
     for col_idx in range(3, 24):
         col_letra = openpyxl.utils.get_column_letter(col_idx)
         ws.column_dimensions[col_letra].width = 5
+    
+    # ==========================================
+    # 💥 7. CONFIGURACIÓN DE IMPRESIÓN (Área, Márgenes y Orientación)
+    # ==========================================
+    # Definimos el área de impresión dinámica
+    ultima_fila = fila_actual - 1
+    ws.print_area = f'A1:W{ultima_fila}'
+    
+    # Orientación horizontal (Landscape) y tamaño de papel A4
+    ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    
+    # 💥 Ajustar a: 1 página de ancho por 1 de alto
+    # IMPORTANTE: En Openpyxl, para que los fitToHeight/Width funcionen, 
+    # se debe activar primero la propiedad fitToPage del sheet.
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 1
+    
+    # 💥 Márgenes Estrechos (Valores estándar de Excel en pulgadas)
+    ws.page_margins.left = 0.25
+    ws.page_margins.right = 0.25
+    ws.page_margins.top = 0.75
+    ws.page_margins.bottom = 0.75
+    ws.page_margins.header = 0.3
+    ws.page_margins.footer = 0.3
+    
+    # 💥 Centrar en la página: Horizontal y Verticalmente
+    ws.print_options.horizontalCentered = True
+    ws.print_options.verticalCentered = True
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename=Matriz_{asignacion.curso.nombre}_{bimestre_actual}B.xlsx'

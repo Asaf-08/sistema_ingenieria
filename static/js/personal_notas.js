@@ -295,6 +295,15 @@ $(document).ready(function() {
       const $promptNotas =$('#ia-prompt-notas');
       const $btnDictar =$('#btn-dictar-notas');
       const $indicadorGrabacion =$('#ia-indicador-grabacion');
+
+      // ==============================================================
+      // 💥 ACCIÓN DEL BOTÓN LIMPIAR (MODAL IA)
+      // ==============================================================
+      $('#btn-limpiar-ia').on('click', function() {
+          const $promptNotas = $('#ia-prompt-notas');
+          $promptNotas.val(''); // Vaciamos la caja de texto
+          $promptNotas.focus(); // Devolvemos el cursor a la caja
+      });
       
       // 1. LÓGICA DEL MICRÓFONO (Web Speech API)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -312,9 +321,12 @@ $(document).ready(function() {
           };
 
           recognition.onresult = function(event) {
-              const transcripcion = event.results[0][0].transcript;
-              // 💥 CORRECCIÓN: Reemplaza todo el contenido del input por el nuevo dictado
-              $promptNotas.val(transcripcion + '.');
+            const transcripcion = event.results[0][0].transcript;
+            const textoActual = $promptNotas.val();
+                // Añade lo dictado al texto que ya estaba, con un espacio
+            $promptNotas.val(textoActual + (textoActual ? ' ' : '') + transcripcion + '. ');
+            //   // 💥 CORRECCIÓN: Reemplaza todo el contenido del input por el nuevo dictado
+            //   $promptNotas.val(transcripcion + '.');
           };
 
         //   recognition.onresult = function(event) {

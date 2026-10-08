@@ -267,12 +267,17 @@
       </div>
       
       <div class="modal-footer border-0 p-3 bg-white d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cancelar</button>
+        
+        <!-- 💥 Botón Limpiar (Reemplaza al de Cancelar) -->
+        <button type="button" id="btn-limpiar-ia" class="btn btn-outline-secondary mb-0 px-3">
+          <i class="material-symbols-rounded text-sm align-middle me-1">backspace</i> Limpiar
+        </button>
         
         <!-- 💥 Botón Procesar con Degradado Sólido e Ícono de Estrellas -->
         <button type="button" id="btn-procesar-notas-ia" class="btn bg-gradient-ia-solid mb-0 px-4 text-white" data-evaluacion-id="{{ evaluacion.id }}">
           <i class="material-symbols-rounded text-sm align-middle me-1 text-white">auto_awesome</i> Procesar Notas
         </button>
+
       </div>
     </div>
   </div>
