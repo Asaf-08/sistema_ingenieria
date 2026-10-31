@@ -8,8 +8,9 @@ from django.core.cache import cache
 
 # Importa tus modelos de las otras apps
 from django.contrib.auth.views import LoginView
-from apps.academico.services import obtener_consolidado_aula_maestro
-from apps.academico.servicios_ia import analizar_rendimiento_estudiante
+# [DESACTIVADO TEMPORALMENTE PARA CARGA RÁPIDA EN PRESENTACIÓN]
+# from apps.academico.services import obtener_consolidado_aula_maestro
+# from apps.academico.servicios_ia import analizar_rendimiento_estudiante
 from apps.personal.models import Personal
 from apps.academico.models import Aula, Estudiante, AsignacionAcademica, Matricula, Nota, CatalogoMaterial, PeriodoLectivo
 from apps.asistencia.models import AsistenciaEstudiante
@@ -87,105 +88,159 @@ def dashboard_principal(request):
         ).exclude(asignaciones__evaluaciones__isnull=False).distinct()[:5]
 
         # ---------------------------------------------------------------------
-        # 💥 CAPA DE CACHÉ PARA MOTOR DE CÁLCULO E IA HÍBRIDA
+        # ⚡ CÁLCULO RÁPIDO Y BÁSICO PARA EL DASHBOARD (SIN MOTOR IA PESADO)
         # ---------------------------------------------------------------------
-        cache_key = f"dashboard_pesado_{periodo_actual.id}"
-        datos_pesados = cache.get(cache_key)
+        hace_un_mes = ahora - timedelta(days=30)
+        total_optimos = 0
+        total_esfuerzo = 0
+        total_riesgo = 0
+        riesgo_mes_pasado = 0
+        lista_global_alumnos = []
 
-        # Si no hay datos en caché (o ya pasaron 15 minutos), el servidor hace la matemática
-        if not datos_pesados:
-            todas_las_aulas = Aula.objects.filter(asignaciones__periodo=periodo_actual).distinct()
-            
-            lista_global_alumnos = []
-            total_optimos = 0
-            total_esfuerzo = 0
-            total_riesgo = 0
-            total_sin_notas = 0
+        if periodo_actual:
+            # 1 sola consulta agregada para segmentación y orden de mérito
+            matriculas_stats = Matricula.objects.filter(
+                periodo=periodo_actual,
+                estudiante__estado='Activo'
+            ).select_related('estudiante', 'aula').annotate(
+                promedio_general=Avg('notas__valor'),
+                bimestres_con_nota=Count(
+                    'notas__evaluacion__bimestre',
+                    filter=Q(notas__valor__isnull=False),
+                    distinct=True
+                )
+            )
 
-            sumas_por_bimestre = {'I': 0, 'II': 0, 'III': 0, 'IV': 0}
-            conteo_por_bimestre = {'I': 0, 'II': 0, 'III': 0, 'IV': 0}
-            bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
+            for mat in matriculas_stats:
+                if mat.promedio_general is not None:
+                    prom = float(mat.promedio_general)
+                    if prom < 13:
+                        total_riesgo += 1
+                    elif prom < 15:
+                        total_esfuerzo += 1
+                    else:
+                        total_optimos += 1
 
-            for aula in todas_las_aulas:
-                data_alumnos, _ = obtener_consolidado_aula_maestro(aula, periodo_actual)
-                
-                for mat_id, data in data_alumnos.items():
-                    mat = data['matricula']
-                    
-                    puntajes_validos = [p for p in data['puntajes_bimestre'].values() if p is not None and p > 0]
-                    puntaje_anual = sum(puntajes_validos)
-                    
-                    if puntaje_anual > 0:
-                        mat.puntaje_total_exacto = puntaje_anual 
-                        lista_global_alumnos.append(mat)
+                    if prom < 11 and mat.estudiante.fecha_registro < hace_un_mes:
+                        riesgo_mes_pasado += 1
 
-                    promedio_oficial_bim = data['promedios_bimestre'].get(bimestre_activo, 0)
-
-                    diagnostico_ia = analizar_rendimiento_estudiante(
-                        matricula_id=mat.id,
-                        promedio_oficial=promedio_oficial_bim,
-                        bimestre_actual=bimestre_activo,
-                        usar_llm=False
-                    )
-
-                    color_ia = diagnostico_ia.get('color')
-                    if color_ia == 'danger': total_riesgo += 1
-                    elif color_ia in ['warning', 'secondary']: total_esfuerzo += 1
-                    elif color_ia in ['success', 'info']: total_optimos += 1
-
-                    for bim in ['I', 'II', 'III', 'IV']:
-                        prom_bim = data['promedios_bimestre'].get(bim)
-                        if prom_bim is not None and prom_bim > 0:
-                            sumas_por_bimestre[bim] += prom_bim
-                            conteo_por_bimestre[bim] += 1
+                    # Estimación ligera del puntaje acumulado (~10 áreas puntuables por bimestre)
+                    bims_activos = max(1, mat.bimestres_con_nota or 1)
+                    mat.puntaje_total_exacto = round(prom * 10 * bims_activos)
+                    lista_global_alumnos.append(mat)
 
             lista_global_alumnos.sort(key=lambda x: x.puntaje_total_exacto, reverse=True)
             mejores_alumnos = lista_global_alumnos[:5]
-            total_esfuerzo += total_sin_notas
 
-            labels_bimestres = ["Bimestre I", "Bimestre II", "Bimestre III", "Bimestre IV"]
-            valores_bimestres = []
-            
-            for bim in ['I', 'II', 'III', 'IV']:
-                if conteo_por_bimestre[bim] > 0:
-                    promedio_real_colegio = sumas_por_bimestre[bim] / conteo_por_bimestre[bim]
-                    valores_bimestres.append(float(round(promedio_real_colegio, 1)))
-                else:
-                    valores_bimestres.append(0.0)
+            # 1 sola consulta agrupada para la curva de rendimiento por bimestre
+            promedios_bim_qs = dict(
+                Nota.objects.filter(
+                    matricula__periodo=periodo_actual,
+                    matricula__estudiante__estado='Activo',
+                    valor__isnull=False
+                ).values_list('evaluacion__bimestre').annotate(
+                    prom=Avg('valor')
+                )
+            )
+            valores_bimestres = [
+                round(float(promedios_bim_qs.get(bim, 0.0) or 0.0), 1)
+                for bim in ['I', 'II', 'III', 'IV']
+            ]
+        else:
+            mejores_alumnos = []
+            valores_bimestres = [0.0, 0.0, 0.0, 0.0]
 
-            # Empaquetamos todo el resultado y lo guardamos en la memoria RAM del servidor
-            datos_pesados = {
-                'mejores_alumnos': mejores_alumnos,
-                'total_optimos': total_optimos,
-                'total_esfuerzo': total_esfuerzo,
-                'total_riesgo': total_riesgo,
-                'labels_bimestres': labels_bimestres,
-                'valores_bimestres': valores_bimestres
-            }
-            # 💥 Almacenamos en caché por 900 segundos (15 minutos)
-            cache.set(cache_key, datos_pesados, 900)
+        labels_bimestres = ["Bimestre I", "Bimestre II", "Bimestre III", "Bimestre IV"]
+
+        datos_pesados = {
+            'mejores_alumnos': mejores_alumnos,
+            'total_optimos': total_optimos,
+            'total_esfuerzo': total_esfuerzo,
+            'total_riesgo': total_riesgo,
+            'labels_bimestres': labels_bimestres,
+            'valores_bimestres': valores_bimestres,
+        }
+
+        # ---------------------------------------------------------------------
+        # [DESACTIVADO TEMPORALMENTE] MOTOR DE CÁLCULO E IA HÍBRIDA
+        # ---------------------------------------------------------------------
+        # cache_key = f"dashboard_pesado_{periodo_actual.id}"
+        # datos_pesados = cache.get(cache_key)
+        # if not datos_pesados:
+        #     todas_las_aulas = Aula.objects.filter(asignaciones__periodo=periodo_actual).distinct()
+        #     lista_global_alumnos = []
+        #     total_optimos = 0
+        #     total_esfuerzo = 0
+        #     total_riesgo = 0
+        #     total_sin_notas = 0
+        #     sumas_por_bimestre = {'I': 0, 'II': 0, 'III': 0, 'IV': 0}
+        #     conteo_por_bimestre = {'I': 0, 'II': 0, 'III': 0, 'IV': 0}
+        #     bimestre_activo = periodo_actual.bimestre_actual if periodo_actual else 'I'
+        #     for aula in todas_las_aulas:
+        #         data_alumnos, _ = obtener_consolidado_aula_maestro(aula, periodo_actual)
+        #         for mat_id, data in data_alumnos.items():
+        #             mat = data['matricula']
+        #             puntajes_validos = [p for p in data['puntajes_bimestre'].values() if p is not None and p > 0]
+        #             puntaje_anual = sum(puntajes_validos)
+        #             if puntaje_anual > 0:
+        #                 mat.puntaje_total_exacto = puntaje_anual 
+        #                 lista_global_alumnos.append(mat)
+        #             promedio_oficial_bim = data['promedios_bimestre'].get(bimestre_activo, 0)
+        #             diagnostico_ia = analizar_rendimiento_estudiante(
+        #                 matricula_id=mat.id,
+        #                 promedio_oficial=promedio_oficial_bim,
+        #                 bimestre_actual=bimestre_activo,
+        #                 usar_llm=False
+        #             )
+        #             color_ia = diagnostico_ia.get('color')
+        #             if color_ia == 'danger': total_riesgo += 1
+        #             elif color_ia in ['warning', 'secondary']: total_esfuerzo += 1
+        #             elif color_ia in ['success', 'info']: total_optimos += 1
+        #             for bim in ['I', 'II', 'III', 'IV']:
+        #                 prom_bim = data['promedios_bimestre'].get(bim)
+        #                 if prom_bim is not None and prom_bim > 0:
+        #                     sumas_por_bimestre[bim] += prom_bim
+        #                     conteo_por_bimestre[bim] += 1
+        #     lista_global_alumnos.sort(key=lambda x: x.puntaje_total_exacto, reverse=True)
+        #     mejores_alumnos = lista_global_alumnos[:5]
+        #     total_esfuerzo += total_sin_notas
+        #     labels_bimestres = ["Bimestre I", "Bimestre II", "Bimestre III", "Bimestre IV"]
+        #     valores_bimestres = []
+        #     for bim in ['I', 'II', 'III', 'IV']:
+        #         if conteo_por_bimestre[bim] > 0:
+        #             promedio_real_colegio = sumas_por_bimestre[bim] / conteo_por_bimestre[bim]
+        #             valores_bimestres.append(float(round(promedio_real_colegio, 1)))
+        #         else:
+        #             valores_bimestres.append(0.0)
+        #     datos_pesados = {
+        #         'mejores_alumnos': mejores_alumnos,
+        #         'total_optimos': total_optimos,
+        #         'total_esfuerzo': total_esfuerzo,
+        #         'total_riesgo': total_riesgo,
+        #         'labels_bimestres': labels_bimestres,
+        #         'valores_bimestres': valores_bimestres
+        #     }
+        #     cache.set(cache_key, datos_pesados, 900)
 
 
         # ---------------------------------------------------------------------
-        # Gráficos dinámicos y Deltas
+        # Gráficos dinámicos y Deltas (Optimizados a 1 sola consulta)
         # ---------------------------------------------------------------------
         dias_semana = []
         asistencias_semana = []
         inicio_semana = hoy - timedelta(days=hoy.weekday())
+        fin_semana = inicio_semana + timedelta(days=4)
+        conteo_asistencias = dict(
+            AsistenciaEstudiante.objects.filter(
+                fecha__range=(inicio_semana, fin_semana),
+                estado__in=['P', 'T', 'J']
+            ).values_list('fecha').annotate(total=Count('id'))
+        )
         for i in range(5):
             dia_evaluar = inicio_semana + timedelta(days=i)
             dias_semana.append(dia_evaluar.strftime('%d/%m'))
-            presentes = AsistenciaEstudiante.objects.filter(fecha=dia_evaluar, estado__in=['P', 'T', 'J']).count()
-            asistencias_semana.append(presentes)
+            asistencias_semana.append(conteo_asistencias.get(dia_evaluar, 0))
 
-        # 💥 CORRECCIÓN: Usamos 'ahora' en lugar de 'hoy' para evitar el error de naive datetime
-        hace_un_mes = ahora - timedelta(days=30)
-        
-        riesgo_mes_pasado = Estudiante.objects.filter(estado='Activo', fecha_registro__lt=hace_un_mes).annotate(
-            prom_ant=Avg('matricula__notas__valor')
-        ).filter(prom_ant__lt=11).count()
-        
-        # Leemos el valor de la caché de forma segura
         riesgo_actual = datos_pesados.get('total_riesgo', 0)
         delta_riesgo = riesgo_actual - riesgo_mes_pasado
         texto_delta = f"+{delta_riesgo}" if delta_riesgo >= 0 else f"{delta_riesgo}"
@@ -201,7 +256,7 @@ def dashboard_principal(request):
             'dias_semana': dias_semana,
             'asistencias_semana': asistencias_semana,
             'texto_delta': texto_delta,
-            **datos_pesados  # 💥 Desempaquetamos los datos de la caché directamente al contexto
+            **datos_pesados  # 💥 Desempaquetamos los datos directamente al contexto
         })
         
         return render(request, 'core/dashboard_admin.html', context)
