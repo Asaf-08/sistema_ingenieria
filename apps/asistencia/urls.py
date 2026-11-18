@@ -16,7 +16,9 @@ urlpatterns = [
     # 📊 DASHBOARDS Y REPORTES ADMINISTRATIVOS
     # ==========================================
     path('reporte-personal/', views.reporte_asistencia_personal, name='reporte_asistencia_personal'),
+    path('reporte-personal/pdf/', views.reporte_asistencia_personal_pdf, name='reporte_asistencia_personal_pdf'),
     path('reporte-estudiantes/', views.reporte_asistencia_estudiantes, name='reporte_asistencia_estudiantes'),
+    path('reporte-estudiantes/pdf/', views.reporte_asistencia_estudiantes_pdf, name='reporte_asistencia_estudiantes_pdf'),
 
     # ==========================================
     # ⚙️ APIs DE ASISTENCIA (PERSONAL)

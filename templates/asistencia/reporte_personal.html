@@ -10,23 +10,31 @@
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 px-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="text-white">
-                                <i class="material-symbols-rounded align-middle me-2">fact_check</i>
-                                Reporte de Asistencia del Personal
-                            </h6>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h6 class="text-white mb-0">
+                                    <i class="material-symbols-rounded align-middle me-2">fact_check</i>
+                                    Reporte de Asistencia del Personal
+                                </h6>
+                                <p class="text-white opacity-8 text-xs mb-0 mt-1">
+                                    Tolerancia de ingreso: Personal Fijo hasta <b>07:40 AM</b> (tardanza 07:41 AM) | Por Horas/Talleres hasta <b>07:50 AM</b> (tardanza 07:51 AM)
+                                </p>
+                            </div>
+                            <button type="button" class="btn bg-gradient-danger btn-sm mb-0 d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReportePersonalPDF">
+                                <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Exportar Reporte PDF
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="card-body px-0 pb-2">
-                    <div class="d-flex justify-content-start px-4 mt-3">
-                        <button class="btn bg-gradient-dark btn-sm" onclick="abrirModalCrear()">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap px-4 mt-3 gap-2">
+                        <button class="btn bg-gradient-dark btn-sm mb-0" onclick="abrirModalCrear()">
                             <i class="material-symbols-rounded text-sm me-1">add</i> Registro Manual
                         </button>
                     </div>
 
-                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center px-4 gap-2 gap-md-3">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center px-4 mt-3 gap-2 gap-md-3">
                         <p class="text-sm mb-0 font-weight-bold text-dark">Rango de Búsqueda:</p>
                         
                         <form method="GET" action="." class="d-flex flex-column flex-sm-row align-items-center bg-white border-radius-md px-3 py-2 shadow-sm border mb-0 w-100 w-md-auto gap-2">
@@ -49,8 +57,10 @@
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Personal</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Contrato / Límite</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Estado</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Hora Entrada</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Retraso</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Hora Salida</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Fecha</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Acciones</th>
@@ -63,16 +73,30 @@
                                         <div class="d-flex px-2 py-1">
                                             <div class="d-flex flex-column justify-content-center">
                                                 <h6 class="mb-0 text-sm">{{a.personal.apellidos}}, {{ a.personal.nombres }}</h6>
+                                                <span class="text-xxs text-secondary">{{ a.personal.get_cargo_display }}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge badge-sm bg-gradient-{% if a.estado == 'P' %}success{% elif a.estado == 'T' %}warning{% elif a.estado == 'J' %}info{% else %}danger{% endif %}">
-                                            {{ a.get_estado_display }}
+                                        <span class="text-xs font-weight-bold text-dark d-block">{{ a.personal.tipo_contrato }}</span>
+                                        <span class="text-xxs text-secondary">Límite: {{ a.hora_limite_ref|time:"h:i A" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm bg-gradient-{% if a.estado == 'P' and a.minutos_tardanza == 0 %}success{% elif a.estado == 'T' or a.minutos_tardanza > 0 %}warning{% elif a.estado == 'J' %}info{% else %}danger{% endif %}">
+                                            {% if a.minutos_tardanza > 0 and a.estado == 'P' %}Tardanza{% else %}{{ a.get_estado_display }}{% endif %}
                                         </span>
                                     </td>
                                     <td class="align-middle text-center text-sm font-weight-bold">
                                         {{ a.hora_entrada|time:"h:i A"|default:"--" }}
+                                    </td>
+                                    <td class="align-middle text-center text-xs">
+                                        {% if a.minutos_tardanza > 0 %}
+                                            <span class="badge bg-gradient-danger">+{{ a.minutos_tardanza }} min</span>
+                                        {% elif a.hora_entrada %}
+                                            <span class="text-success font-weight-bold">0 min</span>
+                                        {% else %}
+                                            <span class="text-secondary">--</span>
+                                        {% endif %}
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         {{ a.hora_salida|time:"h:i A"|default:"--" }}
@@ -115,6 +139,7 @@
     </div>
 </div>
 
+<!-- MODAL REGISTRO MANUAL / EDICIÓN -->
 <div class="modal fade" id="modalAsistencia" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -132,7 +157,7 @@
                         <select class="form-control" id="id_docente" name="docente">
                             <option value="">Seleccione un personal...</option>
                             {% for d in lista_personal %}
-                            <option value="{{ d.id }}">{{ d.apellidos }}, {{ d.nombres }}</option>
+                            <option value="{{ d.id }}">{{ d.apellidos }}, {{ d.nombres }} ({{ d.tipo_contrato }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -195,8 +220,99 @@
         </div>
     </div>
 </div>
+
+<!-- 💥 MODAL DE EXPORTACIÓN EJECUTIVA PDF (PERSONAL) -->
+<div class="modal fade" id="modalReportePersonalPDF" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-radius-xl">
+            <div class="modal-header bg-gradient-danger p-3">
+                <h6 class="modal-title text-white font-weight-bolder d-flex align-items-center mb-0">
+                    <i class="material-symbols-rounded me-2">picture_as_pdf</i>
+                    Generar Informe PDF de Asistencia del Personal
+                </h6>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="GET" action="{% url 'asistencia:reporte_asistencia_personal_pdf' %}">
+                <div class="modal-body p-4">
+                    <label class="text-xs font-weight-bold text-uppercase text-secondary mb-2 d-block">1. Selección Rápida de Periodo:</label>
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-dark btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('HOY')">Hoy</button>
+                        <button type="button" class="btn btn-outline-info btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('SEMANA')">Esta Semana</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('MES')">Este Mes</button>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="text-xs font-weight-bold text-dark mb-1">Fecha Inicio:</label>
+                            <input type="date" name="fecha_inicio" id="pdf_per_inicio" class="form-control border px-2 py-1" value="{{ fecha_inicio|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-xs font-weight-bold text-dark mb-1">Fecha Fin:</label>
+                            <input type="date" name="fecha_fin" id="pdf_per_fin" class="form-control border px-2 py-1" value="{{ fecha_fin|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">2. Régimen / Tipo de Contrato:</label>
+                        <select name="tipo_contrato" class="form-select border px-2 py-2">
+                            <option value="TODOS">Todo el Personal Activo (Fijo + Por Horas)</option>
+                            <option value="Fijo">Solo Personal Fijo (Tolerancia 07:40 AM — Tardanza 07:41 AM)</option>
+                            <option value="Por Horas">Solo Docentes Por Horas / Talleres (Tolerancia 07:50 AM — Tardanza 07:51 AM)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">3. Nivel de Detalle del Informe:</label>
+                        <select name="incluir_detalle" class="form-select border px-2 py-2">
+                            <option value="1">Consolidado por Docente + Anexo de Incidencias (Tardanzas y Faltas)</option>
+                            <option value="0">Solo Tabla Consolidada de Cumplimiento y Minutos Acumulados</option>
+                        </select>
+                    </div>
+
+                    <div class="alert alert-light border text-xs text-secondary mb-0 mt-3 py-2 px-3">
+                        <i class="material-symbols-rounded text-danger align-middle me-1" style="font-size: 16px;">timer</i>
+                        El informe calculará automáticamente los <b>minutos exactos de retraso acumulados</b>, la hora promedio de ingreso, horas laboradas y el semáforo de descuento por planilla.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn bg-gradient-danger mb-0 d-flex align-items-center">
+                        <i class="material-symbols-rounded text-sm me-1">visibility</i> Generar Vista Previa PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{% static 'js/asistencia_personal.js' %}"></script>
+<script>
+function setRangoPersonalPDF(modo) {
+    const hoy = new Date();
+    const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+    let inicio = new Date(hoy);
+    let fin = new Date(hoy);
+
+    if (modo === 'SEMANA') {
+        const diaSemana = hoy.getDay(); // 0 dom, 1 lun...
+        const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+        inicio.setDate(hoy.getDate() + diffLunes);
+        fin = new Date(inicio);
+        fin.setDate(inicio.getDate() + 4);
+    } else if (modo === 'MES') {
+        inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    }
+
+    document.getElementById('pdf_per_inicio').value = fmt(inicio);
+    document.getElementById('pdf_per_fin').value = fmt(fin);
+}
+</script>
 {% endblock scripts %}
