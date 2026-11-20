@@ -191,12 +191,12 @@ def reporte_asistencia_personal_pdf(request):
     personal_qs = Personal.objects.filter(estado='Activo').order_by('apellidos', 'nombres')
     if filtro_contrato == 'Fijo':
         personal_qs = personal_qs.filter(tipo_contrato='Fijo')
-        etiqueta_filtro = 'Personal Fijo (Tiempo Completo - Tolerancia 07:40 AM)'
+        etiqueta_filtro = 'Personal Fijo'
     elif filtro_contrato == 'Por Horas':
         personal_qs = personal_qs.filter(tipo_contrato='Por Horas')
-        etiqueta_filtro = 'Docentes Por Horas / Talleres (Tolerancia 07:50 AM)'
+        etiqueta_filtro = 'Por Horas / Talleres'
     else:
-        etiqueta_filtro = 'Todo el Personal Activo (Fijos y Por Horas)'
+        etiqueta_filtro = 'Todo el Personal'
 
     asistencias_qs = AsistenciaPersonal.objects.filter(
         fecha__range=[fecha_inicio, fecha_fin],
@@ -299,16 +299,16 @@ def reporte_asistencia_personal_pdf(request):
 
         min_acum = data['minutos_tardanza_acumulados']
         if total_reg == 0:
-            nivel_cumplimiento = 'SIN REGISTROS'
+            nivel_cumplimiento = 'Sin registros'
             color_cumplimiento = 'secondary'
         elif data['faltas'] >= 1 or data['tardanzas'] >= 3 or min_acum > 15:
-            nivel_cumplimiento = 'CRÍTICO (DESCUENTO)'
+            nivel_cumplimiento = 'Crítico'
             color_cumplimiento = 'danger'
         elif data['tardanzas'] >= 1 or min_acum > 0:
-            nivel_cumplimiento = 'OBSERVADO'
+            nivel_cumplimiento = 'Observado'
             color_cumplimiento = 'warning'
         else:
-            nivel_cumplimiento = 'ÓPTIMO'
+            nivel_cumplimiento = 'Óptimo'
             color_cumplimiento = 'success'
 
         data['hora_promedio_entrada'] = hora_prom
@@ -502,7 +502,8 @@ def reporte_asistencia_estudiantes_pdf(request):
     if tipo_reporte == 'SEMANAL':
         fecha_inicio = fecha_ref - datetime.timedelta(days=fecha_ref.weekday())
         fecha_fin = fecha_inicio + datetime.timedelta(days=4)
-        subtitulo_periodo = f"Consolidado Semanal (Lunes {fecha_inicio.strftime('%d/%m/%Y')} al Viernes {fecha_fin.strftime('%d/%m/%Y')})"
+        modalidad_texto = 'Semanal'
+        fecha_consulta_texto = f"Del {fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')}"
         asistencias_qs = AsistenciaEstudiante.objects.filter(
             estudiante__in=estudiantes,
             fecha__range=[fecha_inicio, fecha_fin]
@@ -512,7 +513,8 @@ def reporte_asistencia_estudiantes_pdf(request):
         fecha_inicio = datetime.date(fecha_ref.year, fecha_ref.month, 1)
         fecha_fin = datetime.date(fecha_ref.year, fecha_ref.month, ultimo_dia)
         nombre_mes = MESES_ES[fecha_ref.month]
-        subtitulo_periodo = f"Consolidado Mensual — {nombre_mes} {fecha_ref.year} ({fecha_inicio.strftime('%d/%m/%Y')} al {fecha_fin.strftime('%d/%m/%Y')})"
+        modalidad_texto = 'Mensual'
+        fecha_consulta_texto = f"{nombre_mes} {fecha_ref.year}"
         asistencias_qs = AsistenciaEstudiante.objects.filter(
             estudiante__in=estudiantes,
             fecha__range=[fecha_inicio, fecha_fin]
@@ -520,7 +522,8 @@ def reporte_asistencia_estudiantes_pdf(request):
     elif tipo_reporte == 'BIMESTRAL':
         fecha_inicio = fecha_ref
         fecha_fin = fecha_ref
-        subtitulo_periodo = f"Consolidado Acumulado — Bimestre {bimestre_activo} ({periodo_actual})"
+        modalidad_texto = 'Bimestral'
+        fecha_consulta_texto = f"Bimestre {bimestre_activo}"
         asistencias_qs = AsistenciaEstudiante.objects.filter(
             estudiante__in=estudiantes,
             bimestre=bimestre_activo
@@ -529,7 +532,8 @@ def reporte_asistencia_estudiantes_pdf(request):
         tipo_reporte = 'DIARIO'
         fecha_inicio = fecha_ref
         fecha_fin = fecha_ref
-        subtitulo_periodo = f"Parte Diario de Asistencia — {fecha_ref.strftime('%d/%m/%Y')}"
+        modalidad_texto = 'Diario'
+        fecha_consulta_texto = fecha_ref.strftime('%d/%m/%Y')
         asistencias_qs = AsistenciaEstudiante.objects.filter(
             estudiante__in=estudiantes,
             fecha=fecha_ref
@@ -597,32 +601,32 @@ def reporte_asistencia_estudiantes_pdf(request):
         if tipo_reporte == 'DIARIO':
             if not registro_dia:
                 sin_registro_hoy += 1
-                condicion = 'SIN MARCAJE'
+                condicion = 'Sin marcaje'
                 color_condicion = 'secondary'
             elif f_cnt > 0:
-                condicion = 'FALTA INJUSTIFICADA'
+                condicion = 'Falta'
                 color_condicion = 'danger'
             elif t_cnt > 0:
-                condicion = f'TARDANZA (+{min_tarde_alumno} min)'
+                condicion = 'Tardanza'
                 color_condicion = 'warning'
             elif j_cnt > 0:
-                condicion = 'FALTA JUSTIFICADA'
+                condicion = 'Justificada'
                 color_condicion = 'info'
             else:
-                condicion = 'PUNTUAL'
+                condicion = 'Puntual'
                 color_condicion = 'success'
         else:
             if total_eval == 0:
-                condicion = 'SIN REGISTROS'
+                condicion = 'Sin registros'
                 color_condicion = 'secondary'
             elif f_cnt >= 3 or (total_eval >= 3 and porcentaje_asis < 80):
-                condicion = 'RIESGO INASISTENCIA'
+                condicion = 'Riesgo'
                 color_condicion = 'danger'
             elif t_cnt >= 3 or min_tarde_alumno >= 20 or f_cnt >= 1:
-                condicion = 'ALERTA TARDANZA / FALTA'
+                condicion = 'Observado'
                 color_condicion = 'warning'
             else:
-                condicion = 'REGULAR / ÓPTIMO'
+                condicion = 'Regular'
                 color_condicion = 'success'
 
         fila = {
@@ -661,23 +665,20 @@ def reporte_asistencia_estudiantes_pdf(request):
         'periodo': periodo_actual,
         'bimestre_actual': bimestre_activo,
         'tipo_reporte': tipo_reporte,
+        'modalidad_texto': modalidad_texto,
+        'fecha_consulta_texto': fecha_consulta_texto,
         'es_diario': tipo_reporte == 'DIARIO',
-        'subtitulo_periodo': subtitulo_periodo,
         'fecha_ref': fecha_ref,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'filas_estudiantes': filas_estudiantes,
-        'alumnos_alerta': alumnos_alerta,
-        'total_matriculados': len(estudiantes),
+        'total_alumnos': len(estudiantes),
         'total_p_periodo': total_p_periodo,
         'total_t_periodo': total_t_periodo,
         'total_f_periodo': total_f_periodo,
         'total_j_periodo': total_j_periodo,
         'sin_registro_hoy': sin_registro_hoy,
-        'total_minutos_tardanza_aula': total_minutos_tardanza_aula,
-        'tiempo_tardanza_aula_str': formatear_minutos_a_texto(total_minutos_tardanza_aula),
         'asistencia_efectiva_global': asistencia_efectiva_global,
-        'hora_limite_estudiante_str': HORA_LIMITE_ESTUDIANTE.strftime('%I:%M %p'),
         'fecha_emision': localtime(now()),
     })
 

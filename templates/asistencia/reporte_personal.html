@@ -11,17 +11,12 @@
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 px-3">
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div>
-                                <h6 class="text-white mb-0">
-                                    <i class="material-symbols-rounded align-middle me-2">fact_check</i>
-                                    Reporte de Asistencia del Personal
-                                </h6>
-                                <p class="text-white opacity-8 text-xs mb-0 mt-1">
-                                    Tolerancia de ingreso: Personal Fijo hasta <b>07:40 AM</b> (tardanza 07:41 AM) | Por Horas/Talleres hasta <b>07:50 AM</b> (tardanza 07:51 AM)
-                                </p>
-                            </div>
+                            <h6 class="text-white mb-0">
+                                <i class="material-symbols-rounded align-middle me-2">fact_check</i>
+                                Reporte de Asistencia del Personal
+                            </h6>
                             <button type="button" class="btn bg-gradient-danger btn-sm mb-0 d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReportePersonalPDF">
-                                <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Exportar Reporte PDF
+                                <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Reporte PDF
                             </button>
                         </div>
                     </div>
@@ -221,63 +216,57 @@
     </div>
 </div>
 
-<!-- 💥 MODAL DE EXPORTACIÓN EJECUTIVA PDF (PERSONAL) -->
+<!-- MODAL EXPORTACIÓN PDF (PERSONAL) -->
 <div class="modal fade" id="modalReportePersonalPDF" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-radius-xl">
-            <div class="modal-header bg-gradient-danger p-3">
+            <div class="modal-header bg-gradient-info p-3">
                 <h6 class="modal-title text-white font-weight-bolder d-flex align-items-center mb-0">
                     <i class="material-symbols-rounded me-2">picture_as_pdf</i>
-                    Generar Informe PDF de Asistencia del Personal
+                    Reporte de Asistencia del Personal (PDF)
                 </h6>
                 <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="GET" action="{% url 'asistencia:reporte_asistencia_personal_pdf' %}">
+            <form method="GET" action="{% url 'asistencia:reporte_asistencia_personal_pdf' %}" target="_blank" onsubmit="bootstrap.Modal.getInstance(document.getElementById('modalReportePersonalPDF')).hide()">
                 <div class="modal-body p-4">
-                    <label class="text-xs font-weight-bold text-uppercase text-secondary mb-2 d-block">1. Selección Rápida de Periodo:</label>
                     <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-dark btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('HOY')">Hoy</button>
-                        <button type="button" class="btn btn-outline-info btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('SEMANA')">Esta Semana</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('MES')">Este Mes</button>
+                        <button type="button" id="btn-rango-HOY" class="btn btn-outline-dark btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('HOY')">Hoy</button>
+                        <button type="button" id="btn-rango-SEMANA" class="btn btn-outline-info btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('SEMANA')">Esta Semana</button>
+                        <button type="button" id="btn-rango-MES" class="btn btn-outline-primary btn-sm mb-0 flex-fill" onclick="setRangoPersonalPDF('MES')">Este Mes</button>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-6">
-                            <label class="text-xs font-weight-bold text-dark mb-1">Fecha Inicio:</label>
-                            <input type="date" name="fecha_inicio" id="pdf_per_inicio" class="form-control border px-2 py-1" value="{{ fecha_inicio|date:'Y-m-d' }}" required>
+                            <label class="text-xs font-weight-bold text-dark mb-1">Desde</label>
+                            <input type="date" name="fecha_inicio" id="pdf_per_inicio" class="form-control border px-2 py-1" value="{{ fecha_inicio|date:'Y-m-d' }}" onchange="actualizarEstadoBotonesRango()" required>
                         </div>
                         <div class="col-6">
-                            <label class="text-xs font-weight-bold text-dark mb-1">Fecha Fin:</label>
-                            <input type="date" name="fecha_fin" id="pdf_per_fin" class="form-control border px-2 py-1" value="{{ fecha_fin|date:'Y-m-d' }}" required>
+                            <label class="text-xs font-weight-bold text-dark mb-1">Hasta</label>
+                            <input type="date" name="fecha_fin" id="pdf_per_fin" class="form-control border px-2 py-1" value="{{ fecha_fin|date:'Y-m-d' }}" onchange="actualizarEstadoBotonesRango()" required>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">2. Régimen / Tipo de Contrato:</label>
-                        <select name="tipo_contrato" class="form-select border px-2 py-2">
-                            <option value="TODOS">Todo el Personal Activo (Fijo + Por Horas)</option>
-                            <option value="Fijo">Solo Personal Fijo (Tolerancia 07:40 AM — Tardanza 07:41 AM)</option>
-                            <option value="Por Horas">Solo Docentes Por Horas / Talleres (Tolerancia 07:50 AM — Tardanza 07:51 AM)</option>
+                        <label class="text-xs font-weight-bold text-dark mb-1 d-block">Tipo de Contrato</label>
+                        <select name="tipo_contrato" class="form-select border px-3 py-2">
+                            <option value="TODOS">Todos</option>
+                            <option value="Fijo">Personal Fijo</option>
+                            <option value="Por Horas">Por Horas / Talleres</option>
                         </select>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">3. Nivel de Detalle del Informe:</label>
-                        <select name="incluir_detalle" class="form-select border px-2 py-2">
-                            <option value="1">Consolidado por Docente + Anexo de Incidencias (Tardanzas y Faltas)</option>
-                            <option value="0">Solo Tabla Consolidada de Cumplimiento y Minutos Acumulados</option>
+                    <div class="mb-1">
+                        <label class="text-xs font-weight-bold text-dark mb-1 d-block">Contenido</label>
+                        <select name="incluir_detalle" class="form-select border px-3 py-2">
+                            <option value="1">Resumen + Detalle de incidencias</option>
+                            <option value="0">Solo resumen por personal</option>
                         </select>
-                    </div>
-
-                    <div class="alert alert-light border text-xs text-secondary mb-0 mt-3 py-2 px-3">
-                        <i class="material-symbols-rounded text-danger align-middle me-1" style="font-size: 16px;">timer</i>
-                        El informe calculará automáticamente los <b>minutos exactos de retraso acumulados</b>, la hora promedio de ingreso, horas laboradas y el semáforo de descuento por planilla.
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 px-4 pb-3 d-flex justify-content-between">
                     <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn bg-gradient-danger mb-0 d-flex align-items-center">
-                        <i class="material-symbols-rounded text-sm me-1">visibility</i> Generar Vista Previa PDF
+                    <button type="submit" class="btn bg-gradient-info mb-0 d-flex align-items-center">
+                        <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Generar PDF
                     </button>
                 </div>
             </form>
@@ -289,7 +278,7 @@
 {% block scripts %}
 <script src="{% static 'js/asistencia_personal.js' %}"></script>
 <script>
-function setRangoPersonalPDF(modo) {
+function obtenerRangosPredefinidos() {
     const hoy = new Date();
     const fmt = (d) => {
         const y = d.getFullYear();
@@ -297,22 +286,85 @@ function setRangoPersonalPDF(modo) {
         const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
     };
-    let inicio = new Date(hoy);
-    let fin = new Date(hoy);
 
-    if (modo === 'SEMANA') {
-        const diaSemana = hoy.getDay(); // 0 dom, 1 lun...
-        const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-        inicio.setDate(hoy.getDate() + diffLunes);
-        fin = new Date(inicio);
-        fin.setDate(inicio.getDate() + 4);
-    } else if (modo === 'MES') {
-        inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-    }
+    const diaSemana = hoy.getDay();
+    const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() + diffLunes);
+    const finSemana = new Date(inicioSemana);
+    finSemana.setDate(inicioSemana.getDate() + 4);
 
-    document.getElementById('pdf_per_inicio').value = fmt(inicio);
-    document.getElementById('pdf_per_fin').value = fmt(fin);
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+    return {
+        HOY: { inicio: fmt(hoy), fin: fmt(hoy) },
+        SEMANA: { inicio: fmt(inicioSemana), fin: fmt(finSemana) },
+        MES: { inicio: fmt(inicioMes), fin: fmt(finMes) }
+    };
 }
+
+function pintarBotonRango(modoActivo) {
+    const estilos = {
+        HOY: { outline: 'btn-outline-dark', solid: 'bg-gradient-dark' },
+        SEMANA: { outline: 'btn-outline-info', solid: '#1A73E8' },
+        MES: { outline: 'btn-outline-primary', solid: 'bg-gradient-info' }
+    };
+
+    Object.keys(estilos).forEach((modo) => {
+        const btn = document.getElementById(`btn-rango-${modo}`);
+        if (!btn) return;
+        const { outline, solid } = estilos[modo];
+
+        btn.classList.remove(outline, 'text-white');
+        if (!solid.startsWith('#')) {
+            btn.classList.remove(solid);
+        }
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+
+        if (modo === modoActivo) {
+            if (solid.startsWith('#')) {
+                btn.style.backgroundColor = solid;
+                btn.style.borderColor = solid;
+            } else {
+                btn.classList.add(solid);
+            }
+            btn.classList.add('text-white');
+        } else {
+            btn.classList.add(outline);
+        }
+    });
+}
+
+function actualizarEstadoBotonesRango() {
+    const inicioActual = document.getElementById('pdf_per_inicio').value;
+    const finActual = document.getElementById('pdf_per_fin').value;
+    const rangos = obtenerRangosPredefinidos();
+
+    let modoCoincidente = null;
+    Object.keys(rangos).forEach((modo) => {
+        if (rangos[modo].inicio === inicioActual && rangos[modo].fin === finActual) {
+            modoCoincidente = modo;
+        }
+    });
+    pintarBotonRango(modoCoincidente);
+}
+
+function setRangoPersonalPDF(modo) {
+    const rangos = obtenerRangosPredefinidos();
+    if (!rangos[modo]) return;
+    document.getElementById('pdf_per_inicio').value = rangos[modo].inicio;
+    document.getElementById('pdf_per_fin').value = rangos[modo].fin;
+    pintarBotonRango(modo);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modalEl = document.getElementById('modalReportePersonalPDF');
+    if (modalEl) {
+        modalEl.addEventListener('show.bs.modal', actualizarEstadoBotonesRango);
+    }
+    actualizarEstadoBotonesRango();
+});
 </script>
 {% endblock scripts %}

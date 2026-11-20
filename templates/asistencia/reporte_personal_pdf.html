@@ -1,290 +1,297 @@
-{% extends 'layouts/base.html' %}
 {% load static %}
-
-{% block title %}Informe PDF de Asistencia del Personal{% endblock title %}
-
-{% block extra_css %}
-<style>
-    .pdf-wrapper {
-        background-color: #e9ecef;
-        padding: 20px 10px;
-        overflow-x: auto;
-    }
-
-    .pdf-sheet {
-        width: 210mm;
-        min-height: 297mm;
-        margin: 0 auto;
-        padding: 12mm 14mm;
-        background: #ffffff;
-        box-sizing: border-box;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        font-family: 'Arial', sans-serif;
-        color: #1e293b;
-    }
-
-    .doc-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 3px solid #002060;
-        padding-bottom: 10px;
-        margin-bottom: 14px;
-    }
-
-    .doc-header .logo-box {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .doc-header .logo-box img {
-        height: 48px;
-        object-fit: contain;
-    }
-
-    .inst-title {
-        font-size: 13pt;
-        font-weight: 900;
-        color: #002060;
-        margin: 0;
-        text-transform: uppercase;
-    }
-
-    .inst-sub {
-        font-size: 8.5pt;
-        color: #475569;
-        margin: 2px 0 0 0;
-    }
-
-    .meta-badge {
-        background-color: #002060;
-        color: #ffffff;
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-align: right;
-        font-size: 8pt;
-        line-height: 1.4;
-    }
-
-    .report-banner {
-        background: linear-gradient(90deg, #002060 0%, #0068EC 100%);
-        color: #ffffff;
-        padding: 10px 14px;
-        border-radius: 6px;
-        margin-bottom: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .report-banner h2 {
-        font-size: 11.5pt;
-        font-weight: 800;
-        margin: 0;
-        color: #ffffff;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .report-banner p {
-        font-size: 8.5pt;
-        margin: 2px 0 0 0;
-        opacity: 0.92;
-    }
-
-    .tolerance-bar {
-        background-color: #f8fafc;
-        border: 1px solid #cbd5e1;
-        border-left: 4px solid #0068EC;
-        border-radius: 4px;
-        padding: 6px 10px;
-        font-size: 8pt;
-        margin-bottom: 12px;
-        display: flex;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        margin-bottom: 14px;
-    }
-
-    .kpi-card {
-        border: 1px solid #cbd5e1;
-        border-top: 3px solid #002060;
-        border-radius: 6px;
-        padding: 8px 10px;
-        background: #ffffff;
-    }
-
-    .kpi-card.kpi-blue { border-top-color: #0068EC; }
-    .kpi-card.kpi-warn { border-top-color: #f59e0b; }
-    .kpi-card.kpi-danger { border-top-color: #dc2626; }
-
-    .kpi-label {
-        font-size: 7.5pt;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #64748b;
-        margin-bottom: 3px;
-    }
-
-    .kpi-value {
-        font-size: 13pt;
-        font-weight: 900;
-        color: #002060;
-        line-height: 1.1;
-    }
-
-    .kpi-sub {
-        font-size: 7pt;
-        color: #64748b;
-        margin-top: 2px;
-    }
-
-    .section-title {
-        font-size: 9.5pt;
-        font-weight: 800;
-        color: #002060;
-        text-transform: uppercase;
-        border-bottom: 2px solid #0068EC;
-        padding-bottom: 4px;
-        margin: 12px 0 8px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .pdf-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 14px;
-        font-size: 8pt;
-    }
-
-    .pdf-table thead th {
-        background-color: #002060;
-        color: #ffffff;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 6px 5px;
-        border: 1px solid #002060;
-        font-size: 7.2pt;
-    }
-
-    .pdf-table tbody td {
-        padding: 5px 5px;
-        border: 1px solid #cbd5e1;
-        vertical-align: middle;
-    }
-
-    .pdf-table tbody tr:nth-child(even) {
-        background-color: #f8fafc;
-    }
-
-    .pill {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 800;
-        font-size: 6.8pt;
-        text-transform: uppercase;
-    }
-
-    .pill-success { background-color: #dcfce7; color: #166534; }
-    .pill-warning { background-color: #fef3c7; color: #92400e; }
-    .pill-danger { background-color: #fee2e2; color: #991b1b; }
-    .pill-info { background-color: #dbeafe; color: #1e40af; }
-    .pill-secondary { background-color: #f1f5f9; color: #475569; }
-
-    .signatures {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 28px;
-        padding-top: 15px;
-        page-break-inside: avoid;
-    }
-
-    .sig-box {
-        width: 200px;
-        border-top: 1.5px solid #002060;
-        text-align: center;
-        padding-top: 5px;
-        font-size: 8pt;
-        font-weight: 700;
-        color: #002060;
-    }
-
-    .doc-footer {
-        margin-top: 16px;
-        border-top: 1px solid #cbd5e1;
-        padding-top: 6px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 7pt;
-        color: #64748b;
-    }
-
-    @media print {
-        @page {
-            size: A4 portrait;
-            margin: 8mm;
-        }
-        .sidenav, .navbar, .no-print, footer, .fixed-plugin {
-            display: none !important;
-        }
-        html, body, .main-content, .container-fluid, .pdf-wrapper {
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .pdf-sheet {
-            width: 100% !important;
-            min-height: 0 !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte_Asistencia_Personal_{{ fecha_inicio|date:"Ymd" }}_{{ fecha_fin|date:"Ymd" }}.pdf</title>
+    <style>
         * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-    }
-</style>
-{% endblock extra_css %}
 
-{% block content %}
-<div class="container-fluid py-3">
-    <!-- BARRA DE CONTROLES (NO SE IMPRIME) -->
-    <div class="d-flex justify-content-between align-items-center mb-3 mx-3 flex-wrap gap-2 no-print">
-        <div class="d-flex align-items-center gap-2">
-            <a href="{% url 'asistencia:reporte_asistencia_personal' %}?fecha_inicio={{ fecha_inicio|date:'Y-m-d' }}&fecha_fin={{ fecha_fin|date:'Y-m-d' }}" class="btn btn-outline-dark btn-sm mb-0 d-flex align-items-center">
-                <i class="material-symbols-rounded text-sm me-1">arrow_back</i> Volver al Módulo
-            </a>
-            <div>
-                <h5 class="mb-0 text-dark font-weight-bolder">Vista Previa — Informe Ejecutivo de Personal</h5>
-                <p class="text-xs text-secondary mb-0">Documento formateado en hoja A4 oficial.</p>
-            </div>
-        </div>
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            color: #333333;
+            overflow: hidden;
+        }
 
-        <div class="d-flex gap-2">
-            <button type="button" onclick="window.print()" class="btn btn-outline-info btn-sm mb-0 d-flex align-items-center">
-                <i class="material-symbols-rounded text-sm me-1">print</i> Imprimir
-            </button>
-            <button type="button" id="btn-descargar-pdf" class="btn bg-gradient-danger btn-sm mb-0 d-flex align-items-center">
-                <i class="material-symbols-rounded text-sm me-1">download</i> Descargar PDF
-            </button>
-        </div>
+        #pdf-loader {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: #333333;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .spinner-naranja {
+            width: 38px;
+            height: 38px;
+            border: 4px solid #f3f4f6;
+            border-top-color: #f57c00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #pdf-viewer-frame {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            display: none;
+            z-index: 10000;
+        }
+
+        /* Contenedor exacto A4 (210mm) con padding interno simétrico */
+        #pdf-source-wrapper {
+            position: relative;
+            width: 210mm;
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+        }
+
+        .pdf-sheet {
+            width: 210mm;
+            padding: 8mm 10mm;
+            margin: 0;
+            background: #ffffff;
+            color: #333333;
+        }
+
+        /* 1. Cabecera superior */
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f57c00;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .logo-box img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .inst-name {
+            font-size: 11.5pt;
+            font-weight: 800;
+            color: #333333;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .meta-right {
+            text-align: right;
+            font-size: 7.8pt;
+            color: #555555;
+            line-height: 1.45;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .meta-right b {
+            color: #333333;
+        }
+
+        /* 2. Banda principal naranja institucional */
+        .title-band {
+            background-color: #f57c00;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-band h1 {
+            font-size: 10.5pt;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .title-band-right {
+            text-align: right;
+            font-size: 8.2pt;
+            line-height: 1.35;
+            white-space: nowrap;
+        }
+
+        /* 3. Barra de datos */
+        .info-bar {
+            background-color: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-left: 3px solid #333333;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 8pt;
+            color: #333333;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* 4. Tarjetas resumen */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .kpi-box {
+            border: 1px solid #e0e0e0;
+            border-top: 3px solid #333333;
+            border-radius: 5px;
+            padding: 7px 10px;
+            background: #ffffff;
+        }
+
+        .kpi-box.accent {
+            border-top-color: #f57c00;
+        }
+
+        .kpi-label {
+            font-size: 7.2pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #666666;
+            margin-bottom: 2px;
+        }
+
+        .kpi-val {
+            font-size: 13pt;
+            font-weight: 800;
+            color: #333333;
+            line-height: 1.15;
+        }
+
+        .kpi-sub {
+            font-size: 7pt;
+            color: #777777;
+            margin-top: 2px;
+        }
+
+        /* 5. Título de tabla */
+        .table-heading {
+            font-size: 9pt;
+            font-weight: 800;
+            color: #333333;
+            border-bottom: 1.5px solid #f57c00;
+            padding-bottom: 3px;
+            margin: 10px 0 6px 0;
+        }
+
+        /* 6. Tabla de datos */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7.6pt;
+            margin-bottom: 10px;
+        }
+
+        table.data-table thead th {
+            background-color: #333333;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 5px 5px;
+            border: 1px solid #333333;
+            font-size: 7pt;
+            text-transform: uppercase;
+        }
+
+        table.data-table tbody td {
+            padding: 4.5px 5px;
+            border: 1px solid #dddddd;
+            vertical-align: middle;
+        }
+
+        table.data-table tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        table.data-table tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 1.5px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+            font-size: 6.7pt;
+        }
+
+        .tag-success { background: #e8f5e9; color: #2e7d32; }
+        .tag-warning { background: #fff3e0; color: #e65100; }
+        .tag-danger { background: #ffebee; color: #c62828; }
+        .tag-info { background: #e3f2fd; color: #1565c0; }
+        .tag-secondary { background: #f3f4f6; color: #616161; }
+
+        /* 7. Pie de página simple */
+        .doc-footer {
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px solid #e0e0e0;
+            text-align: right;
+            font-size: 7.2pt;
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pdf-loader">
+        <div class="spinner-naranja"></div>
+        <span>Generando documento PDF...</span>
     </div>
 
-    <div class="pdf-wrapper">
-        <div id="documento-pdf-personal" class="pdf-sheet">
-            <!-- 1. CABECERA INSTITUCIONAL -->
+    <iframe id="pdf-viewer-frame" title="Reporte de Asistencia del Personal"></iframe>
+
+    <div id="pdf-source-wrapper">
+        <div id="documento-pdf" class="pdf-sheet">
+            <!-- 1. CABECERA -->
             <div class="doc-header">
                 <div class="logo-box">
                     {% if institucion_global and institucion_global.logo %}
@@ -292,226 +299,206 @@
                     {% else %}
                         <img src="{% static 'assets/img/logo_colegio_completo.webp' %}" alt="Logo" onerror="this.style.display='none'">
                     {% endif %}
-                    <div>
-                        <h1 class="inst-title">{{ institucion_global.nombre|default:"Consorcio Educativo Ingeniería" }}</h1>
-                        <p class="inst-sub">
-                            {{ institucion_global.sede|default:"Sede Carabayllo" }}
-                            {% if institucion_global.ruc %} | RUC: {{ institucion_global.ruc }}{% endif %}
-                            {% if institucion_global.codigo_modular %} | Cód. Modular: {{ institucion_global.codigo_modular }}{% endif %}
-                        </p>
+                    <div class="inst-name">
+                        {{ institucion_global.nombre|default:"Consorcio Educativo Ingeniería" }}{% if institucion_global.sede %} - {{ institucion_global.sede }}{% endif %}
                     </div>
                 </div>
-                <div class="meta-badge">
-                    <div><b>EMISIÓN:</b> {{ fecha_emision|date:"d/m/Y h:i A" }}</div>
-                    <div><b>ALCANCE:</b> {% if es_mismo_dia %}{{ fecha_inicio|date:"d/m/Y" }}{% else %}{{ fecha_inicio|date:"d/m/Y" }} al {{ fecha_fin|date:"d/m/Y" }}{% endif %}</div>
+                <div class="meta-right">
+                    <div><b>Emisión:</b> {{ fecha_emision|date:"d/m/Y h:i A" }}</div>
+                    <div><b>Marcaciones:</b> {{ total_marcaciones }}</div>
                 </div>
             </div>
 
-            <!-- 2. BANNER DEL REPORTE -->
-            <div class="report-banner">
-                <div>
-                    <h2>Informe de Control de Asistencia y Puntualidad del Personal</h2>
-                    <p>Filtro aplicado: {{ etiqueta_filtro }}</p>
-                </div>
-                <div style="text-align: right; font-size: 8pt;">
-                    <b>Trabajadores Evaluados:</b> {{ total_trabajadores }}<br>
-                    <b>Total Marcaciones:</b> {{ total_marcaciones }}
+            <!-- 2. TÍTULO PRINCIPAL -->
+            <div class="title-band">
+                <h1>REPORTE DE CONTROL DE ASISTENCIA DEL PERSONAL</h1>
+                <div class="title-band-right">
+                    <div><b>{{ etiqueta_filtro }}</b></div>
+                    <div>{{ total_trabajadores }} trabajador{{ total_trabajadores|pluralize:"es" }}</div>
                 </div>
             </div>
 
-            <!-- 3. REGLA DE TOLERANCIA -->
-            <div class="tolerance-bar">
-                <span><b>Parámetros Oficiales de Puntualidad:</b></span>
-                <span>• <b>Personal Fijo (Tiempo Completo):</b> Ingreso hasta {{ hora_limite_fijo_str }} (Tardanza desde 07:41 AM)</span>
-                <span>• <b>Docentes Por Horas / Talleres:</b> Ingreso hasta {{ hora_limite_horas_str }} (Tardanza desde 07:51 AM)</span>
+            <!-- 3. BARRA DE FECHAS -->
+            <div class="info-bar">
+                <span><b>Filtro:</b> {{ etiqueta_filtro }}</span>
+                <span>
+                    <b>Fecha:</b>
+                    {% if es_mismo_dia %}
+                        {{ fecha_inicio|date:"d/m/Y" }}
+                    {% else %}
+                        Del {{ fecha_inicio|date:"d/m/Y" }} al {{ fecha_fin|date:"d/m/Y" }}
+                    {% endif %}
+                </span>
             </div>
 
-            <!-- 4. TARJETAS KPI -->
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Índice de Puntualidad</div>
-                    <div class="kpi-value">{{ indice_puntualidad_global }}%</div>
-                    <div class="kpi-sub">{{ total_puntuales_global }} ingresos puntuales de {{ total_marcaciones }}</div>
+            <!-- 4. TARJETAS RESUMEN -->
+            <div class="kpi-row">
+                <div class="kpi-box accent">
+                    <div class="kpi-label">Puntualidad</div>
+                    <div class="kpi-val">{{ indice_puntualidad_global }}%</div>
+                    <div class="kpi-sub">{{ total_puntuales_global }} de {{ total_marcaciones }} marcaciones</div>
                 </div>
-                <div class="kpi-card kpi-danger">
-                    <div class="kpi-label">Tiempo Tardanza Acum.</div>
-                    <div class="kpi-value" style="color: #dc2626;">{{ tiempo_tardanza_global_str }}</div>
-                    <div class="kpi-sub">{{ total_minutos_tardanza_global }} minutos totales de retraso</div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Tardanza Acumulada</div>
+                    <div class="kpi-val" style="color: #c62828;">{{ tiempo_tardanza_global_str }}</div>
+                    <div class="kpi-sub">{{ total_minutos_tardanza_global }} min en total</div>
                 </div>
-                <div class="kpi-card kpi-warn">
-                    <div class="kpi-label">Ingresos con Tardanza</div>
-                    <div class="kpi-value" style="color: #d97706;">{{ total_tardanzas_global }}</div>
-                    <div class="kpi-sub">Registros fuera del horario límite</div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Tardanzas</div>
+                    <div class="kpi-val" style="color: #e65100;">{{ total_tardanzas_global }}</div>
+                    <div class="kpi-sub">Ingresos con retraso</div>
                 </div>
-                <div class="kpi-card kpi-blue">
-                    <div class="kpi-label">Inasistencias Periodo</div>
-                    <div class="kpi-value" style="color: #0068EC;">{{ total_faltas_global }} F / {{ total_justificadas_global }} J</div>
-                    <div class="kpi-sub">{{ total_faltas_global }} injustificadas y {{ total_justificadas_global }} justificadas</div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Inasistencias</div>
+                    <div class="kpi-val" style="color: #333333;">{{ total_faltas_global }} F / {{ total_justificadas_global }} J</div>
+                    <div class="kpi-sub">{{ total_faltas_global }} faltas y {{ total_justificadas_global }} justificadas</div>
                 </div>
             </div>
 
-            <!-- 5. TABLA CONSOLIDADA DE CUMPLIMIENTO POR TRABAJADOR -->
-            <div class="section-title">
-                <span>1. Consolidado de Puntualidad, Minutos de Tardanza y Horas Laboradas por Personal</span>
-                <span style="font-size: 7.5pt; color: #0068EC;">Ordenado por mayor incidencia de retraso</span>
-            </div>
+            <!-- 5. TABLA CONSOLIDADA DE PERSONAL -->
+            <div class="table-heading">Personal - Resumen del Periodo</div>
 
-            <table class="pdf-table">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th style="width: 4%; text-align: center;">N°</th>
-                        <th style="width: 24%; text-align: left;">Personal / Cargo</th>
-                        <th style="width: 13%; text-align: center;">Régimen (Límite)</th>
-                        <th style="width: 5%; text-align: center;" title="Puntual">P</th>
-                        <th style="width: 5%; text-align: center;" title="Tardanza">T</th>
-                        <th style="width: 5%; text-align: center;" title="Falta">F</th>
-                        <th style="width: 5%; text-align: center;" title="Justificada">J</th>
-                        <th style="width: 10%; text-align: center;">Hora Prom. Ingreso</th>
-                        <th style="width: 11%; text-align: center;">Min. Tardanza Acum.</th>
+                        <th style="width: 28%; text-align: left;">Apellidos y Nombres</th>
+                        <th style="width: 11%; text-align: center;">Contrato</th>
+                        <th style="width: 5%; text-align: center;">P</th>
+                        <th style="width: 5%; text-align: center;">T</th>
+                        <th style="width: 5%; text-align: center;">F</th>
+                        <th style="width: 5%; text-align: center;">J</th>
+                        <th style="width: 10%; text-align: center;">{% if es_mismo_dia %}Hora Entrada{% else %}Hora Prom.{% endif %}</th>
+                        <th style="width: 10%; text-align: center;">Min. Tardanza</th>
                         <th style="width: 8%; text-align: center;">Horas Lab.</th>
-                        <th style="width: 10%; text-align: center;">Estado RR.HH.</th>
+                        <th style="width: 9%; text-align: center;">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in resumen_personal %}
                     <tr>
-                        <td style="text-align: center; font-weight: bold;">{{ forloop.counter }}</td>
+                        <td style="text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
                         <td>
-                            <div style="font-weight: 800; color: #0f172a;">{{ item.personal.apellidos }}, {{ item.personal.nombres }}</div>
-                            <div style="font-size: 7pt; color: #64748b;">{{ item.personal.get_cargo_display }} | DNI: {{ item.personal.dni }}</div>
+                            <div style="font-weight: 600;">{{ item.personal.apellidos }}, {{ item.personal.nombres }}</div>
+                            <div style="font-size: 6.8pt; color: #777777;">{{ item.personal.get_cargo_display }}</div>
                         </td>
-                        <td style="text-align: center;">
-                            <div style="font-weight: 700;">{{ item.personal.tipo_contrato }}</div>
-                            <div style="font-size: 6.8pt; color: #475569;">Máx: {{ item.hora_limite|time:"h:i A" }}</div>
-                        </td>
-                        <td style="text-align: center; font-weight: 700; color: #166534;">{{ item.puntuales }}</td>
-                        <td style="text-align: center; font-weight: 700; color: #d97706;">{{ item.tardanzas }}</td>
-                        <td style="text-align: center; font-weight: 700; color: #dc2626;">{{ item.faltas }}</td>
-                        <td style="text-align: center; font-weight: 700; color: #1e40af;">{{ item.justificadas }}</td>
-                        <td style="text-align: center; font-weight: 700;">{{ item.hora_promedio_entrada }}</td>
+                        <td style="text-align: center;">{{ item.personal.tipo_contrato }}</td>
+                        <td style="text-align: center; font-weight: 700; color: #2e7d32;">{{ item.puntuales }}</td>
+                        <td style="text-align: center; font-weight: 700; color: #e65100;">{{ item.tardanzas }}</td>
+                        <td style="text-align: center; font-weight: 700; color: #c62828;">{{ item.faltas }}</td>
+                        <td style="text-align: center; font-weight: 700; color: #1565c0;">{{ item.justificadas }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ item.hora_promedio_entrada }}</td>
                         <td style="text-align: center;">
                             {% if item.minutos_tardanza_acumulados > 0 %}
-                                <span class="pill pill-danger">+{{ item.minutos_tardanza_acumulados }} min ({{ item.tiempo_tardanza_texto }})</span>
+                                <span class="tag tag-danger">+{{ item.minutos_tardanza_acumulados }} min</span>
                             {% else %}
-                                <span style="color: #166534; font-weight: 700;">0 min</span>
+                                <span style="color: #2e7d32; font-weight: 700;">0 min</span>
                             {% endif %}
                         </td>
-                        <td style="text-align: center; font-size: 7.5pt; font-weight: 700;">
-                            {{ item.tiempo_laborado_texto }}
-                        </td>
+                        <td style="text-align: center; font-size: 7.2pt;">{{ item.tiempo_laborado_texto }}</td>
                         <td style="text-align: center;">
-                            <span class="pill pill-{{ item.color_cumplimiento }}">{{ item.nivel_cumplimiento }}</span>
+                            <span class="tag tag-{{ item.color_cumplimiento }}">{{ item.nivel_cumplimiento }}</span>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" style="text-align: center; padding: 14px; color: #64748b;">
-                            No se encontraron trabajadores activos para el filtro seleccionado.
+                        <td colspan="11" style="text-align: center; padding: 14px; color: #777777;">
+                            No se encontraron registros de personal para el filtro seleccionado.
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <!-- 6. DETALLE CRONOLÓGICO DE INCIDENCIAS (TARDANZAS Y FALTAS) -->
-            {% if incluir_detalle %}
-            <div class="section-title">
-                <span>2. Bitácora Detallada de Incidencias (Tardanzas, Minutos de Retraso y Faltas)</span>
-                <span style="font-size: 7.5pt; color: #dc2626;">{{ incidencias_detalle|length }} incidencia(s) detectada(s)</span>
-            </div>
+            <!-- 6. DETALLE DE INCIDENCIAS (OPCIONAL) -->
+            {% if incluir_detalle and incidencias_detalle %}
+            <div class="table-heading">Detalle de Tardanzas e Inasistencias</div>
 
-            <table class="pdf-table">
+            <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 10%; text-align: center;">Fecha</th>
-                        <th style="width: 26%; text-align: left;">Personal</th>
-                        <th style="width: 12%; text-align: center;">Hora Límite</th>
-                        <th style="width: 11%; text-align: center;">Hora Entrada</th>
-                        <th style="width: 11%; text-align: center;">Hora Salida</th>
-                        <th style="width: 10%; text-align: center;">Min. Retraso</th>
-                        <th style="width: 8%; text-align: center;">Estado</th>
-                        <th style="width: 12%; text-align: left;">Justificación / Obs.</th>
+                        <th style="width: 11%; text-align: center;">Fecha</th>
+                        <th style="width: 29%; text-align: left;">Personal</th>
+                        <th style="width: 11%; text-align: center;">Entrada</th>
+                        <th style="width: 11%; text-align: center;">Salida</th>
+                        <th style="width: 10%; text-align: center;">Retraso</th>
+                        <th style="width: 10%; text-align: center;">Estado</th>
+                        <th style="width: 18%; text-align: left;">Justificación</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for inc in incidencias_detalle %}
                     <tr>
-                        <td style="text-align: center; font-weight: 700;">{{ inc.fecha|date:"d/m/Y" }}</td>
-                        <td>
-                            <b>{{ inc.personal.apellidos }}, {{ inc.personal.nombres }}</b>
-                            <span style="font-size: 6.8pt; color: #64748b; display: block;">{{ inc.personal.tipo_contrato }} — {{ inc.tipo_actividad }}</span>
-                        </td>
-                        <td style="text-align: center;">{{ inc.hora_limite|time:"h:i A" }}</td>
-                        <td style="text-align: center; font-weight: 700;">{{ inc.hora_entrada|time:"h:i A"|default:"--" }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ inc.fecha|date:"d/m/Y" }}</td>
+                        <td style="font-weight: 600;">{{ inc.personal.apellidos }}, {{ inc.personal.nombres }}</td>
+                        <td style="text-align: center;">{{ inc.hora_entrada|time:"h:i A"|default:"--" }}</td>
                         <td style="text-align: center;">{{ inc.hora_salida|time:"h:i A"|default:"--" }}</td>
                         <td style="text-align: center;">
                             {% if inc.minutos_tardanza > 0 %}
-                                <span class="pill pill-danger">+{{ inc.minutos_tardanza }} min</span>
+                                <span class="tag tag-danger">+{{ inc.minutos_tardanza }} min</span>
                             {% else %}
                                 --
                             {% endif %}
                         </td>
                         <td style="text-align: center;">
-                            <span class="pill pill-{% if inc.estado == 'T' %}warning{% elif inc.estado == 'J' %}info{% else %}danger{% endif %}">
+                            <span class="tag tag-{% if inc.estado == 'T' %}warning{% elif inc.estado == 'J' %}info{% else %}danger{% endif %}">
                                 {{ inc.estado_display }}
                             </span>
                         </td>
-                        <td style="font-size: 7pt; color: #334155;">{{ inc.justificacion|default:"Sin justificación registrada" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 12px; color: #166534; font-weight: 700;">
-                            No se registraron tardanzas ni inasistencias en el rango de fechas evaluado.
-                        </td>
+                        <td style="font-size: 7pt; color: #555555;">{{ inc.justificacion|default:"--" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% endif %}
 
-            <!-- 7. FIRMAS -->
-            <div class="signatures">
-                <div class="sig-box">COORDINACIÓN / RECURSOS HUMANOS</div>
-                <div class="sig-box">DIRECCIÓN GENERAL</div>
-            </div>
-
-            <!-- 8. PIE DE PÁGINA -->
+            <!-- 7. PIE DE PÁGINA -->
             <div class="doc-footer">
-                <span>Sistema Académico Web con IA — Módulo de Auditoría de Asistencia</span>
-                <span>Generado por: {{ request.user.get_full_name|default:request.user.username }}</span>
+                Generado por: {{ request.user.get_full_name|default:request.user.username }}
             </div>
         </div>
     </div>
-</div>
-{% endblock content %}
 
-{% block extra_js %}
-<script src="{% static 'plugins/html2pdf/html2pdf.bundle.min.js' %}"></script>
-<script>
-document.getElementById('btn-descargar-pdf').addEventListener('click', function () {
-    const btn = this;
-    const originalHTML = btn.innerHTML;
-    const elemento = document.getElementById('documento-pdf-personal');
+    <script src="{% static 'plugins/html2pdf/html2pdf.bundle.min.js' %}"></script>
+    <script>
+        window.addEventListener('load', function () {
+            window.scrollTo(0, 0);
+            const elemento = document.getElementById('documento-pdf');
+            const filename = 'Reporte_Asistencia_Personal_{{ fecha_inicio|date:"Ymd" }}_{{ fecha_fin|date:"Ymd" }}.pdf';
 
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generando PDF...';
+            const opt = {
+                margin: 0,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2.5,
+                    letterRendering: true,
+                    useCORS: true,
+                    logging: false
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            };
 
-    const opt = {
-        margin: [6, 6, 6, 6],
-        filename: 'Reporte_Asistencia_Personal_{{ fecha_inicio|date:"Ymd" }}_{{ fecha_fin|date:"Ymd" }}.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+            const esMovil = window.matchMedia('(max-width: 767px)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    html2pdf().set(opt).from(elemento).save().then(function () {
-        btn.disabled = false;
-        btn.innerHTML = originalHTML;
-    }).catch(function () {
-        btn.disabled = false;
-        btn.innerHTML = originalHTML;
-        window.print();
-    });
-});
-</script>
-{% endblock extra_js %}
+            if (esMovil) {
+                html2pdf().set(opt).from(elemento).save().then(function () {
+                    document.getElementById('pdf-loader').innerHTML = '<span>PDF descargado correctamente.</span>';
+                });
+            } else {
+                html2pdf().set(opt).from(elemento).toPdf().output('blob').then(function (pdfBlob) {
+                    const blobUrl = URL.createObjectURL(pdfBlob);
+                    const frame = document.getElementById('pdf-viewer-frame');
+                    frame.src = blobUrl;
+                    frame.style.display = 'block';
+                    document.getElementById('pdf-loader').style.display = 'none';
+                    document.getElementById('pdf-source-wrapper').style.display = 'none';
+                }).catch(function () {
+                    html2pdf().set(opt).from(elemento).save();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

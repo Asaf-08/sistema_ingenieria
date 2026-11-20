@@ -80,10 +80,10 @@
                                 <h5 class="text-white mb-0">
                                     <i class="material-symbols-rounded align-middle me-2">school</i> Control de Asistencias
                                 </h5>
-                                {% if aula_obj %}
-                                    <p class="text-white opacity-8 text-sm mb-0">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" de {{ aula_obj.nivel }} | Tolerancia: 08:00 AM</p>
-                                {% else %}
-                                    <p class="text-white opacity-8 text-xs mb-0">Tolerancia de ingreso escolar: hasta las 08:00 AM (tardanza desde las 08:01 AM)</p>
+                                {% if aula_obj and not es_admin %}
+                                    <p class="text-white opacity-8 text-sm mb-0">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" de {{ aula_obj.nivel }}</p>
+                                {% elif aula_obj and origen == 'mi_aula' %}
+                                    <p class="text-white opacity-8 text-sm mb-0">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" de {{ aula_obj.nivel }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -91,7 +91,7 @@
                         <!-- 💥 Lado Derecho: Botón PDF + Bimestre -->
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" class="btn bg-gradient-danger btn-sm mb-0 d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReporteEstudiantesPDF">
-                                <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Exportar Reporte PDF
+                                <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Reporte PDF
                             </button>
                             <span class="badge bg-gradient-info text-md">Bimestre {{ bimestre_actual }}</span>
                         </div>
@@ -209,9 +209,6 @@
                                                 <i class="material-symbols-rounded text-sm align-middle me-1">schedule</i>
                                                 {{ item.asistencia.hora_registro|time:"h:i A"|default:"--" }}
                                             </span>
-                                            {% if item.asistencia.minutos_tardanza > 0 %}
-                                                <span class="badge bg-gradient-warning text-xxs ms-1">+{{ item.asistencia.minutos_tardanza }} min</span>
-                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted font-weight-normal">--</span>
                                         {% endif %}
@@ -265,65 +262,58 @@
     </div>
 </div>
 
-<!-- 💥 MODAL INTELIGENTE DE EXPORTACIÓN PDF POR AULA -->
+<!-- MODAL EXPORTACIÓN PDF POR AULA -->
 <div class="modal fade" id="modalReporteEstudiantesPDF" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-radius-xl">
-            <div class="modal-header bg-gradient-danger p-3">
+            <div class="modal-header bg-gradient-info p-3">
                 <h6 class="modal-title text-white font-weight-bolder d-flex align-items-center mb-0">
                     <i class="material-symbols-rounded me-2">picture_as_pdf</i>
-                    Generar Reporte PDF de Asistencia Estudiantil
+                    Reporte de Asistencia (PDF)
                 </h6>
                 <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="GET" action="{% url 'asistencia:reporte_asistencia_estudiantes_pdf' %}">
+            <form method="GET" action="{% url 'asistencia:reporte_asistencia_estudiantes_pdf' %}" target="_blank" onsubmit="bootstrap.Modal.getInstance(document.getElementById('modalReporteEstudiantesPDF')).hide()">
                 <div class="modal-body p-4">
                     {% if es_admin %}
                     <div class="mb-3">
-                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">1. Seleccione el Aula a Exportar (Obligatorio):</label>
+                        <label class="text-xs font-weight-bold text-dark mb-1 d-block">Aula</label>
                         <select name="aula_id" class="form-select border px-3 py-2" required>
-                            <option value="">-- Elija un salón específico --</option>
+                            <option value="">Seleccione un aula...</option>
                             {% for a in aulas %}
                                 <option value="{{ a.id }}" {% if aula_seleccionada == a.id %}selected{% endif %}>
-                                    {{ a.get_nivel_display }} — {{ a.grado }} "{{ a.seccion }}" {% if a.tutor %}(Tutor: {{ a.tutor.nombre_completo_corto }}){% endif %}
+                                    {{ a.get_nivel_display }} — {{ a.grado }} "{{ a.seccion }}"
                                 </option>
                             {% endfor %}
                         </select>
-                        <small class="text-xxs text-secondary">Se exporta por aula para garantizar un documento oficial limpio y enfocado.</small>
                     </div>
                     {% else %}
                     <input type="hidden" name="aula_id" value="{{ aula_seleccionada }}">
                     <div class="mb-3 p-2 bg-gray-100 border-radius-md border">
-                        <span class="text-xs text-secondary d-block">Aula asignada:</span>
+                        <span class="text-xs text-secondary d-block">Aula</span>
                         <strong class="text-sm text-dark">{{ aula_obj.grado }} "{{ aula_obj.seccion }}" — {{ aula_obj.nivel }}</strong>
                     </div>
                     {% endif %}
 
                     <div class="mb-3">
-                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">2. Modalidad / Alcance del Reporte:</label>
+                        <label class="text-xs font-weight-bold text-dark mb-1 d-block">Modalidad</label>
                         <select name="tipo_reporte" class="form-select border px-3 py-2">
-                            <option value="DIARIO">Parte Diario (Hora de llegada, minutos de tardanza y justificaciones del día)</option>
-                            <option value="SEMANAL">Consolidado Semanal (Lunes a Viernes de la semana seleccionada)</option>
-                            <option value="MENSUAL">Consolidado Mensual (Resumen completo del mes seleccionado)</option>
-                            <option value="BIMESTRAL">Consolidado Bimestral (Acumulado oficial del Bimestre {{ bimestre_actual }})</option>
+                            <option value="DIARIO">Diario</option>
+                            <option value="SEMANAL">Semanal</option>
+                            <option value="MENSUAL">Mensual</option>
+                            <option value="BIMESTRAL">Bimestral</option>
                         </select>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="text-xs font-weight-bold text-uppercase text-secondary mb-1 d-block">3. Fecha de Referencia:</label>
+                    <div class="mb-1">
+                        <label class="text-xs font-weight-bold text-dark mb-1 d-block">Fecha</label>
                         <input type="date" name="fecha" class="form-control border px-3 py-2" value="{{ fecha_seleccionada|date:'Y-m-d' }}" required>
-                        <small class="text-xxs text-secondary">Sirve como día exacto (en Parte Diario) o para ubicar la semana/mes a consolidar.</small>
-                    </div>
-
-                    <div class="alert alert-light border text-xs text-secondary mb-0 mt-3 py-2 px-3">
-                        <i class="material-symbols-rounded text-danger align-middle me-1" style="font-size: 16px;">notifications_active</i>
-                        Incluye <b>cálculo de minutos de tardanza</b> (pasadas las 08:00 AM), <b>% de asistencia efectiva</b> y <b>cuadro de alerta temprana con teléfonos de apoderados</b>.
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 px-4 pb-3 d-flex justify-content-between">
                     <button type="button" class="btn btn-light mb-0" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn bg-gradient-danger mb-0 d-flex align-items-center">
-                        <i class="material-symbols-rounded text-sm me-1">visibility</i> Generar Vista Previa PDF
+                    <button type="submit" class="btn bg-gradient-info mb-0 d-flex align-items-center">
+                        <i class="material-symbols-rounded text-sm me-1">picture_as_pdf</i> Generar PDF
                     </button>
                 </div>
             </form>
