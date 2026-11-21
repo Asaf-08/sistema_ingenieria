@@ -13,10 +13,28 @@ $(document).ready(function () {
     });
 });
 
+function cambiarTipoRegistroPersonal(esExterno) {
+    $('#id_es_externo').val(esExterno ? '1' : '0');
+
+    if (esExterno) {
+        $('#containerDocente').hide();
+        $('#containerExterno').show();
+        $('#btnTipoExterno').removeClass('btn-outline-secondary').addClass('bg-gradient-dark text-white');
+        $('#btnTipoRegistrado').removeClass('bg-gradient-dark text-white').addClass('btn-outline-secondary');
+    } else {
+        $('#containerExterno').hide();
+        $('#containerDocente').show();
+        $('#btnTipoRegistrado').removeClass('btn-outline-secondary').addClass('bg-gradient-dark text-white');
+        $('#btnTipoExterno').removeClass('bg-gradient-dark text-white').addClass('btn-outline-secondary');
+    }
+}
+
 function abrirModalCrear() {
     $('#formAsistencia')[0].reset();
     $('#asistencia_id').val('');
-    $('#id_docente').prop('disabled', false); 
+    $('#id_docente').prop('disabled', false);
+    $('#selectorTipoPersonal').show();
+    cambiarTipoRegistroPersonal(false);
     $('#div_justificacion').hide();
 
     $('#modalTitulo').text('Nuevo Registro Manual');
@@ -25,15 +43,25 @@ function abrirModalCrear() {
     $('#modalAsistencia').modal('show');
 }
 
-function abrirModalEditar(id, docente_id, entrada, salida, estado, justificacion = '', tipo_act = 'REGULAR', obs = '') {
+function abrirModalEditar(id, docente_id, entrada, salida, estado, justificacion = '', tipo_act = 'REGULAR', obs = '', es_externo = false, nombre_ext = '', cargo_ext = '') {
     $('#formAsistencia')[0].reset();
     $('#asistencia_id').val(id);
-    $('#id_docente').val(docente_id).prop('disabled', true); 
+    $('#selectorTipoPersonal').hide();
+
+    if (es_externo) {
+        cambiarTipoRegistroPersonal(true);
+        $('#id_nombre_externo').val(nombre_ext);
+        $('#id_cargo_externo').val(cargo_ext);
+    } else {
+        cambiarTipoRegistroPersonal(false);
+        $('#id_docente').val(docente_id).prop('disabled', true);
+    }
+
     $('#id_hora_entrada').val(entrada);
     $('#id_hora_salida').val(salida);
     $('#id_estado').val(estado);
-    $('#id_tipo_actividad').val(tipo_act);
-    $('#id_observaciones').val(obs);
+    $('#id_tipo_actividad').val(tipo_act || 'REGULAR');
+    $('#id_observaciones').val(obs || '');
 
     if (estado === 'J') {
         $('#div_justificacion').show();
@@ -50,9 +78,14 @@ function abrirModalEditar(id, docente_id, entrada, salida, estado, justificacion
 }
 
 function guardarAsistencia() {
+    const esExterno = $('#id_es_externo').val() === '1';
+
     let data = {
         id: $('#asistencia_id').val(),
+        es_externo: esExterno,
         personal_id: $('#id_docente').val(),
+        nombre_externo: $('#id_nombre_externo').val(),
+        cargo_externo: $('#id_cargo_externo').val(),
         hora_entrada: $('#id_hora_entrada').val(),
         hora_salida: $('#id_hora_salida').val(),
         estado: $('#id_estado').val(),
@@ -60,6 +93,17 @@ function guardarAsistencia() {
         tipo_actividad: $('#id_tipo_actividad').val(),
         observaciones: $('#id_observaciones').val()
     };
+
+    if (!data.id) {
+        if (esExterno && (!data.nombre_externo || data.nombre_externo.trim() === '')) {
+            Swal.fire('Atención', 'Debe ingresar el nombre del personal externo o visitante.', 'warning');
+            return;
+        }
+        if (!esExterno && !data.personal_id) {
+            Swal.fire('Atención', 'Debe seleccionar un personal registrado.', 'warning');
+            return;
+        }
+    }
 
     if (data.estado === 'J' && data.justificacion.trim() === '') {
         Swal.fire('Atención', 'Debe ingresar una justificación.', 'warning');
@@ -95,7 +139,6 @@ function guardarAsistencia() {
 
 // 💥 AQUÍ APLICAMOS LA REUTILIZACIÓN DE CÓDIGO (DRY)
 function confirmarEliminacion(id) {
-    // Usamos tu función global exacta sin cambiar el nombre de esta función local
     confirmarEliminacionAjax({
         titulo: '¿Eliminar asistencia?',
         texto: "Esta acción no se puede deshacer.",

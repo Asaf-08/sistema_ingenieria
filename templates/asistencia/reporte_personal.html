@@ -67,14 +67,24 @@
                                     <td>
                                         <div class="d-flex px-2 py-1">
                                             <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm">{{a.personal.apellidos}}, {{ a.personal.nombres }}</h6>
-                                                <span class="text-xxs text-secondary">{{ a.personal.get_cargo_display }}</span>
+                                                <h6 class="mb-0 text-sm">
+                                                    {{ a.nombre_mostrado }}
+                                                    {% if a.es_externo %}
+                                                        <span class="badge bg-gradient-secondary text-xxs ms-1">Externo</span>
+                                                    {% endif %}
+                                                </h6>
+                                                <span class="text-xxs text-secondary">{{ a.cargo_mostrado }}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="text-xs font-weight-bold text-dark d-block">{{ a.personal.tipo_contrato }}</span>
-                                        <span class="text-xxs text-secondary">Límite: {{ a.hora_limite_ref|time:"h:i A" }}</span>
+                                        {% if a.personal %}
+                                            <span class="text-xs font-weight-bold text-dark d-block">{{ a.personal.tipo_contrato }}</span>
+                                            <span class="text-xxs text-secondary">{% if a.tipo_actividad == 'ASESORIA' %}Asesoría{% else %}Límite: {{ a.hora_limite_ref|time:"h:i A" }}{% endif %}</span>
+                                        {% else %}
+                                            <span class="text-xs font-weight-bold text-secondary d-block">Visita / Externo</span>
+                                            <span class="text-xxs text-secondary">{{ a.get_tipo_actividad_display }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <span class="badge badge-sm bg-gradient-{% if a.estado == 'P' and a.minutos_tardanza == 0 %}success{% elif a.estado == 'T' or a.minutos_tardanza > 0 %}warning{% elif a.estado == 'J' %}info{% else %}danger{% endif %}">
@@ -100,15 +110,27 @@
                                         <span class="text-secondary font-weight-bold">{{ a.fecha|date:"d/m/Y" }}</span>
                                     </td>
                                     <td class="align-middle text-center">
-                                        <button type="button" data-id="{{ a.id }}" data-personal="{{ a.personal.id }}"
+                                        <button type="button" data-id="{{ a.id }}" data-personal="{{ a.personal.id|default:'' }}"
+                                            data-externo="{{ a.es_externo|yesno:'1,0' }}"
+                                            data-nombre-ext="{{ a.nombre_externo|default:'' }}"
+                                            data-cargo-ext="{{ a.cargo_externo|default:'' }}"
                                             data-entrada="{{ a.hora_entrada|time:'H:i' }}"
                                             data-salida="{{ a.hora_salida|time:'H:i' }}" data-estado="{{ a.estado }}"
+                                            data-justif="{{ a.justificacion|default:'' }}"
+                                            data-actividad="{{ a.tipo_actividad }}"
+                                            data-obs="{{ a.observaciones|default:'' }}"
                                             onclick="abrirModalEditar(
                                                 this.dataset.id,
                                                 this.dataset.personal,
                                                 this.dataset.entrada,
                                                 this.dataset.salida,
-                                                this.dataset.estado
+                                                this.dataset.estado,
+                                                this.dataset.justif,
+                                                this.dataset.actividad,
+                                                this.dataset.obs,
+                                                this.dataset.externo === '1',
+                                                this.dataset.nombreExt,
+                                                this.dataset.cargoExt
                                             )"
                                             class="btn btn-icon-only bg-gradient-info rounded-circle mb-0 me-2 d-inline-flex align-items-center justify-content-center"
                                             data-bs-toggle="tooltip" data-bs-title="Editar asistencia"
@@ -147,14 +169,35 @@
                     {% csrf_token %}
                     <input type="hidden" id="asistencia_id" name="asistencia_id">
 
+                    <div class="d-flex gap-2 mb-3" id="selectorTipoPersonal">
+                        <button type="button" id="btnTipoRegistrado" class="btn btn-sm bg-gradient-dark text-white mb-0 flex-fill" onclick="cambiarTipoRegistroPersonal(false)">
+                            Personal Registrado
+                        </button>
+                        <button type="button" id="btnTipoExterno" class="btn btn-sm btn-outline-secondary mb-0 flex-fill" onclick="cambiarTipoRegistroPersonal(true)">
+                            Personal Externo / Visita
+                        </button>
+                    </div>
+                    <input type="hidden" id="id_es_externo" value="0">
+
                     <div class="input-group input-group-static mb-3" id="containerDocente">
-                        <label for="id_docente" class="ms-0">Docente</label>
+                        <label for="id_docente" class="ms-0">Personal</label>
                         <select class="form-control" id="id_docente" name="docente">
                             <option value="">Seleccione un personal...</option>
                             {% for d in lista_personal %}
                             <option value="{{ d.id }}">{{ d.apellidos }}, {{ d.nombres }} ({{ d.tipo_contrato }})</option>
                             {% endfor %}
                         </select>
+                    </div>
+
+                    <div id="containerExterno" style="display: none;">
+                        <div class="input-group input-group-static mb-3">
+                            <label for="id_nombre_externo">Nombre Completo</label>
+                            <input type="text" class="form-control" id="id_nombre_externo" placeholder="Ej: Lic. Juan Pérez">
+                        </div>
+                        <div class="input-group input-group-static mb-3">
+                            <label for="id_cargo_externo">Cargo / Motivo</label>
+                            <input type="text" class="form-control" id="id_cargo_externo" placeholder="Ej: Promotor, Supervisor, Instructor...">
+                        </div>
                     </div>
 
                     <div class="row">

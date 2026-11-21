@@ -32,6 +32,24 @@ HORA_LIMITE_PERSONAL_POR_HORAS = datetime.time(7, 50)
 #    Hasta las 07:40 AM es Puntual. A partir de las 07:41 AM se considera Tardanza.
 HORA_LIMITE_PERSONAL_FIJO = datetime.time(7, 40)
 
+# ==============================================================================
+# 🚦 VENTANAS HORARIAS PERMITIDAS PARA EL ESCÁNER QR (MODIFICABLE A FUTURO)
+# ==============================================================================
+# 4. ESTUDIANTES (Escáner QR):
+#    Solo permite registrar asistencia entre 06:30 AM y 02:30 PM (14:30).
+HORA_INICIO_QR_ESTUDIANTE = datetime.time(6, 30)
+HORA_FIN_QR_ESTUDIANTE = datetime.time(14, 30)
+
+# 5. PERSONAL / DOCENTES (Escáner QR):
+#    Solo permite registrar asistencia entre 06:30 AM y 07:00 PM (19:00).
+HORA_INICIO_QR_PERSONAL = datetime.time(6, 30)
+HORA_FIN_QR_PERSONAL = datetime.time(19, 0)
+
+# 6. ASESORÍAS EN LA TARDE (Docentes Por Horas):
+#    Si un docente Por Horas marca su ingreso desde las 02:30 PM (14:30),
+#    se registra automáticamente como Asesoría/Reunión (Puntual, sin tardanza).
+HORA_INICIO_ASESORIA_TARDE = datetime.time(14, 30)
+
 
 def obtener_hora_limite_personal(personal_obj):
     """
@@ -161,9 +179,13 @@ def reporte_asistencia_personal(request):
 
     asistencias_personal = []
     for a in asistencias_qs:
-        limite = obtener_hora_limite_personal(a.personal)
-        a.hora_limite_ref = limite
-        a.minutos_tardanza = calcular_minutos_tardanza(a.hora_entrada, limite)
+        if a.personal:
+            limite = obtener_hora_limite_personal(a.personal)
+            a.hora_limite_ref = limite
+            a.minutos_tardanza = 0 if a.tipo_actividad == 'ASESORIA' else calcular_minutos_tardanza(a.hora_entrada, limite)
+        else:
+            a.hora_limite_ref = None
+            a.minutos_tardanza = 0
         asistencias_personal.append(a)
     
     return render(request, 'asistencia/reporte_personal.html', {
@@ -235,7 +257,7 @@ def reporte_asistencia_personal_pdf(request):
             continue
 
         limite = info['hora_limite']
-        min_tarde = calcular_minutos_tardanza(reg.hora_entrada, limite)
+        min_tarde = 0 if reg.tipo_actividad == 'ASESORIA' else calcular_minutos_tardanza(reg.hora_entrada, limite)
         min_trabajados = calcular_minutos_laborados(reg.hora_entrada, reg.hora_salida)
 
         # Si llegó después de su hora límite o tiene estado 'T', contabilizamos los minutos de retraso
@@ -329,6 +351,15 @@ def reporte_asistencia_personal_pdf(request):
     total_marcaciones = total_puntuales_global + total_tardanzas_global + total_faltas_global + total_justificadas_global
     indice_puntualidad_global = round((total_puntuales_global / total_marcaciones) * 100, 1) if total_marcaciones > 0 else 0.0
 
+    visitas_externas = []
+    if filtro_contrato == 'TODOS':
+        visitas_externas = list(
+            AsistenciaPersonal.objects.filter(
+                fecha__range=[fecha_inicio, fecha_fin],
+                personal__isnull=True
+            ).order_by('fecha', 'hora_entrada')
+        )
+
     return render(request, 'asistencia/reporte_personal_pdf.html', {
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
@@ -338,6 +369,7 @@ def reporte_asistencia_personal_pdf(request):
         'incluir_detalle': incluir_detalle,
         'resumen_personal': resumen_personal,
         'incidencias_detalle': incidencias_detalle,
+        'visitas_externas': visitas_externas,
         'todos_los_registros': todos_los_registros,
         'total_trabajadores': len(resumen_personal),
         'total_marcaciones': total_marcaciones,
@@ -706,25 +738,45 @@ def registrar_asistencia_api(request):
         bimestre = periodo_actual.bimestre_actual if periodo_actual else 'I'
 
         if tipo_usuario in ['DOC', 'PER']:
+            # Validación de ventana horaria permitida para Personal (06:30 AM - 07:00 PM)
+            if hora_actual < HORA_INICIO_QR_PERSONAL or hora_actual > HORA_FIN_QR_PERSONAL:
+                return JsonResponse({
+                    'status': 'warning',
+                    'mensaje': f'Fuera de horario permitido para personal ({HORA_INICIO_QR_PERSONAL.strftime("%I:%M %p")} - {HORA_FIN_QR_PERSONAL.strftime("%I:%M %p")}).'
+                })
+
             personal = Personal.objects.filter(id=id_usuario).first()
             if not personal:
                 return JsonResponse({'status': 'error', 'mensaje': 'Personal no encontrado.'}, status=404)
 
-            # Calculamos puntualidad según contrato: Fijo (07:40) vs Por Horas (07:50)
-            hora_limite_per = obtener_hora_limite_personal(personal)
-            min_retraso = calcular_minutos_tardanza(hora_actual, hora_limite_per)
-            estado_calculado = 'P' if min_retraso == 0 else 'T'
+            # Si es Docente Por Horas ingresando desde las 02:30 PM -> se marca como Asesoría (Puntual)
+            if personal.tipo_contrato == 'Por Horas' and hora_actual >= HORA_INICIO_ASESORIA_TARDE:
+                min_retraso = 0
+                estado_calculado = 'P'
+                tipo_actividad_calc = 'ASESORIA'
+            else:
+                hora_limite_per = obtener_hora_limite_personal(personal)
+                min_retraso = calcular_minutos_tardanza(hora_actual, hora_limite_per)
+                estado_calculado = 'P' if min_retraso == 0 else 'T'
+                tipo_actividad_calc = 'REGULAR'
 
             asistencia, created = AsistenciaPersonal.objects.get_or_create(
                 personal=personal, 
                 fecha=fecha_hoy,
-                defaults={'estado': estado_calculado, 'hora_entrada': hora_actual}
+                defaults={
+                    'estado': estado_calculado,
+                    'hora_entrada': hora_actual,
+                    'tipo_actividad': tipo_actividad_calc
+                }
             )
 
             if created:
-                mensaje = f"Entrada registrada: {personal.nombres}"
-                if min_retraso > 0:
-                    mensaje += f" (Tardanza: +{min_retraso} min)"
+                if tipo_actividad_calc == 'ASESORIA':
+                    mensaje = f"Entrada por Asesoría: {personal.nombres}"
+                else:
+                    mensaje = f"Entrada registrada: {personal.nombres}"
+                    if min_retraso > 0:
+                        mensaje += f" (Tardanza: +{min_retraso} min)"
                 tipo_registro = 'Entrada'
             elif not asistencia.hora_salida:
                 asistencia.hora_salida = hora_actual
@@ -735,6 +787,13 @@ def registrar_asistencia_api(request):
                 return JsonResponse({'status': 'warning', 'mensaje': 'El personal ya registró entrada y salida hoy.'})
             
         elif tipo_usuario == 'EST':
+            # Validación de ventana horaria permitida para Estudiantes (06:30 AM - 02:30 PM)
+            if hora_actual < HORA_INICIO_QR_ESTUDIANTE or hora_actual > HORA_FIN_QR_ESTUDIANTE:
+                return JsonResponse({
+                    'status': 'warning',
+                    'mensaje': f'Fuera de horario escolar permitido ({HORA_INICIO_QR_ESTUDIANTE.strftime("%I:%M %p")} - {HORA_FIN_QR_ESTUDIANTE.strftime("%I:%M %p")}).'
+                })
+
             estudiante = Estudiante.objects.filter(id=id_usuario).first()
             if not estudiante:
                 return JsonResponse({'status': 'error', 'mensaje': 'Estudiante no encontrado.'}, status=404)
@@ -780,15 +839,36 @@ def guardar_asistencia_personal_api(request):
 
         if asistencia_id: 
             asistencia = get_object_or_404(AsistenciaPersonal, id=asistencia_id)
+            if asistencia.es_externo:
+                nombre_ext = (data.get('nombre_externo') or '').strip()
+                if nombre_ext:
+                    asistencia.nombre_externo = nombre_ext
+                asistencia.cargo_externo = (data.get('cargo_externo') or '').strip()
             mensaje = "Asistencia actualizada correctamente."
         else: 
-            personal_id = data.get('personal_id')
-            if AsistenciaPersonal.objects.filter(personal=personal_id, fecha=hoy).exists():
-                return JsonResponse({'success': False, 'mensaje': 'El personal ya tiene una asistencia registrada hoy.'})
+            es_externo = bool(data.get('es_externo', False))
+            if es_externo:
+                nombre_ext = (data.get('nombre_externo') or '').strip()
+                cargo_ext = (data.get('cargo_externo') or '').strip()
+                if not nombre_ext:
+                    return JsonResponse({'success': False, 'mensaje': 'Debe ingresar el nombre del personal externo o visitante.'})
+                asistencia = AsistenciaPersonal(
+                    personal=None,
+                    nombre_externo=nombre_ext,
+                    cargo_externo=cargo_ext or 'Visita / Externo',
+                    fecha=hoy
+                )
+                mensaje = "Asistencia de personal externo registrada."
+            else:
+                personal_id = data.get('personal_id')
+                if not personal_id:
+                    return JsonResponse({'success': False, 'mensaje': 'Debe seleccionar un personal registrado.'})
+                if AsistenciaPersonal.objects.filter(personal=personal_id, fecha=hoy).exists():
+                    return JsonResponse({'success': False, 'mensaje': 'El personal ya tiene una asistencia registrada hoy.'})
 
-            personal = get_object_or_404(Personal, id=personal_id)
-            asistencia = AsistenciaPersonal(personal=personal, fecha=hoy)
-            mensaje = "Asistencia registrada manualmente."
+                personal = get_object_or_404(Personal, id=personal_id)
+                asistencia = AsistenciaPersonal(personal=personal, fecha=hoy)
+                mensaje = "Asistencia registrada manualmente."
 
         asistencia.hora_entrada = hora_entrada
         asistencia.hora_salida = hora_salida or None

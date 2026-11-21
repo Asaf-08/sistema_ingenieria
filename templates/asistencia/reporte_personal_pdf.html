@@ -452,7 +452,37 @@
             </table>
             {% endif %}
 
-            <!-- 7. PIE DE PÁGINA -->
+            <!-- 7. PERSONAL EXTERNO / VISITAS -->
+            {% if visitas_externas %}
+            <div class="table-heading">Personal Externo / Visitas</div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 11%; text-align: center;">Fecha</th>
+                        <th style="width: 28%; text-align: left;">Nombre</th>
+                        <th style="width: 18%; text-align: left;">Cargo / Motivo</th>
+                        <th style="width: 11%; text-align: center;">Entrada</th>
+                        <th style="width: 11%; text-align: center;">Salida</th>
+                        <th style="width: 21%; text-align: left;">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in visitas_externas %}
+                    <tr>
+                        <td style="text-align: center; font-weight: 600;">{{ v.fecha|date:"d/m/Y" }}</td>
+                        <td style="font-weight: 600;">{{ v.nombre_mostrado }}</td>
+                        <td>{{ v.cargo_mostrado }}</td>
+                        <td style="text-align: center;">{{ v.hora_entrada|time:"h:i A"|default:"--" }}</td>
+                        <td style="text-align: center;">{{ v.hora_salida|time:"h:i A"|default:"--" }}</td>
+                        <td style="font-size: 7pt; color: #555555;">{{ v.observaciones|default:"--" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            <!-- 8. PIE DE PÁGINA -->
             <div class="doc-footer">
                 Generado por: {{ request.user.get_full_name|default:request.user.username }}
             </div>
