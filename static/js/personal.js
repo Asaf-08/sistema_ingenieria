@@ -33,10 +33,12 @@ $(document).ready(function () {
 });
 
 function inicializarTablaPersonal(){
-    // 💥 1. Destruimos instancias previas para evitar duplicación al recargar (Ajax)
-    if ($.fn.DataTable.isDataTable('.tabla-personal')) {
-        $('.tabla-personal').DataTable().destroy();
-    }
+    // 💥 1. Destruimos instancias previas individualmente para evitar duplicación al recargar (Ajax)
+    $('.tabla-personal').each(function() {
+        if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+        }
+    });
 
     // 💥 2. Usamos .each() para que cada tabla tenga su propio buscador independiente
     $('.tabla-personal').each(function() {
@@ -89,8 +91,38 @@ function inicializarTablaPersonal(){
 
     // 💥 4. Solución al bug visual de Bootstrap Tabs: 
     // Recalcula el ancho de las columnas de DataTables al cambiar de pestaña
-    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+    $('button[data-bs-toggle="tab"]').off('shown.bs.tab.personal').on('shown.bs.tab.personal', function (e) {
         $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust().responsive.recalc();
+    });
+}
+
+function recargarTablasPersonal() {
+    $.get(window.location.href, function (html) {
+        const $doc = $('<div>').append($.parseHTML(html));
+
+        // Destruimos DataTables antes de reemplazar el HTML de cada tabla por separado
+        $('.tabla-personal').each(function () {
+            if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().destroy();
+            }
+        });
+
+        const nuevoFijos = $doc.find('#tabla-personal-fijos').html();
+        const nuevoHoras = $doc.find('#tabla-personal-horas').html();
+
+        if (nuevoFijos) {
+            $('#tabla-personal-fijos').html(nuevoFijos);
+        }
+        if (nuevoHoras) {
+            $('#tabla-personal-horas').html(nuevoHoras);
+        }
+
+        inicializarTablaPersonal();
+
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     });
 }
 
@@ -134,22 +166,58 @@ function abrirModalEditarPersonal(id) {
 }
 
 function guardarPersonal() {
-    guardarRegistroAjax({
+    let formData = new FormData(document.getElementById('formPersonal'));
+
+    $.ajax({
         url: '/personal/guardar/',
-        formId: '#formPersonal',
-        modalId: '#modalPersonal',
-        tableId: '.tabla-personal',
-        textoBuscador: 'Buscar personal...'
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+            if (response.status === 'ok' || response.success) {
+                $('#modalPersonal').modal('hide');
+                mostrarNotificacionExito(response.message || response.mensaje || 'Personal guardado correctamente.');
+                recargarTablasPersonal();
+            } else {
+                mostrarErroresModal(response.errors || { 'Error': [response.message || 'Revise los datos ingresados.'] });
+            }
+        },
+        error: function () {
+            mostrarErroresModal({ 'Servidor': ['Error al intentar conectar con el servidor.'] });
+        }
     });
 }
 
 function confirmarEliminarPersonal(id, nombre) {
-    confirmarEliminacionAjax({
-        titulo: '¿Eliminar a ' + nombre + '?',
-        texto: "Esta acción no se puede deshacer.",
-        url: '/personal/eliminar/' + id + '/',
-        tableId: '.tabla-personal',
-        textoBuscador: 'Buscar personal...'
+    Swal.fire({
+        title: '¿Eliminar a ' + nombre + '?',
+        text: "Esta acción no se puede deshacer.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#adb5bd',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '/personal/eliminar/' + id + '/',
+                type: 'POST',
+                headers: { 'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val() },
+                success: function (response) {
+                    if (response.status === 'ok' || response.success) {
+                        mostrarNotificacionExito(response.message || 'Personal eliminado correctamente.');
+                        recargarTablasPersonal();
+                    } else {
+                        mostrarErroresModal({ 'Error': [response.message || 'No se pudo eliminar.'] });
+                    }
+                },
+                error: function () {
+                    mostrarErroresModal({ 'Servidor': ['Error al intentar conectar con el servidor.'] });
+                }
+            });
+        }
     });
 }
 
@@ -175,15 +243,7 @@ function guardarNuevoEstado() {
             if (response.status === 'ok' || response.success) {
                 $('#modalEstado').modal('hide');
                 mostrarNotificacionExito(response.message || response.mensaje || 'Estado actualizado con éxito.');
-                
-                $('.tabla-personal').load(window.location.href + ' .tabla-personal > *', function () {
-                    inicializarTablaPersonal();
-                    
-                    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                    tooltipTriggerList.map(function (tooltipTriggerEl) {
-                        return new bootstrap.Tooltip(tooltipTriggerEl);
-                    });
-                });
+                recargarTablasPersonal();
             } else {
                 mostrarErroresModal(response.errors || { 'Error': [response.mensaje || 'No se pudo actualizar el estado.'] });
             }

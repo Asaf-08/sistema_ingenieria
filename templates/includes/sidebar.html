@@ -121,6 +121,12 @@
           <span class="nav-link-text ms-1">Mi Aula (Tutoría)</span>
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'escaner' %} active {% else %} text-dark {% endif %}" href="{% url 'asistencia:escaner' %}">
+          <i class="material-symbols-rounded opacity-5">qr_code_scanner</i>
+          <span class="nav-link-text ms-1">Escáner QR</span>
+        </a>
+      </li>
       {% endif %}
       <li class="nav-item">
         <a class="nav-link {% if request.resolver_match.url_name == 'centro_materiales' %} active {% else %} text-dark {% endif %}" href="{% url 'personal:centro_materiales' %}">
