@@ -73,7 +73,7 @@
                     <p class="text-xs text-secondary mb-0">{{ sol.asignacion.curso.nombre }}</p>
                   </td>
 
-                  <td>
+                  <td data-order="{{ sol.fecha_subida|date:'Y-m-d H:i:s' }}">
                     <span class="text-xs font-weight-bold">{{ sol.fecha_subida|date:"d/m/Y H:i" }}</span>
                   </td>
 

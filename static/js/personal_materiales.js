@@ -27,8 +27,7 @@ $(document).ready(function () {
         ],
         "responsive": true,
         "order": [
-            [4, "asc"], 
-            [2, "desc"] 
+            [2, "desc"]
         ],
         "pageLength": 10,
         "dom": '<"d-flex justify-content-between align-items-center px-4 pt-3"f l>t<"d-flex justify-content-between align-items-center"ip>',
@@ -275,7 +274,7 @@ function insertarFilaEnDataTable(reg) {
                     <p class="text-xs text-secondary mb-0">${escapeHTML(reg.tema)}</p>
                 </div>
             </td>
-            <td><span class="text-xs font-weight-bold">${escapeHTML(reg.fecha)}</span></td>
+            <td data-order="${escapeHTML(reg.fecha_iso || '')}"><span class="text-xs font-weight-bold">${escapeHTML(reg.fecha)}</span></td>
             <td>
                 <div class="d-flex flex-column gap-1">
                     ${materialesHTML}

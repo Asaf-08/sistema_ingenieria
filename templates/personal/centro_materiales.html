@@ -108,7 +108,7 @@
                       <p class="text-xs text-secondary mb-0">{{ req.get_tema_display }}</p>
                     </div>
                   </td>
-                  <td><span class="text-xs font-weight-bold">{{ req.fecha_subida|date:"d/m/Y H:i" }}</span></td>
+                  <td data-order="{{ req.fecha_subida|date:'Y-m-d H:i:s' }}"><span class="text-xs font-weight-bold">{{ req.fecha_subida|date:"d/m/Y H:i" }}</span></td>
                   <td>
                     <div class="d-flex flex-column gap-1">
                       {% regroup req.archivos.all by get_tipo_display as materiales_list %}

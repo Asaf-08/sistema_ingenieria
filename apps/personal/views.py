@@ -502,7 +502,8 @@ def centro_materiales(request):
                 'id': solicitud.id,
                 'curso': solicitud.asignacion.curso.nombre,
                 'tema': solicitud.get_tema_display(),
-                'fecha': fecha_local.strftime("%d/%m/%Y %H:%M"), 
+                'fecha': fecha_local.strftime("%d/%m/%Y %H:%M"),
+                'fecha_iso': fecha_local.strftime("%Y-%m-%d %H:%M:%S"),
                 'materiales': materiales_resumen,
                 'estado': solicitud.get_estado_display(),
                 'url_eliminar': reverse('personal:eliminar_solicitud', args=[solicitud.id])

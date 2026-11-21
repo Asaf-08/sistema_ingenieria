@@ -486,8 +486,8 @@ def eliminar_matricula_ajax(request, pk):
     })
 
 def panel_asistente_imprenta(request):
-    # Traemos todas las solicitudes, pero las PENDIENTES y EN PROCESO van primero
-    solicitudes = SolicitudImpresion.objects.all().order_by('estado', '-fecha_subida')
+    # Ordenamos estrictamente por fecha de envío más reciente primero
+    solicitudes = SolicitudImpresion.objects.all().order_by('-fecha_subida')
     
     return render(request, 'asistente/panel_imprenta.html', {
         'solicitudes': solicitudes
@@ -2075,13 +2075,28 @@ def exportar_simulacro_word(request, simulacro_id):
         if curso_name not in areas_dict[area_code]['cursos_map']:
             areas_dict[area_code]['cursos_map'][curso_name] = {'nombre': curso_name, 'preguntas': []}
             
-        # 4. Procesamiento de la Imagen (¡Vital!)
+        # 4. Procesamiento de la Imagen (Compatible con disco local y AWS S3)
         imagen_inline = None
-        if preg.imagen and preg.imagen.name: # Verificamos que sí haya subido un archivo
-            ruta_imagen = preg.imagen.path
-            if os.path.exists(ruta_imagen):
-                # InlineImage incrusta la foto. Mm(70) limita su ancho a 7 centímetros para no desbordar la columna
-                imagen_inline = InlineImage(doc, ruta_imagen, width=Mm(70))
+        if preg.imagen and preg.imagen.name:
+            try:
+                import io
+                from PIL import Image as PILImage
+
+                with preg.imagen.open('rb') as img_file:
+                    raw_bytes = img_file.read()
+
+                # Normalizamos a PNG en memoria (compatible con python-docx aunque suban .webp o desde S3)
+                pil_img = PILImage.open(io.BytesIO(raw_bytes))
+                if pil_img.mode not in ('RGB', 'RGBA'):
+                    pil_img = pil_img.convert('RGB')
+                img_buffer = io.BytesIO()
+                pil_img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+
+                imagen_inline = InlineImage(doc, img_buffer, width=Mm(70))
+            except Exception as e:
+                print(f"⚠️ No se pudo incrustar la imagen de la pregunta {preg.id}: {e}")
+                imagen_inline = None
         
         # Función interna para pintar de amarillo si es la clave correcta
         def formatear_opcion(texto_opcion, letra_opcion):
@@ -2411,9 +2426,11 @@ def configuracion_institucion(request):
     else:
         form = InstitucionForm(instance=institucion)
         
+    periodo_actual = PeriodoLectivo.objects.filter(activo=True).first()
     return render(request, 'academico/configuracion.html', {
         'form': form, 
-        'institucion': institucion
+        'institucion': institucion,
+        'periodo_actual': periodo_actual
     })
 
 @login_required
