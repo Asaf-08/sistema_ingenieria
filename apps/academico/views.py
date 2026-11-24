@@ -921,7 +921,7 @@ def guardar_evidencia_ajax(request):
                 titulo="Nuevos Materiales Subidos 📁",
                 mensaje=f"El Prof. {personal_actual.nombres.split()[0]} ha subido una nueva evidencia para revisión.",
                 tipo='INFO',
-                enlace="/academico/gestion-evidencias/" # Ajusta a la URL real
+                enlace="/academico/supervision/"
             )
         # ==============================================================
 

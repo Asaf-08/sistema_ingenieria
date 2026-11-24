@@ -234,7 +234,7 @@ function guardarEvidencia() {
     btn.innerText = 'Enviando a Coordinación...';
 
     $.ajax({
-        url: '/academico/supervision/evidencia/entregar/',
+        url: '/academico/supervision/evidencia/guardar/',
         type: 'POST',
         data: new FormData(form),
         processData: false,
